@@ -5,15 +5,15 @@ import com.alibaba.fastjson.JSONObject;
 import com.sky.properties.WeChatProperties;
 import com.sky.order.service.OrderService;
 import com.wechat.pay.contrib.apache.httpclient.util.AesUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.entity.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -23,7 +23,7 @@ import java.util.HashMap;
  */
 @RestController
 @RequestMapping("/notify")
-@Api(tags = "支付回调接口")
+@Tag(name = "支付回调接口")
 @Slf4j
 public class PayNotifyController {
     @Autowired
@@ -36,7 +36,7 @@ public class PayNotifyController {
      *
      * @param request
      */
-    @ApiOperation("支付成功回调")
+    @Operation(summary = "支付成功回调")
     @RequestMapping("/paySuccess")
     public void paySuccessNotify(HttpServletRequest request, HttpServletResponse response) throws Exception {
         //读取数据

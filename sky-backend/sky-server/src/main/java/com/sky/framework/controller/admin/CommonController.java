@@ -3,8 +3,8 @@ package com.sky.framework.controller.admin;
 import com.sky.constant.MessageConstant;
 import com.sky.result.Result;
 import com.sky.utils.AliOssUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,7 +20,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/admin/common")
-@Api(tags = "通用接口")
+@Tag(name = "通用接口")
 @Slf4j
 public class CommonController {
 
@@ -33,7 +33,7 @@ public class CommonController {
      * @return
      */
     @PostMapping("/upload")
-    @ApiOperation("文件上传")
+    @Operation(summary = "文件上传")
     public Result<String> upload(MultipartFile file){
         log.info("文件上传：{}",file);
 

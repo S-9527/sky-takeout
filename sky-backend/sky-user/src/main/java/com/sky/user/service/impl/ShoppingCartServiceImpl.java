@@ -1,5 +1,6 @@
 package com.sky.user.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sky.context.BaseContext;
 import com.sky.user.dto.ShoppingCartDTO;
 import com.sky.menu.entity.Dish;
@@ -13,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,13 +41,13 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         Long userId = BaseContext.getCurrentId();
         shoppingCart.setUserId(userId);
 
-        List<ShoppingCart> list = shoppingCartMapper.list(shoppingCart);
+        List<ShoppingCart> list = shoppingCartMapper.selectList(buildQueryWrapper(shoppingCart));
 
         //如果已经存在了，只需要将数量加一
         if(list != null && list.size() > 0){
             ShoppingCart cart = list.get(0);
-            cart.setNumber(cart.getNumber() + 1);//update shopping_cart set number = ? where id = ?
-            shoppingCartMapper.updateNumberById(cart);
+            cart.setNumber(cart.getNumber() + 1);
+            shoppingCartMapper.updateById(cart);
         }else {
             //如果不存在，需要插入一条购物车数据
             //判断本次添加到购物车的是菜品还是套餐
@@ -80,8 +82,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         ShoppingCart shoppingCart = ShoppingCart.builder()
                 .userId(userId)
                 .build();
-        List<ShoppingCart> list = shoppingCartMapper.list(shoppingCart);
-        return list;
+        return shoppingCartMapper.selectList(buildQueryWrapper(shoppingCart));
     }
 
     /**
@@ -90,7 +91,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
     public void cleanShoppingCart() {
         //获取到当前微信用户的id
         Long userId = BaseContext.getCurrentId();
-        shoppingCartMapper.deleteByUserId(userId);
+        shoppingCartMapper.delete(new LambdaQueryWrapper<ShoppingCart>().eq(ShoppingCart::getUserId, userId));
     }
 
     /**
@@ -99,15 +100,18 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
      * @return
      */
     public List<ShoppingCart> list(ShoppingCart shoppingCart) {
-        return shoppingCartMapper.list(shoppingCart);
+        return shoppingCartMapper.selectList(buildQueryWrapper(shoppingCart));
     }
 
     /**
      * 批量插入购物车
      * @param shoppingCartList
      */
+    @Transactional
     public void insertBatch(List<ShoppingCart> shoppingCartList) {
-        shoppingCartMapper.insertBatch(shoppingCartList);
+        for (ShoppingCart shoppingCart : shoppingCartList) {
+            shoppingCartMapper.insert(shoppingCart);
+        }
     }
 
     /**
@@ -115,7 +119,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
      * @param userId
      */
     public void deleteByUserId(Long userId) {
-        shoppingCartMapper.deleteByUserId(userId);
+        shoppingCartMapper.delete(new LambdaQueryWrapper<ShoppingCart>().eq(ShoppingCart::getUserId, userId));
     }
 
     /**
@@ -128,7 +132,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         //设置查询条件，查询当前登录用户的购物车数据
         shoppingCart.setUserId(BaseContext.getCurrentId());
 
-        List<ShoppingCart> list = shoppingCartMapper.list(shoppingCart);
+        List<ShoppingCart> list = shoppingCartMapper.selectList(buildQueryWrapper(shoppingCart));
 
         if(list != null && list.size() > 0){
             shoppingCart = list.get(0);
@@ -140,8 +144,21 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
             }else {
                 //当前商品在购物车中的份数不为1，修改份数即可
                 shoppingCart.setNumber(shoppingCart.getNumber() - 1);
-                shoppingCartMapper.updateNumberById(shoppingCart);
+                shoppingCartMapper.updateById(shoppingCart);
             }
         }
+    }
+
+    /**
+     * 构建购物车动态查询条件（对应原 ShoppingCartMapper.list 的 XML 动态 SQL）
+     * @param shoppingCart
+     * @return
+     */
+    private LambdaQueryWrapper<ShoppingCart> buildQueryWrapper(ShoppingCart shoppingCart) {
+        return new LambdaQueryWrapper<ShoppingCart>()
+                .eq(shoppingCart.getUserId() != null, ShoppingCart::getUserId, shoppingCart.getUserId())
+                .eq(shoppingCart.getSetmealId() != null, ShoppingCart::getSetmealId, shoppingCart.getSetmealId())
+                .eq(shoppingCart.getDishId() != null, ShoppingCart::getDishId, shoppingCart.getDishId())
+                .eq(shoppingCart.getDishFlavor() != null, ShoppingCart::getDishFlavor, shoppingCart.getDishFlavor());
     }
 }

@@ -1,7 +1,8 @@
 package com.sky.employee.service.impl;
 
-import com.github.pagehelper.Page;
-import com.github.pagehelper.PageHelper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
 import com.sky.constant.PasswordConstant;
 import com.sky.constant.StatusConstant;
@@ -41,7 +42,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         String password = employeeLoginDTO.getPassword();
 
         //1、根据用户名查询数据库中的数据
-        Employee employee = employeeMapper.getByUsername(username);
+        Employee employee = employeeMapper.selectOne(new LambdaQueryWrapper<Employee>()
+                .eq(Employee::getUsername, username));
 
         //2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
         if (employee == null) {
@@ -83,14 +85,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         //设置密码，默认密码123456
         employee.setPassword(DigestUtils.md5DigestAsHex(PasswordConstant.DEFAULT_PASSWORD.getBytes()));
 
-        //设置当前记录的创建时间和修改时间
-        //employee.setCreateTime(LocalDateTime.now());
-        //employee.setUpdateTime(LocalDateTime.now());
-
-        //设置当前记录创建人id和修改人id
-        //employee.setCreateUser(BaseContext.getCurrentId());
-        //employee.setUpdateUser(BaseContext.getCurrentId());
-
         employeeMapper.insert(employee);
     }
 
@@ -101,14 +95,12 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @return
      */
     public PageResult pageQuery(EmployeePageQueryDTO employeePageQueryDTO) {
-        // select * from employee limit 0,10
-        //开始分页查询
-        PageHelper.startPage(employeePageQueryDTO.getPage(), employeePageQueryDTO.getPageSize());
-
-        Page<Employee> page = employeeMapper.pageQuery(employeePageQueryDTO);
+        IPage<Employee> page = employeeMapper.pageQuery(
+                new Page<>(employeePageQueryDTO.getPage(), employeePageQueryDTO.getPageSize()),
+                employeePageQueryDTO);
 
         long total = page.getTotal();
-        List<Employee> records = page.getResult();
+        List<Employee> records = page.getRecords();
 
         return new PageResult(total, records);
     }
@@ -120,18 +112,12 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @param id
      */
     public void startOrStop(Integer status, Long id) {
-        // update employee set status = ? where id = ?
-
-        /*Employee employee = new Employee();
-        employee.setStatus(status);
-        employee.setId(id);*/
-
         Employee employee = Employee.builder()
                 .status(status)
                 .id(id)
                 .build();
 
-        employeeMapper.update(employee);
+        employeeMapper.updateById(employee);
     }
 
     /**
@@ -141,7 +127,7 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @return
      */
     public Employee getById(Long id) {
-        Employee employee = employeeMapper.getById(id);
+        Employee employee = employeeMapper.selectById(id);
         employee.setPassword("****");
         return employee;
     }
@@ -155,9 +141,6 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee employee = new Employee();
         BeanUtils.copyProperties(employeeDTO, employee);
 
-        //employee.setUpdateTime(LocalDateTime.now());
-        //employee.setUpdateUser(BaseContext.getCurrentId());
-
-        employeeMapper.update(employee);
+        employeeMapper.updateById(employee);
     }
 }

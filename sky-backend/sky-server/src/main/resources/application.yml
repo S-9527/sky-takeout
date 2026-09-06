@@ -19,7 +19,7 @@ spring:
       password: ${sky.redis.password}
       database: ${sky.redis.database}
 
-mybatis:
+mybatis-plus:
   #mapper配置文件
   mapper-locations: classpath*:mapper/*.xml
   type-aliases-package: com.sky.employee.entity,com.sky.menu.entity,com.sky.user.entity,com.sky.order.entity

@@ -1,5 +1,6 @@
 package com.sky.order.task;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sky.order.entity.Orders;
 import com.sky.order.mapper.OrderMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -29,14 +30,16 @@ public class OrderTask {
         LocalDateTime time = LocalDateTime.now().plusMinutes(-15);
 
         // select * from orders where status = ? and order_time < (当前时间 - 15分钟)
-        List<Orders> ordersList = orderMapper.getByStatusAndOrderTimeLT(Orders.PENDING_PAYMENT, time);
+        List<Orders> ordersList = orderMapper.selectList(new LambdaQueryWrapper<Orders>()
+                .eq(Orders::getStatus, Orders.PENDING_PAYMENT)
+                .lt(Orders::getOrderTime, time));
 
         if(ordersList != null && ordersList.size() > 0){
             for (Orders orders : ordersList) {
                 orders.setStatus(Orders.CANCELLED);
                 orders.setCancelReason("订单超时，自动取消");
                 orders.setCancelTime(LocalDateTime.now());
-                orderMapper.update(orders);
+                orderMapper.updateById(orders);
             }
         }
     }
@@ -50,12 +53,14 @@ public class OrderTask {
 
         LocalDateTime time = LocalDateTime.now().plusMinutes(-60);
 
-        List<Orders> ordersList = orderMapper.getByStatusAndOrderTimeLT(Orders.DELIVERY_IN_PROGRESS, time);
+        List<Orders> ordersList = orderMapper.selectList(new LambdaQueryWrapper<Orders>()
+                .eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS)
+                .lt(Orders::getOrderTime, time));
 
         if(ordersList != null && ordersList.size() > 0){
             for (Orders orders : ordersList) {
                 orders.setStatus(Orders.COMPLETED);
-                orderMapper.update(orders);
+                orderMapper.updateById(orders);
             }
         }
     }

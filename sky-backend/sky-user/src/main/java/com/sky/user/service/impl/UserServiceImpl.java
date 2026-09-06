@@ -2,6 +2,7 @@ package com.sky.user.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sky.constant.MessageConstant;
 import com.sky.user.dto.UserLoginDTO;
 import com.sky.user.entity.User;
@@ -44,7 +45,7 @@ public class UserServiceImpl implements UserService {
         }
 
         //判断当前用户是否为新用户
-        User user = userMapper.getByOpenid(openid);
+        User user = userMapper.selectOne(new LambdaQueryWrapper<User>().eq(User::getOpenid, openid));
 
         //如果是新用户，自动完成注册
         if(user == null){
@@ -65,7 +66,7 @@ public class UserServiceImpl implements UserService {
      * @return
      */
     public User getById(Long id) {
-        return userMapper.getById(id);
+        return userMapper.selectById(id);
     }
 
     /**
@@ -74,7 +75,12 @@ public class UserServiceImpl implements UserService {
      * @return
      */
     public Integer countByMap(Map map) {
-        return userMapper.countByMap(map);
+        Object begin = map.get("begin");
+        Object end = map.get("end");
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>()
+                .gt(begin != null, User::getCreateTime, begin)
+                .lt(end != null, User::getCreateTime, end);
+        return userMapper.selectCount(wrapper).intValue();
     }
 
     /**

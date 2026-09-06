@@ -1,7 +1,8 @@
 package com.sky.menu.service.impl;
 
-import com.github.pagehelper.Page;
-import com.github.pagehelper.PageHelper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
 import com.sky.constant.StatusConstant;
 import com.sky.menu.dto.DishDTO;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -75,9 +77,10 @@ public class DishServiceImpl implements DishService {
      * @return
      */
     public PageResult pageQuery(DishPageQueryDTO dishPageQueryDTO) {
-        PageHelper.startPage(dishPageQueryDTO.getPage(), dishPageQueryDTO.getPageSize());
-        Page<DishVO> page = dishMapper.pageQuery(dishPageQueryDTO);
-        return new PageResult(page.getTotal(), page.getResult());
+        IPage<DishVO> page = dishMapper.pageQuery(
+                new Page<>(dishPageQueryDTO.getPage(), dishPageQueryDTO.getPageSize()),
+                dishPageQueryDTO);
+        return new PageResult(page.getTotal(), page.getRecords());
     }
 
     /**
@@ -86,7 +89,7 @@ public class DishServiceImpl implements DishService {
      * @return
      */
     public Dish getById(Long id) {
-        return dishMapper.getById(id);
+        return dishMapper.selectById(id);
     }
 
     /**
@@ -107,7 +110,7 @@ public class DishServiceImpl implements DishService {
     public void deleteBatch(List<Long> ids) {
         //判断当前菜品是否能够删除---是否存在起售中的菜品？？
         for (Long id : ids) {
-            Dish dish = dishMapper.getById(id);
+            Dish dish = dishMapper.selectById(id);
             if (dish.getStatus() == StatusConstant.ENABLE) {
                 //当前菜品处于起售中，不能删除
                 throw new DeletionNotAllowedException(MessageConstant.DISH_ON_SALE);
@@ -125,7 +128,7 @@ public class DishServiceImpl implements DishService {
         for (Long id : ids) {
             dishMapper.deleteById(id);
             //删除菜品关联的口味数据
-            dishFlavorMapper.deleteByDishId(id);
+            dishFlavorMapper.delete(new LambdaQueryWrapper<DishFlavor>().eq(DishFlavor::getDishId, id));
         }
     }
 
@@ -137,10 +140,11 @@ public class DishServiceImpl implements DishService {
      */
     public DishVO getByIdWithFlavor(Long id) {
         //根据id查询菜品数据
-        Dish dish = dishMapper.getById(id);
+        Dish dish = dishMapper.selectById(id);
 
         //根据菜品id查询口味数据
-        List<DishFlavor> dishFlavors = dishFlavorMapper.getByDishId(id);
+        List<DishFlavor> dishFlavors = dishFlavorMapper.selectList(
+                new LambdaQueryWrapper<DishFlavor>().eq(DishFlavor::getDishId, id));
 
         //将查询到的数据封装到VO
         DishVO dishVO = new DishVO();
@@ -160,10 +164,10 @@ public class DishServiceImpl implements DishService {
         BeanUtils.copyProperties(dishDTO, dish);
 
         //修改菜品表基本信息
-        dishMapper.update(dish);
+        dishMapper.updateById(dish);
 
         //删除原有的口味数据
-        dishFlavorMapper.deleteByDishId(dishDTO.getId());
+        dishFlavorMapper.delete(new LambdaQueryWrapper<DishFlavor>().eq(DishFlavor::getDishId, dishDTO.getId()));
 
         //重新插入口味数据
         List<DishFlavor> flavors = dishDTO.getFlavors();
@@ -188,7 +192,7 @@ public class DishServiceImpl implements DishService {
                 .id(id)
                 .status(status)
                 .build();
-        dishMapper.update(dish);
+        dishMapper.updateById(dish);
 
         if (status == StatusConstant.DISABLE) {
             // 如果是停售操作，还需要将包含当前菜品的套餐也停售
@@ -202,7 +206,7 @@ public class DishServiceImpl implements DishService {
                             .id(setmealId)
                             .status(StatusConstant.DISABLE)
                             .build();
-                    setmealMapper.update(setmeal);
+                    setmealMapper.updateById(setmeal);
                 }
             }
         }
@@ -215,11 +219,10 @@ public class DishServiceImpl implements DishService {
      * @return
      */
     public List<Dish> list(Long categoryId) {
-        Dish dish = Dish.builder()
-                .categoryId(categoryId)
-                .status(StatusConstant.ENABLE)
-                .build();
-        return dishMapper.list(dish);
+        return dishMapper.selectList(new LambdaQueryWrapper<Dish>()
+                .eq(Dish::getCategoryId, categoryId)
+                .eq(Dish::getStatus, StatusConstant.ENABLE)
+                .orderByDesc(Dish::getCreateTime));
     }
 
     /**
@@ -228,7 +231,13 @@ public class DishServiceImpl implements DishService {
      * @return
      */
     public List<DishVO> listWithFlavor(Dish dish) {
-        List<Dish> dishList = dishMapper.list(dish);
+        LambdaQueryWrapper<Dish> wrapper = new LambdaQueryWrapper<Dish>()
+                .like(dish.getName() != null, Dish::getName, dish.getName())
+                .eq(dish.getCategoryId() != null, Dish::getCategoryId, dish.getCategoryId())
+                .eq(dish.getStatus() != null, Dish::getStatus, dish.getStatus())
+                .orderByDesc(Dish::getCreateTime);
+
+        List<Dish> dishList = dishMapper.selectList(wrapper);
 
         List<DishVO> dishVOList = new ArrayList<>();
 
@@ -237,7 +246,8 @@ public class DishServiceImpl implements DishService {
             BeanUtils.copyProperties(d,dishVO);
 
             //根据菜品id查询对应的口味
-            List<DishFlavor> flavors = dishFlavorMapper.getByDishId(d.getId());
+            List<DishFlavor> flavors = dishFlavorMapper.selectList(
+                    new LambdaQueryWrapper<DishFlavor>().eq(DishFlavor::getDishId, d.getId()));
 
             dishVO.setFlavors(flavors);
             dishVOList.add(dishVO);

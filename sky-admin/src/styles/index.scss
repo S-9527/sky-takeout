@@ -40,14 +40,6 @@ div:focus {
   outline: none;
 }
 
-.clearfix {
-  @include clearfix;
-}
-
-.app-container {
-  padding: 20px;
-}
-
 /* ========== 通用工具类 ========== */
 
 .pageList {
@@ -134,12 +126,6 @@ div:focus {
   background-color: #2a2a2a !important;
   border-color: #2a2a2a !important;
   color: #ffffff !important;
-}
-
-/* 数字输入框去掉 stepper */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
 }
 
 input[type="number"] {

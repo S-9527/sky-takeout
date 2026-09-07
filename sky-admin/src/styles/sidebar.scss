@@ -49,19 +49,13 @@
 
   // EP2 把 el-menu--collapse 直接加在 .el-menu 自身上,不能嵌套在 .el-menu 里写
   .el-menu--collapse {
-    .el-menu-item,
-    .el-sub-menu__title {
+    .el-menu-item {
       padding: 0 !important;
       display: flex;
       justify-content: center;
     }
 
-    .el-menu-item > span,
-    .el-sub-menu > .el-sub-menu__title > span {
-      display: none;
-    }
-
-    .el-sub-menu__icon-arrow {
+    .el-menu-item > span {
       display: none;
     }
 

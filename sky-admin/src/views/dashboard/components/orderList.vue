@@ -31,7 +31,7 @@
           >
             <el-table-column prop="number" label="订单号"> </el-table-column>
             <el-table-column label="订单菜品">
-              <template slot-scope="scope">
+              <template #default="scope">
                 <div class="ellipsisHidden">
                   <el-popover
                     placement="top-start"
@@ -40,7 +40,7 @@
                     trigger="hover"
                     :content="scope.row.orderDishes"
                   >
-                    <span slot="reference">{{ scope.row.orderDishes }}</span>
+                    <template #reference><span>{{ scope.row.orderDishes }}</span></template>
                   </el-popover>
                 </div>
               </template>
@@ -49,7 +49,7 @@
               label="地址"
               :class-name="dialogOrderStatus === 2 ? 'address' : ''"
             >
-              <template slot-scope="scope">
+              <template #default="scope">
                 <div class="ellipsisHidden">
                   <el-popover
                     placement="top-start"
@@ -58,7 +58,7 @@
                     trigger="hover"
                     :content="scope.row.address"
                   >
-                    <span slot="reference">{{ scope.row.address }}</span>
+                    <template #reference><span>{{ scope.row.address }}</span></template>
                   </el-popover>
                 </div>
               </template>
@@ -74,7 +74,7 @@
             </el-table-column>
             <el-table-column prop="amount" label="实收金额"> </el-table-column>
             <el-table-column label="备注">
-              <template slot-scope="scope">
+              <template #default="scope">
                 <div class="ellipsisHidden">
                   <el-popover
                     placement="top-start"
@@ -83,7 +83,7 @@
                     trigger="hover"
                     :content="scope.row.remark"
                   >
-                    <span slot="reference">{{ scope.row.remark }}</span>
+                    <template #reference><span>{{ scope.row.remark }}</span></template>
                   </el-popover>
                 </div>
               </template>
@@ -108,12 +108,12 @@
                   : 'auto'
               "
             >
-              <template slot-scope="{ row }">
+              <template #default="{ row }">
                 <!-- <el-divider direction="vertical" /> -->
                 <div class="before">
                   <el-button
                     v-if="row.status === 2"
-                    type="text"
+                    link
                     class="blueBug"
                     @click="
                       orderAccept(row, $event), (isTableOperateBtn = true)
@@ -123,7 +123,7 @@
                   </el-button>
                   <el-button
                     v-if="row.status === 3"
-                    type="text"
+                    link
                     class="blueBug"
                     @click="cancelOrDeliveryOrComplete(3, row.id, $event)"
                   >
@@ -133,7 +133,7 @@
                 <div class="middle">
                   <el-button
                     v-if="row.status === 2"
-                    type="text"
+                    link
                     class="delBut"
                     @click="
                       orderReject(row, $event), (isTableOperateBtn = true)
@@ -143,7 +143,7 @@
                   </el-button>
                   <el-button
                     v-if="[1, 3, 4, 5].includes(row.status)"
-                    type="text"
+                    link
                     class="delBut"
                     @click="cancelOrder(row, $event)"
                   >
@@ -152,7 +152,7 @@
                 </div>
                 <div class="after">
                   <el-button
-                    type="text"
+                    link
                     class="blueBug non"
                     @click="goDetail(row.id, row.status, row, $event)"
                   >
@@ -179,7 +179,7 @@
     <!-- 查看弹框部分 -->
     <el-dialog
       title="订单信息"
-      :visible.sync="dialogVisible"
+      v-model="dialogVisible"
       width="53%"
       :before-close="handleClose"
       class="order-dialog"
@@ -327,7 +327,7 @@
           </div>
         </div>
       </el-scrollbar>
-      <span v-if="dialogOrderStatus !== 6" slot="footer" class="dialog-footer">
+      <template v-if="dialogOrderStatus !== 6" #footer class="dialog-footer">
         <el-checkbox
           v-if="dialogOrderStatus === 2 && status === 2"
           v-model="isAutoNext"
@@ -368,13 +368,13 @@
           @click="cancelOrder(row, $event)"
           >取消订单</el-button
         >
-      </span>
+      </template>
     </el-dialog>
     <!-- end -->
     <!-- 拒单，取消弹窗 -->
     <el-dialog
       :title="cancelDialogTitle + '原因'"
-      :visible.sync="cancelDialogVisible"
+      v-model="cancelDialogVisible"
       width="42%"
       :before-close="() => ((cancelDialogVisible = false), (cancelReason = ''))"
       class="cancelDialog"
@@ -404,19 +404,20 @@
           />
         </el-form-item>
       </el-form>
-      <span slot="footer" class="dialog-footer">
+      <template #footer class="dialog-footer">
         <el-button @click=";(cancelDialogVisible = false), (cancelReason = '')"
           >取 消</el-button
         >
         <el-button type="primary" @click="confirmCancel">确 定</el-button>
-      </span>
+      </template>
     </el-dialog>
     <!-- end -->
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import Empty from '@/components/Empty/index.vue'
 import {
   getOrderDetailPage,
@@ -424,286 +425,279 @@ import {
   completeOrder,
   deliveryOrder,
   orderCancel,
-  orderReject,
-  orderAccept,
+  orderReject as apiOrderReject,
+  orderAccept as apiOrderAccept,
   getOrderListBy,
 } from '@/api/order'
-@Component({
-  name: 'Orderview',
-  components: {
-    Empty,
+
+const props = defineProps({
+  orderStatics: {
+    type: Object,
+    default: () => ({}),
   },
 })
-export default class extends Vue {
-  @Prop({ default: '' }) orderStatics!: any
+const emit = defineEmits(['getOrderListBy3Status'])
 
-  private orderId = '' //订单号
-  private dialogOrderStatus = 0 //弹窗所需订单状态，用于详情展示字段
-  private activeIndex = 0
+const orderId = ref('') //订单号
+const dialogOrderStatus = ref(0) //弹窗所需订单状态，用于详情展示字段
+const activeIndex = ref(0)
 
-  private dialogVisible = false //详情弹窗
-  private cancelDialogVisible = false //取消，拒单弹窗
-  private cancelDialogTitle = '' //取消，拒绝弹窗标题
-  private cancelReason = ''
-  private remark = '' //自定义原因
-  private diaForm = []
-  private row = {}
-  private isAutoNext = true
-  private isSearch: boolean = false
-  private counts = 0
-  private page: number = 1
-  private pageSize: number = 10
-  private status = 2
-  private orderData = []
-  private isTableOperateBtn = true
-  private cancelOrderReasonList = [
-    {
-      value: 1,
-      label: '订单量较多，暂时无法接单',
-    },
-    {
-      value: 2,
-      label: '菜品已销售完，暂时无法接单',
-    },
-    {
-      value: 3,
-      label: '餐厅已打烊，暂时无法接单',
-    },
-    {
-      value: 0,
-      label: '自定义原因',
-    },
-  ]
+const dialogVisible = ref(false) //详情弹窗
+const cancelDialogVisible = ref(false) //取消，拒单弹窗
+const cancelDialogTitle = ref('') //取消，拒绝弹窗标题
+const cancelReason = ref('')
+const remark = ref('') //自定义原因
+const diaForm = ref<any>([])
+const row = ref<any>({})
+const isAutoNext = ref(true)
+const isSearch = ref(false)
+const counts = ref(0)
+const page = ref<number>(1)
+const pageSize = ref<number>(10)
+const status = ref(2)
+const orderData = ref<any>([])
+const isTableOperateBtn = ref(true)
+const cancelOrderReasonList = [
+  {
+    value: 1,
+    label: '订单量较多，暂时无法接单',
+  },
+  {
+    value: 2,
+    label: '菜品已销售完，暂时无法接单',
+  },
+  {
+    value: 3,
+    label: '餐厅已打烊，暂时无法接单',
+  },
+  {
+    value: 0,
+    label: '自定义原因',
+  },
+]
 
-  private cancelrReasonList = [
-    {
-      value: 1,
-      label: '订单量较多，暂时无法接单',
-    },
-    {
-      value: 2,
-      label: '菜品已销售完，暂时无法接单',
-    },
-    {
-      value: 3,
-      label: '骑手不足无法配送',
-    },
-    {
-      value: 4,
-      label: '客户电话取消',
-    },
-    {
-      value: 0,
-      label: '自定义原因',
-    },
-  ]
-  private orderList = [
-    {
-      label: '全部订单',
-      value: 0,
-    },
-    {
-      label: '待付款',
-      value: 1,
-    },
-    {
-      label: '待接单',
-      value: 2,
-    },
-    {
-      label: '待派送',
-      value: 3,
-    },
-    {
-      label: '派送中',
-      value: 4,
-    },
-    {
-      label: '已完成',
-      value: 5,
-    },
-    {
-      label: '已取消',
-      value: 6,
-    },
-  ]
-  get tabList() {
-    return [
-      {
-        label: '待接单',
-        value: 2,
-        num: this.orderStatics.toBeConfirmed,
-      },
-      {
-        label: '待派送',
-        value: 3,
-        num: this.orderStatics.confirmed,
-      },
-    ]
-  }
-  created() {
-    this.getOrderListData(this.status)
-  }
-  // // 获取订单数据
-  async getOrderListData(status) {
-    const params = {
-      page: this.page,
-      pageSize: this.pageSize,
-      status: status,
-    }
-    const data = await getOrderDetailPage(params)
-    this.orderData = data.data.data.records
-    this.counts = data.data.data.total
-    this.$emit('getOrderListBy3Status')
-    if (
-      this.dialogOrderStatus === 2 &&
-      this.status === 2 &&
-      this.isAutoNext &&
-      !this.isTableOperateBtn &&
-      data.data.records.length > 1
-    ) {
-      const row = data.data.records[0]
-      this.goDetail(row.id, row.status, row, row)
-    } else {
-      return null
-    }
-  }
+const cancelrReasonList = [
+  {
+    value: 1,
+    label: '订单量较多，暂时无法接单',
+  },
+  {
+    value: 2,
+    label: '菜品已销售完，暂时无法接单',
+  },
+  {
+    value: 3,
+    label: '骑手不足无法配送',
+  },
+  {
+    value: 4,
+    label: '客户电话取消',
+  },
+  {
+    value: 0,
+    label: '自定义原因',
+  },
+]
+const orderList = [
+  {
+    label: '全部订单',
+    value: 0,
+  },
+  {
+    label: '待付款',
+    value: 1,
+  },
+  {
+    label: '待接单',
+    value: 2,
+  },
+  {
+    label: '待派送',
+    value: 3,
+  },
+  {
+    label: '派送中',
+    value: 4,
+  },
+  {
+    label: '已完成',
+    value: 5,
+  },
+  {
+    label: '已取消',
+    value: 6,
+  },
+]
+const tabList = computed(() => [
+  {
+    label: '待接单',
+    value: 2,
+    num: props.orderStatics.toBeConfirmed,
+  },
+  {
+    label: '待派送',
+    value: 3,
+    num: props.orderStatics.confirmed,
+  },
+])
 
-  //接单
-  orderAccept(row: any, event) {
-    event.stopPropagation()
-    this.orderId = row.id
-    this.dialogOrderStatus = row.status
-    orderAccept({ id: this.orderId })
-      .then((res) => {
-        if (res.data.code === 1) {
-          this.$message.success('操作成功')
-          this.orderId = ''
-          // this.dialogOrderStatus = 0
-          this.dialogVisible = false
-          this.getOrderListData(this.status)
-        } else {
-          this.$message.error(res.data.msg)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
+getOrderListData(status.value)
+// // 获取订单数据
+async function getOrderListData(val) {
+  const params = {
+    page: page.value,
+    pageSize: pageSize.value,
+    status: val,
   }
-  //打开取消订单弹窗
-  cancelOrder(row: any, event) {
-    event.stopPropagation()
-    this.cancelDialogVisible = true
-    this.orderId = row.id
-    this.dialogOrderStatus = row.status
-    this.cancelDialogTitle = '取消'
-    this.dialogVisible = false
-    this.cancelReason = ''
+  const data = await getOrderDetailPage(params)
+  orderData.value = data.data.data.records
+  counts.value = data.data.data.total
+  emit('getOrderListBy3Status')
+  if (
+    dialogOrderStatus.value === 2 &&
+    status.value === 2 &&
+    isAutoNext.value &&
+    !isTableOperateBtn.value &&
+    data.data.records.length > 1
+  ) {
+    const row = data.data.records[0]
+    goDetail(row.id, row.status, row, row)
+  } else {
+    return null
   }
-  //打开拒单弹窗
-  orderReject(row: any, event) {
-    event.stopPropagation()
-    this.cancelDialogVisible = true
-    this.orderId = row.id
-    this.dialogOrderStatus = row.status
-    this.cancelDialogTitle = '拒绝'
-    this.dialogVisible = false
-    this.cancelReason = ''
-  }
-  //确认取消或拒绝订单并填写原因
-  confirmCancel(type) {
-    if (!this.cancelReason) {
-      return this.$message.error(`请选择${this.cancelDialogTitle}原因`)
-    } else if (this.cancelReason === '自定义原因' && !this.remark) {
-      return this.$message.error(`请输入${this.cancelDialogTitle}原因`)
-    }
+}
 
-    ;(this.cancelDialogTitle === '取消' ? orderCancel : orderReject)({
-      id: this.orderId,
-      // eslint-disable-next-line standard/computed-property-even-spacing
-      [this.cancelDialogTitle === '取消' ? 'cancelReason' : 'rejectionReason']:
-        this.cancelReason === '自定义原因' ? this.remark : this.cancelReason,
+//接单
+function orderAccept(row: any, event: any) {
+  event.stopPropagation()
+  orderId.value = row.id
+  dialogOrderStatus.value = row.status
+  apiOrderAccept({ id: orderId.value })
+    .then((res) => {
+      if (res.data.code === 1) {
+        ElMessage.success('操作成功')
+        orderId.value = ''
+        dialogVisible.value = false
+        getOrderListData(status.value)
+      } else {
+        ElMessage.error(res.data.msg)
+      }
     })
-      .then((res) => {
-        if (res.data.code === 1) {
-          this.$message.success('操作成功')
-          this.cancelDialogVisible = false
-          this.orderId = ''
-          // this.dialogOrderStatus = 0
-          this.getOrderListData(this.status)
-        } else {
-          this.$message.error(res.data.msg)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+//打开取消订单弹窗
+function cancelOrder(row: any, event: any) {
+  event.stopPropagation()
+  cancelDialogVisible.value = true
+  orderId.value = row.id
+  dialogOrderStatus.value = row.status
+  cancelDialogTitle.value = '取消'
+  dialogVisible.value = false
+  cancelReason.value = ''
+}
+//打开拒单弹窗
+function orderReject(row: any, event: any) {
+  event.stopPropagation()
+  cancelDialogVisible.value = true
+  orderId.value = row.id
+  dialogOrderStatus.value = row.status
+  cancelDialogTitle.value = '拒绝'
+  dialogVisible.value = false
+  cancelReason.value = ''
+}
+//确认取消或拒绝订单并填写原因
+function confirmCancel(type: any) {
+  if (!cancelReason.value) {
+    return ElMessage.error(`请选择${cancelDialogTitle.value}原因`)
+  } else if (cancelReason.value === '自定义原因' && !remark.value) {
+    return ElMessage.error(`请输入${cancelDialogTitle.value}原因`)
   }
 
-  // 派送，完成
-  cancelOrDeliveryOrComplete(status: number, id: string, event) {
-    event.stopPropagation()
-    const params = {
-      status,
-      id,
-    }
-    ;(status === 3 ? deliveryOrder : completeOrder)(params)
-      .then((res) => {
-        if (res.data.code === 1) {
-          this.$message.success('操作成功')
-          this.orderId = ''
-          // this.dialogOrderStatus = 0
-          this.dialogVisible = false
-          this.getOrderListData(this.status)
-        } else {
-          this.$message.error(res.data.msg)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-  // 查看详情
-  async goDetail(id: any, status: number, row: any, event) {
-    event.stopPropagation()
-    // console.log(111, index, row)
-    this.diaForm = []
-    this.dialogVisible = true
-    this.dialogOrderStatus = status
-    const { data } = await queryOrderDetailById({ orderId: id })
-    this.diaForm = data.data
-    this.row = row
-  }
-  // 关闭弹层
-  handleClose() {
-    this.dialogVisible = false
-  }
-  // tab切换
-  handleClass(index) {
-    this.activeIndex = index
-    if (index === 0) {
-      this.status = 2
-      this.getOrderListData(2)
-    } else {
-      this.status = 3
-      this.getOrderListData(3)
-    }
-  }
-  // 触发table某一行
-  handleTable(row, column, event) {
-    event.stopPropagation()
-    this.goDetail(row.id, row.status, row, event)
-  }
-  // 分页
-  private handleSizeChange(val: any) {
-    this.pageSize = val
-    this.getOrderListData(this.status)
-  }
+  ;(cancelDialogTitle.value === '取消' ? orderCancel : apiOrderReject)({
+    id: orderId.value,
+    // eslint-disable-next-line standard/computed-property-even-spacing
+    [cancelDialogTitle.value === '取消' ? 'cancelReason' : 'rejectionReason']:
+      cancelReason.value === '自定义原因' ? remark.value : cancelReason.value,
+  })
+    .then((res) => {
+      if (res.data.code === 1) {
+        ElMessage.success('操作成功')
+        cancelDialogVisible.value = false
+        orderId.value = ''
+        getOrderListData(status.value)
+      } else {
+        ElMessage.error(res.data.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
 
-  private handleCurrentChange(val: any) {
-    this.page = val
-    this.getOrderListData(this.status)
+// 派送，完成
+function cancelOrDeliveryOrComplete(status: number, id: string, event: any) {
+  event.stopPropagation()
+  const params = {
+    status,
+    id,
   }
+  ;(status === 3 ? deliveryOrder : completeOrder)(params)
+    .then((res) => {
+      if (res.data.code === 1) {
+        ElMessage.success('操作成功')
+        orderId.value = ''
+        dialogVisible.value = false
+        getOrderListData(status)
+      } else {
+        ElMessage.error(res.data.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+// 查看详情
+async function goDetail(id: any, status: number, rowData: any, event: any) {
+  event.stopPropagation()
+  // console.log(111, index, row)
+  diaForm.value = []
+  dialogVisible.value = true
+  dialogOrderStatus.value = status
+  const { data } = await queryOrderDetailById({ orderId: id })
+  diaForm.value = data.data
+  row.value = rowData
+}
+// 关闭弹层
+function handleClose() {
+  dialogVisible.value = false
+}
+// tab切换
+function handleClass(index: any) {
+  activeIndex.value = index
+  if (index === 0) {
+    status.value = 2
+    getOrderListData(2)
+  } else {
+    status.value = 3
+    getOrderListData(3)
+  }
+}
+// 触发table某一行
+function handleTable(row: any, column: any, event: any) {
+  event.stopPropagation()
+  goDetail(row.id, row.status, row, event)
+}
+// 分页
+function handleSizeChange(val: any) {
+  pageSize.value = val
+  getOrderListData(status.value)
+}
+
+function handleCurrentChange(val: any) {
+  page.value = val
+  getOrderListData(status.value)
 }
 </script>
 <style  lang="scss" scoped >

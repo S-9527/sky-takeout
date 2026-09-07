@@ -9,7 +9,7 @@
                   style="width: 15%"
                   clearable
                   @clear="init"
-                  @keyup.enter.native="init" />
+                  @keyup.enter="init" />
 
         <label style="margin-right: 5px; margin-left: 20px">分类类型：</label>
         <el-select v-model="categoryType"
@@ -49,7 +49,7 @@
                          label="分类名称" />
         <el-table-column prop="type"
                          label="分类类型">
-          <template slot-scope="scope">
+          <template #default="scope">
             <span>{{ scope.row.type == '1' ? '菜品分类' : '套餐分类' }}</span>
           </template>
         </el-table-column>
@@ -57,7 +57,7 @@
         <el-table-column prop="sort"
                          label="排序" />
         <el-table-column label="状态">
-          <template slot-scope="scope">
+          <template #default="scope">
             <div class="tableColumn-status"
                  :class="{ 'stop-use': String(scope.row.status) === '0' }">
               {{ String(scope.row.status) === '0' ? '禁用' : '启用' }}
@@ -69,29 +69,31 @@
         <el-table-column label="操作"
                          width="200"
                          align="center">
-          <template slot-scope="scope">
-            <el-button type="text"
-                       size="small"
-                       class="blueBug"
-                       @click="editHandle(scope.row)">
-              修改
-            </el-button>
-            <el-button type="text"
-                       size="small"
-                       class="delBut"
-                       @click="deleteHandle(scope.row.id)">
-              删除
-            </el-button>
-            <el-button type="text"
-                       size="small"
-                       class="non"
-                       :class="{
-                         blueBug: scope.row.status == '0',
-                         delBut: scope.row.status != '0'
-                       }"
-                       @click="statusHandle(scope.row)">
-              {{ scope.row.status == '1' ? '禁用' : '启用' }}
-            </el-button>
+          <template #default="scope">
+            <div class="table-ops">
+              <el-button link
+                         size="small"
+                         class="blueBug"
+                         @click="editHandle(scope.row)">
+                修改
+              </el-button>
+              <el-button link
+                         size="small"
+                         class="delBut"
+                         @click="deleteHandle(scope.row.id)">
+                删除
+              </el-button>
+              <el-button link
+                         size="small"
+                         class="non"
+                         :class="{
+                           blueBug: scope.row.status == '0',
+                           delBut: scope.row.status != '0'
+                         }"
+                         @click="statusHandle(scope.row)">
+                {{ scope.row.status == '1' ? '禁用' : '启用' }}
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -107,10 +109,10 @@
                      @current-change="handleCurrentChange" />
     </div>
     <el-dialog :title="classData.title"
-               :visible.sync="classData.dialogVisible"
+               v-model="classData.dialogVisible"
                width="30%"
                :before-close="handleClose">
-      <el-form ref="classData"
+      <el-form ref="classDataRef"
                :model="classData"
                class="demo-form-inline"
                :rules="rules"
@@ -127,29 +129,32 @@
                     placeholder="请输入排序" />
         </el-form-item>
       </el-form>
-      <span slot="footer"
-            class="dialog-footer">
-        <el-button size="medium"
-                   @click="
-            ;(classData.dialogVisible = false), $refs.classData.resetFields()
-                   ">取 消</el-button>
-        <el-button type="primary"
-                   :class="{ continue: actionType === 'add' }"
-                   size="medium"
-                   @click="submitForm()">确 定</el-button>
-        <el-button v-if="action != 'edit'"
-                   type="primary"
-                   size="medium"
-                   @click="submitForm('go')">
-          保存并继续添加
-        </el-button>
-      </span>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button size="default"
+                     @click="
+            ;(classData.dialogVisible = false), classDataRef.resetFields()
+                     ">取 消</el-button>
+          <el-button type="primary"
+                     :class="{ continue: actionType === 'add' }"
+                     size="default"
+                     @click="submitForm()">确 定</el-button>
+          <el-button v-if="action != 'edit'"
+                     type="primary"
+                     size="default"
+                     @click="submitForm('go')">
+            保存并继续添加
+          </el-button>
+        </span>
+      </template>
     </el-dialog>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
+<script setup lang="ts">
+import { computed, reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import type { FormInstance } from 'element-plus'
 import HeadLable from '@/components/HeadLable/index.vue'
 import {
   getCategoryPage,
@@ -160,263 +165,249 @@ import {
 } from '@/api/category'
 import Empty from '@/components/Empty/index.vue'
 
-@Component({
-  name: 'Category',
-  components: {
-    HeadLable,
-    Empty
+const options: any = [
+  {
+    value: 1,
+    label: '菜品分类'
+  },
+  {
+    value: 2,
+    label: '套餐分类'
   }
+]
+const actionType = ref('')
+const id = ref('')
+const status = ref('')
+const categoryType = ref<any>(null)
+const name = ref('')
+const action = ref('')
+const counts = ref(0)
+const page = ref(1)
+const pageSize = ref(10)
+const tableData = ref<any[]>([])
+const type = ref('')
+const isSearch = ref(false)
+const classData = reactive<any>({
+  title: '添加菜品分类',
+  dialogVisible: false,
+  categoryId: '',
+  name: '',
+  sort: ''
 })
-export default class extends Vue {
-  private options: any = [
-    {
-      value: 1,
-      label: '菜品分类'
-    },
-    {
-      value: 2,
-      label: '套餐分类'
-    }
-  ]
-  private actionType: string = ''
-  private id = ''
-  private status = ''
-  private categoryType: number = null
-  private name: string = ''
-  private action: string = ''
-  private counts: number = 0
-  private page: number = 1
-  private pageSize: number = 10
-  private tableData = []
-  private type = ''
-  private isSearch: boolean = false
-  private classData: any = {
-    title: '添加菜品分类',
-    dialogVisible: false,
-    categoryId: '',
-    name: '',
-    sort: ''
-  }
+const classDataRef = ref<FormInstance>()
 
-  get rules() {
-    return {
-      name: [
-        {
-          required: true,
-          trigger: 'blur',
-          validator: (rule: any, value: string, callback: Function) => {
-            // const reg = /[\u4e00-\u9fa5]/
-            var reg = new RegExp('^[A-Za-z\u4e00-\u9fa5]+$')
-            if (!value) {
-              callback(new Error(this.classData.title + '不能为空'))
-            } else if (value.length < 2) {
-              callback(new Error('分类名称输入不符，请输入2-20个字符'))
-            } else if (!reg.test(value)) {
-              callback(new Error('分类名称包含特殊字符'))
+const rules = computed(() => {
+  return {
+    name: [
+      {
+        required: true,
+        trigger: 'blur',
+        validator: (rule: any, value: string, callback: Function) => {
+          // const reg = /[\u4e00-\u9fa5]/
+          var reg = new RegExp('^[A-Za-z\u4e00-\u9fa5]+$')
+          if (!value) {
+            callback(new Error(classData.title + '不能为空'))
+          } else if (value.length < 2) {
+            callback(new Error('分类名称输入不符，请输入2-20个字符'))
+          } else if (!reg.test(value)) {
+            callback(new Error('分类名称包含特殊字符'))
+          } else {
+            callback()
+          }
+        }
+      }
+    ],
+    sort: [
+      {
+        required: true,
+        trigger: 'blur',
+        validator: (rule: any, value: string, callback: Function) => {
+          if (value || String(value) === '0') {
+            const reg = /^\d+$/
+            if (!reg.test(value)) {
+              callback(new Error('排序只能输入数字类型'))
+            } else if (Number(value) > 99) {
+              callback(new Error('排序只能输入0-99数字'))
             } else {
               callback()
             }
+          } else {
+            callback(new Error('排序不能为空'))
           }
         }
-      ],
-      sort: [
-        {
-          required: true,
-          trigger: 'blur',
-          validator: (rule: any, value: string, callback: Function) => {
-            if (value || String(value) === '0') {
-              const reg = /^\d+$/
-              if (!reg.test(value)) {
-                callback(new Error('排序只能输入数字类型'))
-              } else if (Number(value) > 99) {
-                callback(new Error('排序只能输入0-99数字'))
-              } else {
-                callback()
-              }
-            } else {
-              callback(new Error('排序不能为空'))
-            }
-          }
-        }
-      ]
-    }
+      }
+    ]
   }
+})
 
-  created() {
-    this.init()
-  }
+init()
 
-  // 初始化信息
-  private async init(isSearch?) {
-    this.isSearch = isSearch
-    await getCategoryPage({
-      page: this.page,
-      pageSize: this.pageSize,
-      name: this.name ? this.name : undefined,
-      type: this.categoryType ? this.categoryType : undefined
+// 初始化信息
+async function init(searchValue?: any) {
+  isSearch.value = searchValue
+  await getCategoryPage({
+    page: page.value,
+    pageSize: pageSize.value,
+    name: name.value ? name.value : undefined,
+    type: categoryType.value ? categoryType.value : undefined
+  })
+    .then(res => {
+      if (String(res.data.code) === '1') {
+        tableData.value =
+          res && res.data && res.data.data && res.data.data.records
+        counts.value = Number(res.data.data.total)
+      } else {
+        ElMessage.error(res.data.desc)
+      }
     })
+    .catch(err => {
+      console.log(err, 'err')
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+
+// 添加
+const addClass = (st: any) => {
+  if (st == 'class') {
+    classData.title = '新增菜品分类'
+    type.value = '1'
+  } else {
+    classData.title = '新增套餐分类'
+    type.value = '2'
+  }
+  action.value = 'add'
+  classData.name = ''
+  classData.sort = ''
+  classData.dialogVisible = true
+  actionType.value = 'add'
+}
+
+// 修改
+const editHandle = (dat: any) => {
+  classData.title = '修改分类'
+  action.value = 'edit'
+  classData.name = dat.name
+  classData.sort = dat.sort
+  classData.id = dat.id
+  classData.dialogVisible = true
+  actionType.value = 'edit'
+}
+
+// 关闭弹窗
+const handleClose = (st: string) => {
+  console.log(classDataRef.value, '$refs.classData')
+  classData.dialogVisible = false
+  //对该表单项进行重置，将其值重置为初始值并移除校验结果
+  classDataRef.value.resetFields()
+}
+
+//状态修改
+const statusHandle = (row: any) => {
+  id.value = row.id
+  status.value = row.status
+  ElMessageBox.confirm('确认调整该分类的状态?', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+    customClass: 'customClass'
+  }).then(() => {
+    enableOrDisableEmployee({ id: id.value, status: !status.value ? 1 : 0 })
       .then(res => {
-        if (String(res.data.code) === '1') {
-          this.tableData =
-            res && res.data && res.data.data && res.data.data.records
-          this.counts = Number(res.data.data.total)
-        } else {
-          this.$message.error(res.data.desc)
+        if (String(res.status) === '200') {
+          ElMessage.success('分类状态更改成功！')
+          init()
         }
       })
       .catch(err => {
-        console.log(err, 'err')
-        this.$message.error('请求出错了：' + err.message)
+        ElMessage.error('请求出错了：' + err.message)
       })
-  }
+  })
+}
 
-  // 添加
-  private addClass(st: any) {
-    if (st == 'class') {
-      this.classData.title = '新增菜品分类'
-      this.type = '1'
-    } else {
-      this.classData.title = '新增套餐分类'
-      this.type = '2'
-    }
-    this.action = 'add'
-    this.classData.name = ''
-    this.classData.sort = ''
-    this.classData.dialogVisible = true
-    this.actionType = 'add'
-  }
-
-  // 修改
-  private editHandle(dat: any) {
-    this.classData.title = '修改分类'
-    this.action = 'edit'
-    this.classData.name = dat.name
-    this.classData.sort = dat.sort
-    this.classData.id = dat.id
-    this.classData.dialogVisible = true
-    this.actionType = 'edit'
-  }
-
-  // 关闭弹窗
-  private handleClose(st: string) {
-    console.log(this.$refs.classData, 'this.$refs.classData')
-    this.classData.dialogVisible = false
-    //对该表单项进行重置，将其值重置为初始值并移除校验结果
-    this.$refs.classData.resetFields()
-  }
-
-  //状态修改
-  private statusHandle(row: any) {
-    this.id = row.id
-    this.status = row.status
-    this.$confirm('确认调整该分类的状态?', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-      customClass: 'customClass'
-    }).then(() => {
-      enableOrDisableEmployee({ id: this.id, status: !this.status ? 1 : 0 })
-        .then(res => {
-          if (String(res.status) === '200') {
-            this.$message.success('分类状态更改成功！')
-            this.init()
-          }
-        })
-        .catch(err => {
-          this.$message.error('请求出错了：' + err.message)
-        })
-    })
-  }
-
-  //删除
-  private deleteHandle(id: any) {
-    this.$confirm('此操作将永久删除该分类，是否继续？', '确定删除', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }).then(() => {
-      deleCategory(id)
-        .then(res => {
-          if (res.data.code === 1) {
-            this.$message.success('删除成功！')
-            this.init()
-          } else {
-            this.$message.error(res.data.msg)
-          }
-        })
-        .catch(err => {
-          this.$message.error('请求出错了：' + err.message)
-        })
-    })
-  }
-
-  $refs!: {
-    classData: any
-  }
-
-  //数据提交
-  submitForm(st: any) {
-    if (this.action === 'add') {
-      this.$refs.classData.validate((value: boolean) => {
-        if (value) {
-          addCategory({
-            name: this.classData.name,
-            type: this.type,
-            sort: this.classData.sort
-          })
-            .then(res => {
-              if (res.data.code === 1) {
-                this.$message.success('分类添加成功！')
-                this.$refs.classData.resetFields()
-                if (!st) {
-                  this.classData.dialogVisible = false
-                }
-                this.init()
-              } else {
-                this.$message.error(res.data.desc || res.data.msg)
-              }
-            })
-            .catch(err => {
-              this.$message.error('请求出错了：' + err.message)
-            })
+//删除
+const deleteHandle = (id: any) => {
+  ElMessageBox.confirm('此操作将永久删除该分类，是否继续？', '确定删除', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    deleCategory(id)
+      .then(res => {
+        if (res.data.code === 1) {
+          ElMessage.success('删除成功！')
+          init()
+        } else {
+          ElMessage.error(res.data.msg)
         }
       })
-    } else {
-      this.$refs.classData.validate((value: boolean) => {
-        if (value) {
-          editCategory({
-            id: this.classData.id,
-            name: this.classData.name,
-            sort: this.classData.sort
-          })
-            .then(res => {
-              if (res.data.code === 1) {
-                this.$message.success('分类修改成功！')
-                this.classData.dialogVisible = false
-                this.$refs.classData.resetFields()
-                this.init()
-              } else {
-                this.$message.error(res.data.desc || res.data.msg)
-              }
-            })
-            .catch(err => {
-              this.$message.error('请求出错了：' + err.message)
-            })
-        }
+      .catch(err => {
+        ElMessage.error('请求出错了：' + err.message)
       })
-    }
-  }
+  })
+}
 
-  //分页
-  private handleSizeChange(val: any) {
-    this.pageSize = val
-    this.init()
+//数据提交
+const submitForm = (st: any) => {
+  if (action.value === 'add') {
+    classDataRef.value.validate((value: boolean) => {
+      if (value) {
+        addCategory({
+          name: classData.name,
+          type: type.value,
+          sort: classData.sort
+        })
+          .then(res => {
+            if (res.data.code === 1) {
+              ElMessage.success('分类添加成功！')
+              classDataRef.value.resetFields()
+              if (!st) {
+                classData.dialogVisible = false
+              }
+              init()
+            } else {
+              ElMessage.error(res.data.desc || res.data.msg)
+            }
+          })
+          .catch(err => {
+            ElMessage.error('请求出错了：' + err.message)
+          })
+      }
+    })
+  } else {
+    classDataRef.value.validate((value: boolean) => {
+      if (value) {
+        editCategory({
+          id: classData.id,
+          name: classData.name,
+          sort: classData.sort
+        })
+          .then(res => {
+            if (res.data.code === 1) {
+              ElMessage.success('分类修改成功！')
+              classData.dialogVisible = false
+              classDataRef.value.resetFields()
+              init()
+            } else {
+              ElMessage.error(res.data.desc || res.data.msg)
+            }
+          })
+          .catch(err => {
+            ElMessage.error('请求出错了：' + err.message)
+          })
+      }
+    })
   }
+}
 
-  private handleCurrentChange(val: any) {
-    this.page = val
-    this.init()
-  }
+//分页
+const handleSizeChange = (val: any) => {
+  pageSize.value = val
+  init()
+}
+
+const handleCurrentChange = (val: any) => {
+  page.value = val
+  init()
 }
 </script>
 <style lang="scss" scoped>

@@ -30,36 +30,3 @@ $menuActiveText:$mine; //Also see settings.sidebarTextTheme
 $lightGray: #080808;
 $darkGray:#889aa4;
 $loginCursorColor: #080808;
-
-// The :export directive is the magic sauce for webpack
-// https://mattferderer.com/use-sass-variables-in-typescript-and-javascript
-:export {
-  menuBg: $menuBg;
-  menuText: $menuText;
-  menuActiveText: $menuActiveText;
-}
-
-.avatar-uploader .el-upload{
-  // border: dashed 2px #D8DDE3 !important;
-  border-radius: 4px !important;
-  background: #FCFCFC;
-}
-.avatar-uploader .avatar-uploader-icon{
-  background: #FCFCFC;
-}
-.avatar-uploader .el-icon-plus:before{
-  content: '上传图片' !important;
-  font-size: 12px;
-  color:#000;
-}
-
-
-// 弹框样式处理
-.el-dialog{
-  border-radius: 8px;
-}
-.el-dialog__header{
-  background: #FBFBFA;
-  border-radius: 8px 8px 0 0;
-  border: none;
-}

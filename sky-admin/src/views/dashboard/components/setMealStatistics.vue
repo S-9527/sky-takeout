@@ -24,12 +24,11 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator'
-@Component({
-  name: 'SetMeal',
+<script setup lang="ts">
+const props = defineProps({
+  setMealData: {
+    type: Object,
+    default: () => ({}),
+  },
 })
-export default class extends Vue {
-  @Prop() private setMealData!: any
-}
 </script>

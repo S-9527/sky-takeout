@@ -23,40 +23,45 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
 
-@Component({
-  name: 'selectInput',
+const props = defineProps({
+  selectFlavorsData: { type: Array, default: () => [] },
+  dishFlavorsData: { type: Array, default: () => [] },
+  value: { type: [String, Number], default: '' },
+  index: { type: Number, default: 0 }
 })
-export default class extends Vue {
-  @Prop({ default: [] }) private selectFlavorsData!: []
-  @Prop({ default: [] }) private dishFlavorsData!: []
-  @Prop({ default: '' }) private value!: number
-  @Prop({ default: 0 }) private index!: number
-  private keyValue = NaN
+const emit = defineEmits(['select'])
 
-  private mak: boolean = false
+const keyValue = ref(NaN)
 
-  private selectFlavor(st: boolean) {
-    this.mak = st
+const mak = ref(false)
+
+const value = computed({
+  get: () => props.value,
+  set: (val: any) => {
+    emit('update:value', val)
   }
+})
 
-  private outSelect(st: boolean) {
-    const _this = this
-    setTimeout(function () {
-      _this.mak = st
-    }, 200)
-  }
+const selectFlavor = (st: boolean) => {
+  mak.value = st
+}
 
-  private inputHandle(val: any) {
-    this.selectFlavor(false)
-  }
+const outSelect = (st: boolean) => {
+  setTimeout(() => {
+    mak.value = st
+  }, 200)
+}
 
-  checkOption(val: any, ind: any) {
-    this.$emit('select', val.name, this.index, ind)
-    this.keyValue = val.name
-  }
+const inputHandle = (val: any) => {
+  selectFlavor(false)
+}
+
+const checkOption = (val: any, ind: any) => {
+  emit('select', val.name, props.index, ind)
+  keyValue.value = val.name
 }
 </script>
 

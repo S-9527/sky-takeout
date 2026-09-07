@@ -7,16 +7,10 @@
   </router-link>
 </template>
 
-<script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator'
+<script setup lang="ts">
 import { isExternal } from '@/utils/validate'
 
-@Component({
-  'name': 'SidebarItemLink'
+defineProps({
+  to: { type: String, required: true }
 })
-export default class extends Vue {
-  @Prop({ 'required': true }) private to!: string
-
-  private isExternal = isExternal
-}
 </script>

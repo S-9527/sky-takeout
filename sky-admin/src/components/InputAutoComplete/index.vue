@@ -7,32 +7,38 @@
       style="width: 250px"
       clearable
       @clear="init"
-      @keyup.enter.native="init"
+      @keyup.enter="init"
     >
-      <i
-        slot="prefix"
-        class="el-input__icon el-icon-search"
-        style="cursor: pointer"
-        @click="init"
-      />
+      <template #prefix>
+        <el-icon
+          class="el-input__icon el-icon-search"
+          style="cursor: pointer"
+          @click="init"
+        >
+          <Search />
+        </el-icon>
+      </template>
     </el-input>
   </div>
 </template>
 
-<script lang='ts'>
-import { Vue, Component, Prop } from 'vue-property-decorator'
-@Component({
-  name: 'InputAutoComplete',
-})
-export default class extends Vue {
-  private input: any = ''
-  @Prop({ default: [] }) data: Array<any>
-  @Prop({ default: '' }) placeholder: string
-  @Prop({ default: 'name' }) ObKey: string
+<script setup lang="ts">
+import { ref } from 'vue'
+import type { PropType } from 'vue'
+import { Search } from '@element-plus/icons-vue'
 
-  init() {
-    this.$emit('init', this.input)
-  }
+defineProps({
+  data: { type: Array as PropType<any[]>, default: () => [] },
+  placeholder: { type: String, default: '' },
+  ObKey: { type: String, default: 'name' }
+})
+
+const emit = defineEmits(['init'])
+
+const input = ref('')
+
+const init = () => {
+  emit('init', input.value)
 }
 </script>
 <style scoped>

@@ -1,67 +1,65 @@
-import { ECharts } from 'echarts';
-import { Component, Vue } from 'vue-property-decorator';
+import type { ECharts } from 'echarts';
+import { onActivated, onDeactivated, onMounted, onBeforeUnmount } from 'vue';
 
-@Component({
-    'name': 'ResizeMixin'
-})
-export default class extends Vue {
-  protected chart!: ECharts | null
-  private sidebarElm?: Element
+export default function useChartResize(chartRef: () => ECharts | null | undefined) {
 
-  mounted() {
-      this.initResizeEvent();
-      this.initSidebarResizeEvent();
+  const getChart = () => {
+    return chartRef()
   }
 
-  beforeDestroy() {
-      this.destroyResizeEvent();
-      this.destroySidebarResizeEvent();
+  const chartResizeHandler = () => {
+    const chart = getChart()
+    if (chart) {
+      chart.resize();
+    }
   }
 
-  activated() {
-      this.initResizeEvent();
-      this.initSidebarResizeEvent();
+  const sidebarResizeHandler = (e: TransitionEvent) => {
+    if (e.propertyName === 'width') {
+      chartResizeHandler();
+    }
   }
 
-  deactivated() {
-      this.destroyResizeEvent();
-      this.destroySidebarResizeEvent();
+  let sidebarElm: Element | undefined
+
+  const initResizeEvent = () => {
+    window.addEventListener('resize', chartResizeHandler);
   }
 
-  private chartResizeHandler() {
-      if (this.chart) {
-          this.chart.resize();
-      }
+  const destroyResizeEvent = () => {
+    window.removeEventListener('resize', chartResizeHandler);
   }
 
-  private sidebarResizeHandler(e: TransitionEvent) {
-      if (e.propertyName === 'width') {
-          this.chartResizeHandler();
-      }
+  const initSidebarResizeEvent = () => {
+    sidebarElm = document.getElementsByClassName('sidebar-container')[0];
+    if (sidebarElm) {
+      sidebarElm.addEventListener('transitionend', sidebarResizeHandler as EventListener);
+    }
   }
 
-  private initResizeEvent() {
-      if (this.chartResizeHandler) {
-          window.addEventListener('resize', this.chartResizeHandler);
-      }
+  const destroySidebarResizeEvent = () => {
+    if (sidebarElm) {
+      sidebarElm.removeEventListener('transitionend', sidebarResizeHandler as EventListener);
+    }
   }
 
-  private destroyResizeEvent() {
-      if (this.chartResizeHandler) {
-          window.removeEventListener('resize', this.chartResizeHandler);
-      }
-  }
+  onMounted(() => {
+    initResizeEvent();
+    initSidebarResizeEvent();
+  })
 
-  private initSidebarResizeEvent() {
-      this.sidebarElm = document.getElementsByClassName('sidebar-container')[0];
-      if (this.sidebarElm) {
-          this.sidebarElm.addEventListener('transitionend', this.sidebarResizeHandler as EventListener);
-      }
-  }
+  onBeforeUnmount(() => {
+    destroyResizeEvent();
+    destroySidebarResizeEvent();
+  })
 
-  private destroySidebarResizeEvent() {
-      if (this.sidebarElm) {
-          this.sidebarElm.removeEventListener('transitionend', this.sidebarResizeHandler as EventListener);
-      }
-  }
+  onActivated(() => {
+    initResizeEvent();
+    initSidebarResizeEvent();
+  })
+
+  onDeactivated(() => {
+    destroyResizeEvent();
+    destroySidebarResizeEvent();
+  })
 }

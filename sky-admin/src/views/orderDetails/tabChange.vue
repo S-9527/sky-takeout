@@ -16,59 +16,60 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Vue, Component, Prop, Watch } from 'vue-property-decorator'
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
 import { getOrderDetailPage } from '@/api/order'
 
-@Component({
-  name: 'TabChange'
+const props = defineProps({
+  orderStatics: { type: Object, default: '' },
+  defaultActivity: { type: [Number, String], default: '' },
 })
-export default class extends Vue {
-  @Prop({ default: '' }) orderStatics: any
-  @Prop({ default: '' }) defaultActivity: any
-  private activeIndex: number = this.defaultActivity || 0
+const emit = defineEmits(['tabChange'])
 
-  @Watch('defaultActivity')
-  private onChange(val) {
-    this.activeIndex = Number(val)
-  }
+const activeIndex = ref<number>(props.defaultActivity || 0)
 
-  get changedOrderList() {
-    return [
-      {
-        label: '全部订单',
-        value: 0
-      },
-      {
-        label: '待接单',
-        value: 2,
-        num: this.orderStatics.toBeConfirmed
-      },
-      {
-        label: '待派送',
-        value: 3,
-        num: this.orderStatics.confirmed
-      },
-      {
-        label: '派送中',
-        value: 4,
-        num: this.orderStatics.deliveryInProgress
-      },
-      {
-        label: '已完成',
-        value: 5
-      },
-      {
-        label: '已取消',
-        value: 6
-      }
-    ]
+watch(
+  () => props.defaultActivity,
+  (val) => {
+    activeIndex.value = Number(val)
   }
+)
 
-  private tabChange(activeIndex) {
-    this.activeIndex = activeIndex
-    this.$emit('tabChange', activeIndex)
-  }
+const changedOrderList = computed(() => {
+  return [
+    {
+      label: '全部订单',
+      value: 0
+    },
+    {
+      label: '待接单',
+      value: 2,
+      num: props.orderStatics.toBeConfirmed
+    },
+    {
+      label: '待派送',
+      value: 3,
+      num: props.orderStatics.confirmed
+    },
+    {
+      label: '派送中',
+      value: 4,
+      num: props.orderStatics.deliveryInProgress
+    },
+    {
+      label: '已完成',
+      value: 5
+    },
+    {
+      label: '已取消',
+      value: 6
+    }
+  ]
+})
+
+function tabChange(val: number) {
+  activeIndex.value = val
+  emit('tabChange', val)
 }
 </script>
 <style lang="scss">

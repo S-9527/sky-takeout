@@ -1,10 +1,11 @@
 <template>
   <el-dialog
     title="修改密码"
-    :visible.sync="dialogFormVisible"
+    :model-value="dialogFormVisible"
     width="568px"
     class="pwdCon"
     @close="handlePwdClose()"
+    @update:model-value="handlePwdClose"
   >
     <el-form :model="form" label-width="85px" :rules="rules" ref="form">
       <el-form-item label="原始密码：" prop="oldPassword">
@@ -29,67 +30,72 @@
         ></el-input>
       </el-form-item>
     </el-form>
-    <div slot="footer" class="dialog-footer">
-      <el-button @click="handlePwdClose()">取 消</el-button>
-      <el-button type="primary" @click="handleSave()">保 存</el-button>
-    </div>
+    <template #footer>
+      <div class="dialog-footer">
+        <el-button @click="handlePwdClose()">取 消</el-button>
+        <el-button type="primary" @click="handleSave()">保 存</el-button>
+      </div>
+    </template>
   </el-dialog>
 </template>
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator'
-import { Form as ElForm, Input } from 'element-ui'
+<script setup lang="ts">
+import { ref } from 'vue'
+import type { FormInstance } from 'element-plus'
 // 接口
 import { editPassword } from '@/api/users'
-@Component({
-  name: 'Password',
+
+const props = defineProps({
+  dialogFormVisible: { type: Boolean, default: false }
 })
-export default class extends Vue {
-  @Prop() private dialogFormVisible!: any
-  private validatePwd = (rule: any, value: any, callback: Function) => {
-    const reg = /^[0-9A-Za-z]{6,20}$/
-    if (!value) {
-      callback(new Error('请输入'))
-    } else if (!reg.test(value)) {
-      callback(new Error('6 - 20位密码，数字或字母，区分大小写'))
-    } else {
-      callback()
-    }
+
+const emit = defineEmits(['handleclose'])
+
+const form = ref({} as any)
+const formRef = ref<FormInstance>()
+
+const validatePwd = (rule: any, value: any, callback: Function) => {
+  const reg = /^[0-9A-Za-z]{6,20}$/
+  if (!value) {
+    callback(new Error('请输入'))
+  } else if (!reg.test(value)) {
+    callback(new Error('6 - 20位密码，数字或字母，区分大小写'))
+  } else {
+    callback()
   }
-  private validatePass2 = (rule, value, callback) => {
-    if (!value) {
-      callback(new Error('请再次输入密码'))
-    } else if (value !== this.form.newPassword) {
-      callback(new Error('密码不一致，请重新输入密码'))
-    } else {
-      callback()
-    }
+}
+const validatePass2 = (rule: any, value: any, callback: Function) => {
+  if (!value) {
+    callback(new Error('请再次输入密码'))
+  } else if (value !== form.value.newPassword) {
+    callback(new Error('密码不一致，请重新输入密码'))
+  } else {
+    callback()
   }
-  rules = {
-    oldPassword: [{ validator: this.validatePwd, trigger: 'blur' }],
-    newPassword: [{ validator: this.validatePwd, trigger: 'blur' }],
-    affirmPassword: [{ validator: this.validatePass2, trigger: 'blur' }],
-  }
-  private form = {} as any
-  private affirmPassword = ''
-  handleSave() {
-    ;(this.$refs.form as ElForm).validate(async (valid: boolean) => {
-      if (valid) {
-        const parnt = {
-          oldPassword: this.form.oldPassword,
-          newPassword: this.form.newPassword,
-        }
-        await editPassword(parnt)
-        this.$emit('handleclose')
-        ;(this.$refs.form as ElForm).resetFields()
-      } else {
-        return false
+}
+const rules = {
+  oldPassword: [{ validator: validatePwd, trigger: 'blur' }],
+  newPassword: [{ validator: validatePwd, trigger: 'blur' }],
+  affirmPassword: [{ validator: validatePass2, trigger: 'blur' }],
+}
+
+const handleSave = () => {
+  formRef.value?.validate(async (valid: boolean) => {
+    if (valid) {
+      const parnt = {
+        oldPassword: form.value.oldPassword,
+        newPassword: form.value.newPassword,
       }
-    })
-  }
-  handlePwdClose() {
-    ;(this.$refs.form as ElForm).resetFields()
-    this.$emit('handleclose')
-  }
+      await editPassword(parnt)
+      emit('handleclose')
+      formRef.value?.resetFields()
+    } else {
+      return false
+    }
+  })
+}
+const handlePwdClose = () => {
+  formRef.value?.resetFields()
+  emit('handleclose')
 }
 </script>
 <style lang="scss">

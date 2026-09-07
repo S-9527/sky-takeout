@@ -3,7 +3,7 @@
     <div class="login-box">
       <img src="@/assets/login/login-l.png" alt="" />
       <div class="login-form">
-        <el-form ref="loginForm" :model="loginForm" :rules="loginRules">
+        <el-form ref="loginFormRef" :model="loginForm" :rules="loginRules">
           <div class="login-form-title">
             <img
               src="@/assets/login/icon_logo.png"
@@ -18,26 +18,32 @@
               type="text"
               auto-complete="off"
               placeholder="账号"
-              prefix-icon="iconfont icon-user"
-            />
+            >
+              <template #prefix>
+                <i class="iconfont icon-user" />
+              </template>
+            </el-input>
           </el-form-item>
           <el-form-item prop="password">
             <el-input
               v-model="loginForm.password"
               type="password"
               placeholder="密码"
-              prefix-icon="iconfont icon-lock"
-              @keyup.enter.native="handleLogin"
-            />
+              @keyup.enter="handleLogin"
+            >
+              <template #prefix>
+                <i class="iconfont icon-lock" />
+              </template>
+            </el-input>
           </el-form-item>
           <el-form-item style="width: 100%">
             <el-button
               :loading="loading"
               class="login-btn"
-              size="medium"
+              size="default"
               type="primary"
               style="width: 100%"
-              @click.native.prevent="handleLogin"
+              @click.prevent="handleLogin"
             >
               <span v-if="!loading">登录</span>
               <span v-else>登录中...</span>
@@ -49,72 +55,65 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator'
-import { Route } from 'vue-router'
-import { Form as ElForm, Input } from 'element-ui'
-import { UserModule } from '@/store/modules/user'
-import { isValidUsername } from '@/utils/validate'
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import type { FormInstance } from 'element-plus'
+import { useUserStore } from '@/store/modules/user'
 
-@Component({
-  name: 'Login',
+const router = useRouter()
+const userStore = useUserStore()
+const loginFormRef = ref<FormInstance>()
+
+const validateUsername = (rule: any, value: string, callback: Function) => {
+  if (!value) {
+    callback(new Error('请输入用户名'))
+  } else {
+    callback()
+  }
+}
+const validatePassword = (rule: any, value: string, callback: Function) => {
+  if (value.length < 6) {
+    callback(new Error('密码必须在6位以上'))
+  } else {
+    callback()
+  }
+}
+const loginForm = ref({
+  username: 'admin',
+  password: '123456',
+} as {
+  username: String
+  password: String
 })
-export default class extends Vue {
-  private validateUsername = (rule: any, value: string, callback: Function) => {
-    if (!value) {
-      callback(new Error('请输入用户名'))
+
+const loginRules = {
+  username: [{ validator: validateUsername, trigger: 'blur' }],
+  password: [{ validator: validatePassword, trigger: 'blur' }],
+}
+const loading = ref(false)
+
+// 登录
+const handleLogin = () => {
+  loginFormRef.value?.validate(async (valid: boolean) => {
+    if (valid) {
+      loading.value = true
+      await userStore
+        .Login(loginForm.value as any)
+        .then((res: any) => {
+          if (String(res.code) === '1') {
+            router.push('/')
+          } else {
+            loading.value = false
+          }
+        })
+        .catch(() => {
+          loading.value = false
+        })
     } else {
-      callback()
+      return false
     }
-  }
-  private validatePassword = (rule: any, value: string, callback: Function) => {
-    if (value.length < 6) {
-      callback(new Error('密码必须在6位以上'))
-    } else {
-      callback()
-    }
-  }
-  private loginForm = {
-    username: 'admin',
-    password: '123456',
-  } as {
-    username: String
-    password: String
-  }
-
-  loginRules = {
-    username: [{ validator: this.validateUsername, trigger: 'blur' }],
-    password: [{ validator: this.validatePassword, trigger: 'blur' }],
-  }
-  private loading = false
-  private redirect?: string
-
-  @Watch('$route', { immediate: true })
-  private onRouteChange(route: Route) {}
-
-  // 登录
-  private handleLogin() {
-    ;(this.$refs.loginForm as ElForm).validate(async (valid: boolean) => {
-      if (valid) {
-        this.loading = true
-        await UserModule.Login(this.loginForm as any)
-          .then((res: any) => {
-            if (String(res.code) === '1') {
-              this.$router.push('/')
-            } else {
-              // this.$message.error(res.msg)
-              this.loading = false
-            }
-          })
-          .catch(() => {
-            // this.$message.error('用户名或密码错误！')
-            this.loading = false
-          })
-      } else {
-        return false
-      }
-    })
-  }
+  })
 }
 </script>
 
@@ -124,7 +123,6 @@ export default class extends Vue {
   justify-content: center;
   align-items: center;
   height: 100%;
-  // background: #476dbe;
   background-color: #333;
 }
 
@@ -159,19 +157,22 @@ export default class extends Vue {
   .el-form-item {
     margin-bottom: 30px;
   }
-  .el-form-item.is-error .el-input__inner {
-    border: 0 !important;
-    border-bottom: 1px solid #fd7065 !important;
-    background: #fff !important;
+  .el-input__wrapper {
+    box-shadow: none;
+    padding: 0 2px;
+    border-bottom: 1px solid #e9e9e8;
+    border-radius: 0;
   }
-  .input-icon {
-    height: 32px;
-    width: 18px;
-    margin-left: -2px;
+  .el-input.is-focus .el-input__wrapper {
+    box-shadow: none !important;
+  }
+  .el-form-item.is-error .el-input__wrapper,
+  .el-form-item.is-error .el-input.is-focus .el-input__wrapper {
+    box-shadow: none !important;
+    border-bottom: 1px solid #fd7065;
   }
   .el-input__inner {
     border: 0;
-    border-bottom: 1px solid #e9e9e8;
     border-radius: 0;
     font-size: 12px;
     font-weight: 400;
@@ -179,20 +180,8 @@ export default class extends Vue {
     height: 32px;
     line-height: 32px;
   }
-  .el-input__prefix {
-    left: 0;
-  }
-  .el-input--prefix .el-input__inner {
-    padding-left: 26px;
-  }
   .el-input__inner::placeholder {
     color: #aeb5c4;
-  }
-  .el-form-item--medium .el-form-item__content {
-    line-height: 32px;
-  }
-  .el-input--medium .el-input__icon {
-    line-height: 32px;
   }
 }
 
@@ -203,13 +192,10 @@ export default class extends Vue {
   font-weight: 500;
   font-size: 12px;
   border: 0;
-  font-weight: 500;
   color: #333333;
-  // background: #09a57a;
   background-color: #ffc200;
   &:hover,
   &:focus {
-    // background: #09a57a;
     background-color: #ffc200;
     color: #ffffff;
   }

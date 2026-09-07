@@ -28,7 +28,7 @@
           <span @click="checkaffterDate('day', 'before')">前一天</span>
           <el-date-picker
             v-model="dataTime"
-            size="mini"
+            size="small"
             type="date"
             placeholder="选择日期"
             value-format="yyyy-MM-dd"
@@ -44,7 +44,7 @@
           <span @click="checkaffterDate('week', 'before')">前一周</span>
           <el-date-picker
             v-model="dataTime"
-            size="mini"
+            size="small"
             type="week"
             format="yyyy 第 WW 周"
             value-format="yyyy-MM-dd"
@@ -63,7 +63,7 @@
           <span @click="checkaffterDate('mouth', 'before')">前一月</span>
           <el-date-picker
             v-model="dataTime"
-            size="mini"
+            size="small"
             type="month"
             value-format="yyyy-MM-dd"
             placeholder="选择月"
@@ -180,8 +180,9 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
+<script setup lang="ts">
+import { ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import HeadLable from '@/components/HeadLable/index.vue'
 import Basic from '@/components/Charts/Basic.vue'
 import BarChart from '@/components/Charts/BarChart.vue'
@@ -201,399 +202,197 @@ import {
   getTimeQuantumDiscount,
   getChartsDataes,
 } from '@/api/charts'
-import { isBoolean } from 'style-resources-loader/lib/utils'
 import request from '@/utils/request'
 
-@Component({
-  name: 'chart',
-  components: {
-    HeadLable,
-    Basic,
-    BarChart,
-    MixedChart,
-  },
-})
-export default class extends Vue {
-  private dataTime: any = ''
-  private restKey = 0
-  private moment = moment
-  private Today = moment().format('YYYY-MM-DD')
-  private week = [
-    moment().startOf('week').add(1, 'day').format('YYYY-MM-DD'),
-    moment().endOf('week').add(1, 'day').format('YYYY-MM-DD'),
-  ]
-  private month = [
-    moment().startOf('month').format('YYYY-MM-DD'),
-    moment().endOf('month').format('YYYY-MM-DD'),
-  ]
-  private topData = {}
-  private stateTime = moment().format('YYYY-MM-DD')
-  private endTime = moment().format('YYYY-MM-DD')
-  private act = 'day'
-  private dataType = 1 //类型(1:金额;2:数量)
-  private typeA = 1
-  private typeB = 1
-  private chartDataA = {} // 销售趋势
-  private chartDataB = {} // 销售排行
+const isBoolean = (v: any) => typeof v === 'boolean'
 
-  private chartDataC = {} //分类占比
-  private chartDataD = {} // 收款构成
-  private discount = [] // 优惠指标
-  private discountTotal = 0
-  private discountPercentTotal = 0
+const dataTime = ref<any>('')
+const restKey = ref(0)
+const Today = moment().format('YYYY-MM-DD')
+const week = [
+  moment().startOf('week').add(1, 'day').format('YYYY-MM-DD'),
+  moment().endOf('week').add(1, 'day').format('YYYY-MM-DD'),
+]
+const month = [
+  moment().startOf('month').format('YYYY-MM-DD'),
+  moment().endOf('month').format('YYYY-MM-DD'),
+]
+const topData = ref<any>({})
+const stateTime = ref(moment().format('YYYY-MM-DD'))
+const endTime = ref(moment().format('YYYY-MM-DD'))
+const act = ref('day')
+const dataType = ref(1) //类型(1:金额;2:数量)
+const typeA = ref(1)
+const typeB = ref(1)
+const chartDataA = ref<any>({}) // 销售趋势
+const chartDataB = ref<any>({}) // 销售排行
 
-  created() {
-    this.init()
-  }
+const chartDataC = ref<any>({}) //分类占比
+const chartDataD = ref<any>({}) // 收款构成
+const discount = ref<any[]>([]) // 优惠指标
+const discountTotal = ref(0)
+const discountPercentTotal = ref(0)
 
-  private async init() {
-    this.dataTime = this.Today
-    this.stateTime = this.Today
-    this.endTime = this.Today
-    // await this.getData()
-    await this.getTimeWuantumData()
-  }
+const init = async () => {
+  dataTime.value = Today
+  stateTime.value = Today
+  endTime.value = Today
+  // await this.getData()
+  await getTimeWuantumData()
+}
 
-  private checkaffterDate(val: any, st: any) {
-    const date = moment(this.dataTime).valueOf()
-    if (st == 'before') {
-      // 前一天、周、月
+const checkaffterDate = (val: any, st: any) => {
+  const date = moment(dataTime.value).valueOf()
+  if (st == 'before') {
+    // 前一天、周、月
+    if (val === 'day') {
+      dataTime.value = moment(date - 86400000).format('YYYY-MM-DD')
+    } else if (val === 'week') {
+      dataTime.value = moment(date - 86400000 * 7).format('YYYY-MM-DD')
+    } else if (val === 'mouth') {
+      const mouthDate = moment(dataTime.value)
+        .startOf('month')
+        .format('YYYY-MM-DD')
+      dataTime.value = moment(moment(mouthDate).valueOf() - 86400000)
+        .startOf('month')
+        .format('YYYY-MM-DD')
+    }
+    changeDate(val)
+  } else if (st == 'after') {
+    // 后一天、周、月
+    if (moment(date + 86400000).isBefore(moment())) {
       if (val === 'day') {
-        this.dataTime = moment(date - 86400000).format('YYYY-MM-DD')
+        dataTime.value = moment(date + 86400000).format('YYYY-MM-DD')
       } else if (val === 'week') {
-        this.dataTime = moment(date - 86400000 * 7).format('YYYY-MM-DD')
+        dataTime.value = moment(date + 86400000 * 7).format('YYYY-MM-DD')
       } else if (val === 'mouth') {
-        const mouthDate = moment(this.dataTime)
+        const mouthDate = moment(dataTime.value)
+          .endOf('month')
+          .format('YYYY-MM-DD')
+        dataTime.value = moment(moment(mouthDate).valueOf() + 86400000)
           .startOf('month')
           .format('YYYY-MM-DD')
-        this.dataTime = moment(moment(mouthDate).valueOf() - 86400000)
-          .startOf('month')
-          .format('YYYY-MM-DD')
       }
-      this.changeDate(val)
-    } else if (st == 'after') {
-      // 后一天、周、月
-      if (moment(date + 86400000).isBefore(moment())) {
-        if (val === 'day') {
-          this.dataTime = moment(date + 86400000).format('YYYY-MM-DD')
-        } else if (val === 'week') {
-          this.dataTime = moment(date + 86400000 * 7).format('YYYY-MM-DD')
-        } else if (val === 'mouth') {
-          const mouthDate = moment(this.dataTime)
-            .endOf('month')
-            .format('YYYY-MM-DD')
-          this.dataTime = moment(moment(mouthDate).valueOf() + 86400000)
-            .startOf('month')
-            .format('YYYY-MM-DD')
-        }
-        this.changeDate(val)
-      } else {
-        let err = ''
-        switch (val) {
-          case 'day':
-            err = '已经是最后一天了'
-            break
-          case 'week':
-            err = '已经是最后一周了'
-            break
-          default:
-            err = '已经是最后一个月了'
-        }
-        this.$message.error(err)
-      }
-    }
-  }
-
-  // 日期选择
-  private changeDate(val: string) {
-    if (this.stateTime == '' || this.endTime == '' || this.dataTime == null) {
-      this.$message.error('检索日期不能为空！')
-      this.dataTime = moment().format('YYYY-MM-DD')
-      this.stateTime = moment().format('YYYY-MM-DD')
-      this.endTime = moment().format('YYYY-MM-DD')
-      return
-    }
-    if (val === 'day') {
-      this.stateTime = moment(this.dataTime).format('YYYY-MM-DD')
-      this.endTime = moment(this.dataTime).format('YYYY-MM-DD')
-      if (
-        moment(this.dataTime).format('YYYY-MM-DD') ===
-        moment().format('YYYY-MM-DD')
-      ) {
-        this.getData()
-      } else {
-        this.getDaySalesVolumeData()
-        // this.getData()
-        this.getTimeWuantumData()
-      }
+      changeDate(val)
     } else {
-      if (val === 'week') {
-        this.stateTime = moment(this.dataTime)
-          .startOf('week')
-          .add(1, 'day')
-          .format('YYYY-MM-DD')
-        this.endTime = moment(this.dataTime)
-          .endOf('week')
-          .add(1, 'day')
-          .format('YYYY-MM-DD')
-      } else {
-        this.stateTime = moment(this.dataTime)
-          .startOf('month')
-          .format('YYYY-MM-DD')
-        this.endTime = moment(this.dataTime).endOf('month').format('YYYY-MM-DD')
+      let err = ''
+      switch (val) {
+        case 'day':
+          err = '已经是最后一天了'
+          break
+        case 'week':
+          err = '已经是最后一周了'
+          break
+        default:
+          err = '已经是最后一个月了'
       }
-      this.getTimeWuantumData()
+      ElMessage.error(err)
     }
   }
+}
 
-  // 日 周 月 切换
-  private dateAct(val: string) {
-    this.restKey++
-    this.act = val
-    if (val === 'day') {
-      this.init()
+// 日期选择
+const changeDate = (val: string) => {
+  if (stateTime.value == '' || endTime.value == '' || dataTime.value == null) {
+    ElMessage.error('检索日期不能为空！')
+    dataTime.value = moment().format('YYYY-MM-DD')
+    stateTime.value = moment().format('YYYY-MM-DD')
+    endTime.value = moment().format('YYYY-MM-DD')
+    return
+  }
+  if (val === 'day') {
+    stateTime.value = moment(dataTime.value).format('YYYY-MM-DD')
+    endTime.value = moment(dataTime.value).format('YYYY-MM-DD')
+    if (
+      moment(dataTime.value).format('YYYY-MM-DD') ===
+      moment().format('YYYY-MM-DD')
+    ) {
+      getData()
     } else {
-      if (val === 'week') {
-        this.dataTime = this.Today
-        this.stateTime = this.week[0]
-        this.endTime = this.week[1]
-      } else {
-        this.dataTime = this.Today
-        this.stateTime = this.month[0]
-        this.endTime = this.month[1]
-      }
-      this.getTimeWuantumData()
+      getDaySalesVolumeData()
+      // this.getData()
+      getTimeWuantumData()
     }
-  }
-
-  private topActiveHandle(act: string) {
-    if (act === 'typeA') {
-      this.typeA = this.typeA === 1 ? 2 : 1
-      if (this.act == 'day') {
-        // moment(this.dataTime).format('YYYY-MM-DD') ===  moment().format('YYYY-MM-DD')){
-        // this.getDayData()
-        this.getTimeQuantumData()
-      } else {
-        this.getTimeQuantumData()
-      }
+  } else {
+    if (val === 'week') {
+      stateTime.value = moment(dataTime.value)
+        .startOf('week')
+        .add(1, 'day')
+        .format('YYYY-MM-DD')
+      endTime.value = moment(dataTime.value)
+        .endOf('week')
+        .add(1, 'day')
+        .format('YYYY-MM-DD')
     } else {
-      this.typeB = this.typeB === 1 ? 2 : 1
-      if (this.act == 'day') {
-        // (moment(this.dataTime).format('YYYY-MM-DD') ===  moment().format('YYYY-MM-DD')){
-        // this.getSalesRankData()
-        this.getTimeQuantumTypeData()
-      } else {
-        this.getTimeQuantumTypeData()
-      }
+      stateTime.value = moment(dataTime.value)
+        .startOf('month')
+        .format('YYYY-MM-DD')
+      endTime.value = moment(dataTime.value).endOf('month').format('YYYY-MM-DD')
+    }
+    getTimeWuantumData()
+  }
+}
+
+// 日 周 月 切换
+const dateAct = (val: string) => {
+  restKey.value++
+  act.value = val
+  if (val === 'day') {
+    init()
+  } else {
+    if (val === 'week') {
+      dataTime.value = Today
+      stateTime.value = week[0]
+      endTime.value = week[1]
+    } else {
+      dataTime.value = Today
+      stateTime.value = month[0]
+      endTime.value = month[1]
+    }
+    getTimeWuantumData()
+  }
+}
+
+const topActiveHandle = (activeKey: string) => {
+  if (activeKey === 'typeA') {
+    typeA.value = typeA.value === 1 ? 2 : 1
+    if (act.value == 'day') {
+      // moment(this.dataTime).format('YYYY-MM-DD') ===  moment().format('YYYY-MM-DD')){
+      // this.getDayData()
+      getTimeQuantumData()
+    } else {
+      getTimeQuantumData()
+    }
+  } else {
+    typeB.value = typeB.value === 1 ? 2 : 1
+    if (act.value == 'day') {
+      // moment(this.dataTime).format('YYYY-MM-DD') ===  moment().format('YYYY-MM-DD')){
+      // this.getSalesRankData()
+      getTimeQuantumTypeData()
+    } else {
+      getTimeQuantumTypeData()
     }
   }
+}
 
-  // 获取当天数据
-  private getData() {
-    this.getDayData()
-    this.getSalesRankData()
-    this.getDayPayTypeData()
-    this.getDayRankingData()
-    this.getDaySalesVolumeData()
-    this.getprivilegeData()
-  }
+// 获取当天数据
+const getData = () => {
+  getDayData()
+  getSalesRankData()
+  getDayPayTypeData()
+  getDayRankingData()
+  getDaySalesVolumeData()
+  getprivilegeData()
+}
 
-  // 获取当日销售趋势信息 - 销售趋势图
-  private getDayData() {
-    getDayDataes({ type: this.typeA, date: this.dataTime })
-      .then((res) => {
-        if (res.data.code == 200) {
-          const { data } = res.data
-          let yData: number[] = []
-          if (this.typeA === 1) {
-            data.series.length > 0 &&
-              data.series.map((n: number) => {
-                yData.push(n / 100)
-              })
-          } else {
-            yData = data.series
-          }
-          const charts = { xData: data.xaxis, yData: yData }
-          this.chartDataA = charts
-        } else {
-          this.$message.error(res.data.desc)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-  // 获取菜品分类销售排行 - 菜品分类占比 -当日
-  private getSalesRankData() {
-    getSalesRanking({ type: this.typeB, date: this.dataTime })
-      .then((res) => {
-        if (res.data.code == 200) {
-          const { data } = res.data
-          let chartData = []
-          if (this.typeB === 1) {
-            data.length > 0 &&
-              data.map((n: { name: string; percent: any; value: number }) => {
-                chartData.push({ ...n, value: n.value / 100 })
-              })
-          } else {
-            chartData = data
-          }
-          let charts = {
-            legendData: [],
-            seriesData: chartData,
-            selected: {},
-          }
-          data &&
-            data.length > 0 &&
-            data.forEach((item: any) => {
-              ;(charts.legendData as Array<string>).push(item.name as string)
-              ;(charts.selected as any)[item.name] = true
-            })
-          this.chartDataC = charts
-        } else {
-          this.$message.error(res.data.desc)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-  // 支付类型数据汇总 - 店内收款构成 - 当日
-  private getDayPayTypeData() {
-    getDayPayType({ date: this.dataTime })
-      .then((res) => {
-        if (res.data.code == 200) {
-          const { data } = res.data
-          let chartData = []
-          if (this.typeB === 1) {
-            data.length > 0 &&
-              data.map((n: { name: string; percent: any; value: number }) => {
-                chartData.push({ ...n, value: n.value / 100 })
-              })
-          } else {
-            chartData = data
-          }
-          let charts = {
-            legendData: [],
-            seriesData: chartData,
-            selected: {},
-          }
-          data &&
-            data.length > 0 &&
-            data.forEach((item: any) => {
-              ;(charts.legendData as Array<string>).push(item.name as string)
-              ;(charts.selected as any)[item.name] = true
-            })
-          this.chartDataD = charts
-        } else {
-          this.$message.error(res.data.desc)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-  // 获取当日菜品销售排行 - 销售排行图
-  private getDayRankingData() {
-    getDayRanking({ type: this.dataType, date: this.dataTime })
-      .then((res) => {
-        if (res.data.code == 200) {
-          const { data } = res.data
-          const charts = { xData: data.xaxis, yData: data.series }
-          this.chartDataB = charts
-        } else {
-          this.$message.error(res.data.desc)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-  // 获取一天的销售数量 - 顶部数据
-  private getDaySalesVolumeData() {
-    // 获取当日销售数据
-    getChartsDataes({ start: this.dataTime, end: this.dataTime })
-      .then((res) => {
-        if (res.data.code == 200) {
-          const { data } = res.data
-          this.topData = data
-        } else {
-          this.$message.error(res.data.desc)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-  // 获取当日各种优惠类型数据汇总
-  private getprivilegeData() {
-    getprivilege({ date: this.dataTime })
-      .then((res) => {
-        if (res.data.code == 200) {
-          const { data } = res.data
-          this.discountTotal = 0
-          this.discountPercentTotal = 0
-          data &&
-            data.dataList.length > 0 &&
-            data.dataList.forEach((item: any) => {
-              this.discountTotal += item.value
-              this.discountPercentTotal += item.percent
-            })
-          this.discount = data.dataList
-        } else {
-          this.$message.error(res.data.desc)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-
-  // 查看时间段接口调用
-  private getTimeWuantumData() {
-    this.getTimeQuantumData()
-    this.getReceivables()
-    this.getTimeQuantumTypeData()
-    this.getTimeQuantumDishesDataes()
-    this.getDaySalesVolumeData()
-    this.getDiscount()
-  }
-
-  // 时间段数据获取
-  // 获取时间范围之内的优惠指标汇总数据 - 优惠指标
-  private getDiscount() {
-    getTimeQuantumDiscount({ start: this.stateTime, end: this.endTime })
-      .then((res) => {
-        if (res.data.code == 200) {
-          const { data } = res.data
-          this.discountTotal = 0
-          this.discountPercentTotal = 0
-          data &&
-            data.dataList.length > 0 &&
-            data.dataList.forEach((item: any) => {
-              this.discountTotal += item.value
-              this.discountPercentTotal += item.percent
-            })
-          this.discount = data.dataList
-        } else {
-          this.$message.error(res.data.desc)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-  // 获取一定日期之内的销售趋势
-  private getTimeQuantumData() {
-    getTimeQuantumDataes({
-      type: this.typeA,
-      start: this.stateTime,
-      end: this.endTime,
-    }).then((res) => {
+// 获取当日销售趋势信息 - 销售趋势图
+const getDayData = () => {
+  getDayDataes({ type: typeA.value, date: dataTime.value })
+    .then((res) => {
       if (res.data.code == 200) {
         const { data } = res.data
         let yData: number[] = []
-        if (this.typeA === 1) {
+        if (typeA.value === 1) {
           data.series.length > 0 &&
             data.series.map((n: number) => {
               yData.push(n / 100)
@@ -602,108 +401,297 @@ export default class extends Vue {
           yData = data.series
         }
         const charts = { xData: data.xaxis, yData: yData }
-        this.chartDataA = charts
+        chartDataA.value = charts
       } else {
-        this.$message.error(res.data.desc)
+        ElMessage.error(res.data.desc)
       }
     })
-  }
-  // 获取时间范围之内的各种支付类型数据汇总 - 店内收款构成 - 时间段
-  private getReceivables() {
-    getTimeQuantumReceivables({ start: this.stateTime, end: this.endTime })
-      .then((res) => {
-        if (res.data.code == 200) {
-          const { data } = res.data
-          let chartData = []
-          if (this.typeB === 1) {
-            data.length > 0 &&
-              data.map((n: { name: string; percent: any; value: number }) => {
-                chartData.push({ ...n, value: n.value / 100 })
-              })
-          } else {
-            chartData = data
-          }
-          let charts = {
-            legendData: [],
-            seriesData: chartData,
-            selected: {},
-          }
-          data &&
-            data.length > 0 &&
-            data.forEach((item: any) => {
-              ;(charts.legendData as Array<string>).push(item.name as string)
-              ;(charts.selected as any)[item.name] = true
-            })
-          this.chartDataD = charts
-        } else {
-          this.$message.error(res.data.desc)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-
-  // 获取时间范围之内的菜品类别销售汇总 -  菜品分类占比 - 时间段
-  private getTimeQuantumTypeData() {
-    getTimeQuantumType({
-      type: this.typeB,
-      start: this.stateTime,
-      end: this.endTime,
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
     })
-      .then((res) => {
-        if (res.data.code == 200) {
-          const { data } = res.data
-          let chartData = []
-          if (this.typeB === 1) {
-            data.length > 0 &&
-              data.map((n: { name: string; percent: any; value: number }) => {
-                chartData.push({ ...n, value: n.value / 100 })
-              })
-          } else {
-            chartData = data
-          }
-          let charts = {
-            legendData: [],
-            seriesData: chartData,
-            selected: {},
-          }
-          data.length > 0 &&
-            data.forEach((item: any) => {
-              ;(charts.legendData as Array<string>).push(item.name as string)
-              ;(charts.selected as any)[item.name] = true
-            })
-          this.chartDataC = charts
-        } else {
-          this.$message.error(res.data.desc)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-  // 获取时间范围之内的菜品销售排行
-  private getTimeQuantumDishesDataes() {
-    getTimeQuantumDishes({ start: this.stateTime, end: this.endTime })
-      .then((res) => {
-        if (res.data.code == 200) {
-          const { data } = res.data
-          let yData: number[] = []
-          data.series.length > 0 &&
-            data.series.map((n: number) => {
-              yData.push(n / 100)
-            })
-          const charts = { xData: data.xaxis, yData: yData }
-          this.chartDataB = charts
-        } else {
-          this.$message.error(res.data.desc)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
 }
+// 获取菜品分类销售排行 - 菜品分类占比 -当日
+const getSalesRankData = () => {
+  getSalesRanking({ type: typeB.value, date: dataTime.value })
+    .then((res) => {
+      if (res.data.code == 200) {
+        const { data } = res.data
+        let chartData: any[] = []
+        if (typeB.value === 1) {
+          data.length > 0 &&
+            data.map((n: { name: string; percent: any; value: number }) => {
+              chartData.push({ ...n, value: n.value / 100 })
+            })
+        } else {
+          chartData = data
+        }
+        let charts: any = {
+          legendData: [],
+          seriesData: chartData,
+          selected: {},
+        }
+        data &&
+          data.length > 0 &&
+          data.forEach((item: any) => {
+            ;(charts.legendData as Array<string>).push(item.name as string)
+            ;(charts.selected as any)[item.name] = true
+          })
+        chartDataC.value = charts
+      } else {
+        ElMessage.error(res.data.desc)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+// 支付类型数据汇总 - 店内收款构成 - 当日
+const getDayPayTypeData = () => {
+  getDayPayType({ date: dataTime.value })
+    .then((res) => {
+      if (res.data.code == 200) {
+        const { data } = res.data
+        let chartData: any[] = []
+        if (typeB.value === 1) {
+          data.length > 0 &&
+            data.map((n: { name: string; percent: any; value: number }) => {
+              chartData.push({ ...n, value: n.value / 100 })
+            })
+        } else {
+          chartData = data
+        }
+        let charts: any = {
+          legendData: [],
+          seriesData: chartData,
+          selected: {},
+        }
+        data &&
+          data.length > 0 &&
+          data.forEach((item: any) => {
+            ;(charts.legendData as Array<string>).push(item.name as string)
+            ;(charts.selected as any)[item.name] = true
+          })
+        chartDataD.value = charts
+      } else {
+        ElMessage.error(res.data.desc)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+// 获取当日菜品销售排行 - 销售排行图
+const getDayRankingData = () => {
+  getDayRanking({ type: dataType.value, date: dataTime.value })
+    .then((res) => {
+      if (res.data.code == 200) {
+        const { data } = res.data
+        const charts = { xData: data.xaxis, yData: data.series }
+        chartDataB.value = charts
+      } else {
+        ElMessage.error(res.data.desc)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+// 获取一天的销售数量 - 顶部数据
+const getDaySalesVolumeData = () => {
+  // 获取当日销售数据
+  getChartsDataes({ start: dataTime.value, end: dataTime.value })
+    .then((res) => {
+      if (res.data.code == 200) {
+        const { data } = res.data
+        topData.value = data
+      } else {
+        ElMessage.error(res.data.desc)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+// 获取当日各种优惠类型数据汇总
+const getprivilegeData = () => {
+  getprivilege({ date: dataTime.value })
+    .then((res) => {
+      if (res.data.code == 200) {
+        const { data } = res.data
+        discountTotal.value = 0
+        discountPercentTotal.value = 0
+        data &&
+          data.dataList.length > 0 &&
+          data.dataList.forEach((item: any) => {
+            discountTotal.value += item.value
+            discountPercentTotal.value += item.percent
+          })
+        discount.value = data.dataList
+      } else {
+        ElMessage.error(res.data.desc)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+
+// 查看时间段接口调用
+const getTimeWuantumData = () => {
+  getTimeQuantumData()
+  getReceivables()
+  getTimeQuantumTypeData()
+  getTimeQuantumDishesDataes()
+  getDaySalesVolumeData()
+  getDiscount()
+}
+
+// 时间段数据获取
+// 获取时间范围之内的优惠指标汇总数据 - 优惠指标
+const getDiscount = () => {
+  getTimeQuantumDiscount({ start: stateTime.value, end: endTime.value })
+    .then((res) => {
+      if (res.data.code == 200) {
+        const { data } = res.data
+        discountTotal.value = 0
+        discountPercentTotal.value = 0
+        data &&
+          data.dataList.length > 0 &&
+          data.dataList.forEach((item: any) => {
+            discountTotal.value += item.value
+            discountPercentTotal.value += item.percent
+          })
+        discount.value = data.dataList
+      } else {
+        ElMessage.error(res.data.desc)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+// 获取一定日期之内的销售趋势
+const getTimeQuantumData = () => {
+  getTimeQuantumDataes({
+    type: typeA.value,
+    start: stateTime.value,
+    end: endTime.value,
+  }).then((res) => {
+    if (res.data.code == 200) {
+      const { data } = res.data
+      let yData: number[] = []
+      if (typeA.value === 1) {
+        data.series.length > 0 &&
+          data.series.map((n: number) => {
+            yData.push(n / 100)
+          })
+      } else {
+        yData = data.series
+      }
+      const charts = { xData: data.xaxis, yData: yData }
+      chartDataA.value = charts
+    } else {
+      ElMessage.error(res.data.desc)
+    }
+  })
+}
+// 获取时间范围之内的各种支付类型数据汇总 - 店内收款构成 - 时间段
+const getReceivables = () => {
+  getTimeQuantumReceivables({ start: stateTime.value, end: endTime.value })
+    .then((res) => {
+      if (res.data.code == 200) {
+        const { data } = res.data
+        let chartData: any[] = []
+        if (typeB.value === 1) {
+          data.length > 0 &&
+            data.map((n: { name: string; percent: any; value: number }) => {
+              chartData.push({ ...n, value: n.value / 100 })
+            })
+        } else {
+          chartData = data
+        }
+        let charts: any = {
+          legendData: [],
+          seriesData: chartData,
+          selected: {},
+        }
+        data &&
+          data.length > 0 &&
+          data.forEach((item: any) => {
+            ;(charts.legendData as Array<string>).push(item.name as string)
+            ;(charts.selected as any)[item.name] = true
+          })
+        chartDataD.value = charts
+      } else {
+        ElMessage.error(res.data.desc)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+
+// 获取时间范围之内的菜品类别销售汇总 -  菜品分类占比 - 时间段
+const getTimeQuantumTypeData = () => {
+  getTimeQuantumType({
+    type: typeB.value,
+    start: stateTime.value,
+    end: endTime.value,
+  })
+    .then((res) => {
+      if (res.data.code == 200) {
+        const { data } = res.data
+        let chartData: any[] = []
+        if (typeB.value === 1) {
+          data.length > 0 &&
+            data.map((n: { name: string; percent: any; value: number }) => {
+              chartData.push({ ...n, value: n.value / 100 })
+            })
+        } else {
+          chartData = data
+        }
+        let charts: any = {
+          legendData: [],
+          seriesData: chartData,
+          selected: {},
+        }
+        data.length > 0 &&
+          data.forEach((item: any) => {
+            ;(charts.legendData as Array<string>).push(item.name as string)
+            ;(charts.selected as any)[item.name] = true
+          })
+        chartDataC.value = charts
+      } else {
+        ElMessage.error(res.data.desc)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+// 获取时间范围之内的菜品销售排行
+const getTimeQuantumDishesDataes = () => {
+  getTimeQuantumDishes({ start: stateTime.value, end: endTime.value })
+    .then((res) => {
+      if (res.data.code == 200) {
+        const { data } = res.data
+        let yData: number[] = []
+        data.series.length > 0 &&
+          data.series.map((n: number) => {
+            yData.push(n / 100)
+          })
+        const charts = { xData: data.xaxis, yData: yData }
+        chartDataB.value = charts
+      } else {
+        ElMessage.error(res.data.desc)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+
+init()
 </script>
 <style lang="scss" scoped>
 .dashboard {

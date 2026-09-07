@@ -15,7 +15,7 @@
           style="width: 15%"
           clearable
           @clear="init(orderStatus)"
-          @keyup.enter.native="initFun(orderStatus)"
+          @keyup.enter="initFun(orderStatus)"
         />
         <label style="margin-left: 20px">手机号：</label>
         <el-input
@@ -24,7 +24,7 @@
           style="width: 15%"
           clearable
           @clear="init(orderStatus)"
-          @keyup.enter.native="initFun(orderStatus)"
+          @keyup.enter="initFun(orderStatus)"
         />
         <label style="margin-left: 20px">下单时间：</label>
         <el-date-picker
@@ -62,7 +62,7 @@
           prop="订单状态"
           label="订单状态"
         >
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <span>{{ getOrderType(row) }}</span>
           </template>
         </el-table-column>
@@ -130,7 +130,7 @@
           label="实收金额"
           align="center"
         >
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <span>￥{{ (row.amount.toFixed(2) * 100) / 100 }}</span>
           </template>
         </el-table-column>
@@ -162,12 +162,12 @@
               : 'auto'
           "
         >
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <!-- <el-divider direction="vertical" /> -->
             <div class="before">
               <el-button
                 v-if="row.status === 2"
-                type="text"
+                link
                 class="blueBug"
                 @click="orderAccept(row), (isTableOperateBtn = true)"
               >
@@ -175,7 +175,7 @@
               </el-button>
               <el-button
                 v-if="row.status === 3"
-                type="text"
+                link
                 class="blueBug"
                 @click="cancelOrDeliveryOrComplete(3, row.id)"
               >
@@ -183,7 +183,7 @@
               </el-button>
               <el-button
                 v-if="row.status === 4"
-                type="text"
+                link
                 class="blueBug"
                 @click="cancelOrDeliveryOrComplete(4, row.id)"
               >
@@ -193,7 +193,7 @@
             <div class="middle">
               <el-button
                 v-if="row.status === 2"
-                type="text"
+                link
                 class="delBut"
                 @click="orderReject(row), (isTableOperateBtn = true)"
               >
@@ -201,7 +201,7 @@
               </el-button>
               <el-button
                 v-if="[1, 3, 4, 5].includes(row.status)"
-                type="text"
+                link
                 class="delBut"
                 @click="cancelOrder(row)"
               >
@@ -210,7 +210,7 @@
             </div>
             <div class="after">
               <el-button
-                type="text"
+                link
                 class="blueBug non"
                 @click="goDetail(row.id, row.status, row)"
               >
@@ -236,7 +236,7 @@
     <!-- 查看弹框部分 -->
     <el-dialog
       title="订单信息"
-      :visible.sync="dialogVisible"
+      v-model="dialogVisible"
       width="53%"
       :before-close="handleClose"
       class="order-dialog"
@@ -386,7 +386,7 @@
           </div>
         </div>
       </el-scrollbar>
-      <span v-if="dialogOrderStatus !== 6" slot="footer" class="dialog-footer">
+      <template #footer><span v-if="dialogOrderStatus !== 6" class="dialog-footer">
         <el-checkbox
           v-if="dialogOrderStatus === 2 && orderStatus === 2"
           v-model="isAutoNext"
@@ -427,12 +427,11 @@
           @click="cancelOrder(row)"
           >取消订单</el-button
         >
-      </span>
+      </span></template>
     </el-dialog>
-    <!-- 拒单，取消弹窗 -->
     <el-dialog
       :title="cancelDialogTitle + '原因'"
-      :visible.sync="cancelDialogVisible"
+      v-model="cancelDialogVisible"
       width="42%"
       :before-close="() => ((cancelDialogVisible = false), (cancelReason = ''))"
       class="cancelDialog"
@@ -462,18 +461,20 @@
           />
         </el-form-item>
       </el-form>
-      <span slot="footer" class="dialog-footer">
+      <template #footer><span class="dialog-footer">
         <el-button @click=";(cancelDialogVisible = false), (cancelReason = '')"
           >取 消</el-button
         >
         <el-button type="primary" @click="confirmCancel">确 定</el-button>
-      </span>
+      </span></template>
     </el-dialog>
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import HeadLable from '@/components/HeadLable/index.vue'
 import InputAutoComplete from '@/components/InputAutoComplete/index.vue'
 import TabChange from './tabChange.vue'
@@ -484,350 +485,335 @@ import {
   completeOrder,
   deliveryOrder,
   orderCancel,
-  orderReject,
-  orderAccept,
+  orderReject as orderRejectApi,
+  orderAccept as orderAcceptApi,
   getOrderListBy,
 } from '@/api/order'
 
-@Component({
-  components: {
-    HeadLable,
-    InputAutoComplete,
-    TabChange,
-    Empty,
+const route = useRoute()
+const router = useRouter()
+
+const defaultActivity = ref<any>(0)
+const orderStatics = ref<any>({})
+const row = ref<any>({})
+const isAutoNext = ref(true)
+const isTableOperateBtn = ref(true)
+const currentPageIndex = ref(0) //记录查看详情数据的index
+const orderId = ref('') //订单号
+const input = ref('') //搜索条件的订单号
+const phone = ref('') //搜索条件的手机号
+const valueTime = ref<any[]>([])
+const dialogVisible = ref(false) //详情弹窗
+const cancelDialogVisible = ref(false) //取消，拒单弹窗
+const cancelDialogTitle = ref('') //取消，拒绝弹窗标题
+const cancelReason = ref('')
+const remark = ref('') //自定义原因
+const counts = ref(0)
+const page = ref(1)
+const pageSize = ref(10)
+const tableData = ref<any[]>([])
+const diaForm = ref<any>([])
+const isSearch = ref(false)
+const orderStatus = ref(0) //列表字段展示所需订单状态,用于分页请求数据
+const dialogOrderStatus = ref(0) //弹窗所需订单状态，用于详情展示字段
+const cancelOrderReasonList = ref([
+  {
+    value: 1,
+    label: '订单量较多，暂时无法接单',
   },
-})
-export default class extends Vue {
-  private defaultActivity: any = 0
-  private orderStatics = {}
-  private row = {}
-  private isAutoNext = true
-  private isTableOperateBtn = true
-  private currentPageIndex = 0 //记录查看详情数据的index
-  private orderId = '' //订单号
-  private input = '' //搜索条件的订单号
-  private phone = '' //搜索条件的手机号
-  private valueTime = []
-  private dialogVisible = false //详情弹窗
-  private cancelDialogVisible = false //取消，拒单弹窗
-  private cancelDialogTitle = '' //取消，拒绝弹窗标题
-  private cancelReason = ''
-  private remark = '' //自定义原因
-  private counts: number = 0
-  private page: number = 1
-  private pageSize: number = 10
-  private tableData = []
-  private diaForm = []
-  private isSearch: boolean = false
-  private orderStatus = 0 //列表字段展示所需订单状态,用于分页请求数据
-  private dialogOrderStatus = 0 //弹窗所需订单状态，用于详情展示字段
-  private cancelOrderReasonList = [
-    {
-      value: 1,
-      label: '订单量较多，暂时无法接单',
-    },
-    {
-      value: 2,
-      label: '菜品已销售完，暂时无法接单',
-    },
-    {
-      value: 3,
-      label: '餐厅已打烊，暂时无法接单',
-    },
-    {
-      value: 0,
-      label: '自定义原因',
-    },
-  ]
+  {
+    value: 2,
+    label: '菜品已销售完，暂时无法接单',
+  },
+  {
+    value: 3,
+    label: '餐厅已打烊，暂时无法接单',
+  },
+  {
+    value: 0,
+    label: '自定义原因',
+  },
+])
 
-  private cancelrReasonList = [
-    {
-      value: 1,
-      label: '订单量较多，暂时无法接单',
-    },
-    {
-      value: 2,
-      label: '菜品已销售完，暂时无法接单',
-    },
-    {
-      value: 3,
-      label: '骑手不足无法配送',
-    },
-    {
-      value: 4,
-      label: '客户电话取消',
-    },
-    {
-      value: 0,
-      label: '自定义原因',
-    },
-  ]
-  private orderList = [
-    {
-      label: '全部订单',
-      value: 0,
-    },
-    {
-      label: '待付款',
-      value: 1,
-    },
-    {
-      label: '待接单',
-      value: 2,
-    },
-    {
-      label: '待派送',
-      value: 3,
-    },
-    {
-      label: '派送中',
-      value: 4,
-    },
-    {
-      label: '已完成',
-      value: 5,
-    },
-    {
-      label: '已取消',
-      value: 6,
-    },
-  ]
+const cancelrReasonList = ref([
+  {
+    value: 1,
+    label: '订单量较多，暂时无法接单',
+  },
+  {
+    value: 2,
+    label: '菜品已销售完，暂时无法接单',
+  },
+  {
+    value: 3,
+    label: '骑手不足无法配送',
+  },
+  {
+    value: 4,
+    label: '客户电话取消',
+  },
+  {
+    value: 0,
+    label: '自定义原因',
+  },
+])
+const orderList = ref([
+  {
+    label: '全部订单',
+    value: 0,
+  },
+  {
+    label: '待付款',
+    value: 1,
+  },
+  {
+    label: '待接单',
+    value: 2,
+  },
+  {
+    label: '待派送',
+    value: 3,
+  },
+  {
+    label: '派送中',
+    value: 4,
+  },
+  {
+    label: '已完成',
+    value: 5,
+  },
+  {
+    label: '已取消',
+    value: 6,
+  },
+])
 
-  created() {
-    this.init(Number(this.$route.query.status) || 0)
-  }
+function initFun(orderStatus: any) {
+  page.value = 1
+  init(orderStatus)
+}
 
-  mounted() {
-    //如果有值说明是消息通知点击进来的
-    if (
-      this.$route.query.orderId &&
-      this.$route.query.orderId !== 'undefined'
-    ) {
-      this.goDetail(this.$route.query.orderId, 2)
-    }
-    if (this.$route.query.status) {
-      this.defaultActivity = this.$route.query.status
-    }
-    // console.log(this.$route.query, 'this.$route')
-  }
+function change(activeIndex: any) {
+  if (activeIndex === orderStatus.value) return
+  init(activeIndex)
+  input.value = ''
+  phone.value = ''
+  valueTime.value = []
+  dialogOrderStatus.value = 0
+  router.push('/order')
+  console.log(activeIndex, '接收到了子组件的index')
+}
 
-  initFun(orderStatus) {
-    this.page = 1
-    this.init(orderStatus)
-  }
-
-  change(activeIndex) {
-    if (activeIndex === this.orderStatus) return
-    this.init(activeIndex)
-    this.input = ''
-    this.phone = ''
-    this.valueTime = []
-    this.dialogOrderStatus = 0
-    this.$router.push('/order')
-    console.log(activeIndex, '接收到了子组件的index')
-  }
-
-  //获取待处理，待派送，派送中数量
-  getOrderListBy3Status() {
-    getOrderListBy({})
-      .then((res) => {
-        if (res.data.code === 1) {
-          this.orderStatics = res.data.data
-        } else {
-          this.$message.error(res.data.msg)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-
-  init(activeIndex: number = 0, isSearch?) {
-    this.isSearch = isSearch
-    const params = {
-      page: this.page,
-      pageSize: this.pageSize,
-      number: this.input || undefined,
-      phone: this.phone || undefined,
-      beginTime:
-        this.valueTime && this.valueTime.length > 0
-          ? this.valueTime[0]
-          : undefined,
-      endTime:
-        this.valueTime && this.valueTime.length > 0
-          ? this.valueTime[1]
-          : undefined,
-      status: activeIndex || undefined,
-    }
-    getOrderDetailPage({ ...params })
-      .then((res) => {
-        if (res.data.code === 1) {
-          this.tableData = res.data.data.records
-          this.orderStatus = activeIndex
-          this.counts = Number(res.data.data.total)
-          this.getOrderListBy3Status()
-          if (
-            this.dialogOrderStatus === 2 &&
-            this.orderStatus === 2 &&
-            this.isAutoNext &&
-            !this.isTableOperateBtn &&
-            res.data.data.records.length > 1
-          ) {
-            const row = res.data.data.records[0]
-            this.goDetail(row.id, row.status, row)
-          } else {
-            return null
-          }
-        } else {
-          this.$message.error(res.data.msg)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-
-  getOrderType(row: any) {
-    if (row.status === 1) {
-      return '待付款'
-    } else if (row.status === 2) {
-      return '待接单'
-    } else if (row.status === 3) {
-      return '待派送'
-    } else if (row.status === 4) {
-      return '派送中'
-    } else if (row.status === 5) {
-      return '已完成'
-    } else if (row.status === 6) {
-      return '已取消'
-    } else {
-      return '退款'
-    }
-  }
-
-  // 查看详情
-  async goDetail(id: any, status: number, row?: any) {
-    // console.log(111, index, row)
-    this.diaForm = []
-    this.dialogVisible = true
-    this.dialogOrderStatus = status
-    this.orderId = id
-    const { data } = await queryOrderDetailById({ orderId: id })
-    this.diaForm = data.data
-    this.row = row || { id: this.$route.query.orderId, status: status }
-    if (this.$route.query.orderId) {
-      this.$router.push('/order')
-    }
-  }
-
-  //打开拒单弹窗
-  orderReject(row: any) {
-    this.cancelDialogVisible = true
-    this.orderId = row.id
-    this.dialogOrderStatus = row.status
-    this.cancelDialogTitle = '拒绝'
-    this.dialogVisible = false
-    this.cancelReason = ''
-  }
-
-  //接单
-  orderAccept(row: any) {
-    this.orderId = row.id
-    this.dialogOrderStatus = row.status
-    orderAccept({ id: this.orderId })
-      .then((res) => {
-        if (res.data.code === 1) {
-          this.$message.success('操作成功')
-          this.orderId = ''
-          // this.dialogOrderStatus = 0
-          this.dialogVisible = false
-          this.init(this.orderStatus)
-        } else {
-          this.$message.error(res.data.msg)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-
-  //打开取消订单弹窗
-  cancelOrder(row: any) {
-    this.cancelDialogVisible = true
-    this.orderId = row.id
-    this.dialogOrderStatus = row.status
-    this.cancelDialogTitle = '取消'
-    this.dialogVisible = false
-    this.cancelReason = ''
-  }
-
-  //确认取消或拒绝订单并填写原因
-  confirmCancel(type) {
-    if (!this.cancelReason) {
-      return this.$message.error(`请选择${this.cancelDialogTitle}原因`)
-    } else if (this.cancelReason === '自定义原因' && !this.remark) {
-      return this.$message.error(`请输入${this.cancelDialogTitle}原因`)
-    }
-
-    ;(this.cancelDialogTitle === '取消' ? orderCancel : orderReject)({
-      id: this.orderId,
-      // eslint-disable-next-line standard/computed-property-even-spacing
-      [this.cancelDialogTitle === '取消' ? 'cancelReason' : 'rejectionReason']:
-        this.cancelReason === '自定义原因' ? this.remark : this.cancelReason,
+//获取待处理，待派送，派送中数量
+function getOrderListBy3Status() {
+  getOrderListBy({})
+    .then((res) => {
+      if (res.data.code === 1) {
+        orderStatics.value = res.data.data
+      } else {
+        ElMessage.error(res.data.msg)
+      }
     })
-      .then((res) => {
-        if (res.data.code === 1) {
-          this.$message.success('操作成功')
-          this.cancelDialogVisible = false
-          this.orderId = ''
-          // this.dialogOrderStatus = 0
-          this.init(this.orderStatus)
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+
+function init(activeIndex: number = 0, isSearchVal?: boolean) {
+  isSearch.value = isSearchVal
+  const params = {
+    page: page.value,
+    pageSize: pageSize.value,
+    number: input.value || undefined,
+    phone: phone.value || undefined,
+    beginTime:
+      valueTime.value && valueTime.value.length > 0
+        ? valueTime.value[0]
+        : undefined,
+    endTime:
+      valueTime.value && valueTime.value.length > 0
+        ? valueTime.value[1]
+        : undefined,
+    status: activeIndex || undefined,
+  }
+  getOrderDetailPage({ ...params })
+    .then((res) => {
+      if (res.data.code === 1) {
+        tableData.value = res.data.data.records
+        orderStatus.value = activeIndex
+        counts.value = Number(res.data.data.total)
+        getOrderListBy3Status()
+        if (
+          dialogOrderStatus.value === 2 &&
+          orderStatus.value === 2 &&
+          isAutoNext.value &&
+          !isTableOperateBtn.value &&
+          res.data.data.records.length > 1
+        ) {
+          const firstRow = res.data.data.records[0]
+          goDetail(firstRow.id, firstRow.status, firstRow)
         } else {
-          this.$message.error(res.data.msg)
+          return null
         }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
+      } else {
+        ElMessage.error(res.data.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
 
-  // 派送，完成
-  cancelOrDeliveryOrComplete(status: number, id: string) {
-    const params = {
-      status,
-      id,
-    }
-    ;(status === 3 ? deliveryOrder : completeOrder)(params)
-      .then((res) => {
-        if (res.data.code === 1) {
-          this.$message.success('操作成功')
-          this.orderId = ''
-          // this.dialogOrderStatus = 0
-          this.dialogVisible = false
-          this.init(this.orderStatus)
-        } else {
-          this.$message.error(res.data.msg)
-        }
-      })
-      .catch((err) => {
-        this.$message.error('请求出错了：' + err.message)
-      })
-  }
-
-  handleClose() {
-    this.dialogVisible = false
-  }
-
-  private handleSizeChange(val: any) {
-    this.pageSize = val
-    this.init(this.orderStatus)
-  }
-
-  private handleCurrentChange(val: any) {
-    this.page = val
-    this.init(this.orderStatus)
+function getOrderType(row: any) {
+  if (row.status === 1) {
+    return '待付款'
+  } else if (row.status === 2) {
+    return '待接单'
+  } else if (row.status === 3) {
+    return '待派送'
+  } else if (row.status === 4) {
+    return '派送中'
+  } else if (row.status === 5) {
+    return '已完成'
+  } else if (row.status === 6) {
+    return '已取消'
+  } else {
+    return '退款'
   }
 }
+
+// 查看详情
+async function goDetail(id: any, status: number, rowData?: any) {
+  diaForm.value = []
+  dialogVisible.value = true
+  dialogOrderStatus.value = status
+  orderId.value = id
+  const { data } = await queryOrderDetailById({ orderId: id })
+  diaForm.value = data.data
+  row.value = rowData || { id: route.query.orderId, status: status }
+  if (route.query.orderId) {
+    router.push('/order')
+  }
+}
+
+//打开拒单弹窗
+function orderReject(rowData: any) {
+  cancelDialogVisible.value = true
+  orderId.value = rowData.id
+  dialogOrderStatus.value = rowData.status
+  cancelDialogTitle.value = '拒绝'
+  dialogVisible.value = false
+  cancelReason.value = ''
+}
+
+//接单
+function orderAccept(rowData: any) {
+  orderId.value = rowData.id
+  dialogOrderStatus.value = rowData.status
+  orderAcceptApi({ id: orderId.value })
+    .then((res) => {
+      if (res.data.code === 1) {
+        ElMessage.success('操作成功')
+        orderId.value = ''
+        dialogVisible.value = false
+        init(orderStatus.value)
+      } else {
+        ElMessage.error(res.data.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+
+//打开取消订单弹窗
+function cancelOrder(rowData: any) {
+  cancelDialogVisible.value = true
+  orderId.value = rowData.id
+  dialogOrderStatus.value = rowData.status
+  cancelDialogTitle.value = '取消'
+  dialogVisible.value = false
+  cancelReason.value = ''
+}
+
+//确认取消或拒绝订单并填写原因
+function confirmCancel(type: any) {
+  if (!cancelReason.value) {
+    return ElMessage.error(`请选择${cancelDialogTitle.value}原因`)
+  } else if (cancelReason.value === '自定义原因' && !remark.value) {
+    return ElMessage.error(`请输入${cancelDialogTitle.value}原因`)
+  }
+
+  ;(cancelDialogTitle.value === '取消' ? orderCancel : orderRejectApi)({
+    id: orderId.value,
+    [cancelDialogTitle.value === '取消' ? 'cancelReason' : 'rejectionReason']:
+      cancelReason.value === '自定义原因' ? remark.value : cancelReason.value,
+  })
+    .then((res) => {
+      if (res.data.code === 1) {
+        ElMessage.success('操作成功')
+        cancelDialogVisible.value = false
+        orderId.value = ''
+        init(orderStatus.value)
+      } else {
+        ElMessage.error(res.data.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+
+// 派送，完成
+function cancelOrDeliveryOrComplete(status: number, id: string) {
+  const params = {
+    status,
+    id,
+  }
+  ;(status === 3 ? deliveryOrder : completeOrder)(params)
+    .then((res) => {
+      if (res.data.code === 1) {
+        ElMessage.success('操作成功')
+        orderId.value = ''
+        dialogVisible.value = false
+        init(orderStatus.value)
+      } else {
+        ElMessage.error(res.data.msg)
+      }
+    })
+    .catch((err) => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+
+function handleClose() {
+  dialogVisible.value = false
+}
+
+function handleSizeChange(val: any) {
+  pageSize.value = val
+  init(orderStatus.value)
+}
+
+function handleCurrentChange(val: any) {
+  page.value = val
+  init(orderStatus.value)
+}
+
+init(Number(route.query.status) || 0)
+
+onMounted(() => {
+  //如果有值说明是消息通知点击进来的
+  if (
+    route.query.orderId &&
+    route.query.orderId !== 'undefined'
+  ) {
+    goDetail(route.query.orderId, 2)
+  }
+  if (route.query.status) {
+    defaultActivity.value = route.query.status
+  }
+})
 </script>
 
 <style lang="scss" scoped>

@@ -21,18 +21,16 @@
       </ul>
 
       <el-button
-        icon="iconfont icon-clear"
         class="right-el-button"
         v-if="status === 1 && baseData.length > 0"
         @click="handleBatch"
-        >全部已读</el-button
+        ><i class="iconfont icon-clear"></i>全部已读</el-button
       >
       <el-button
-        icon="iconfont icon-clear"
         class="right-el-button onbutton"
         disabled
         v-else
-        >全部已读</el-button
+        ><i class="iconfont icon-clear"></i>全部已读</el-button
       >
     </div>
     <div class="container newBox" :class="{ hContainer: baseData.length }">
@@ -196,174 +194,156 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Inject } from 'vue-property-decorator'
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { ElMessage } from 'element-plus'
 import Empty from '@/components/Empty/index.vue'
-import { getNewData, setNewData } from '@/utils/cookies'
-import { AppModule } from '@/store/modules/app'
-// 接口
+import { useAppStore } from '@/store/modules/app'
 import {
   getInformData,
   batchMsg,
   setStatus,
-  getCountUnread,
+  getCountUnread as getCountUnreadApi,
 } from '@/api/inform'
-@Component({
-  name: 'Inform',
-  components: {
-    Empty,
-  },
+
+const appStore = useAppStore()
+
+const activeIndex = ref(0)
+const shopShow = ref(false)
+const counts = ref<number>(0)
+const page = ref<number>(1)
+const pageSize = ref<number>(10)
+const status = ref(1)
+const baseData = ref<any[]>([])
+const showIndex = ref(0)
+const isSearch = ref<boolean>(false)
+const isActive = ref(false)
+
+const tabList = computed(() => {
+  return [
+    {
+      label: '未读',
+      value: 1,
+    },
+    {
+      label: '已读',
+      value: 2,
+    },
+  ]
 })
-export default class extends Vue {
-  // @Inject('reload') readonly reload!: Function
-  private activeIndex = 0
-  private shopShow = false
-  private counts: number = 0
-  private page: number = 1
-  private pageSize: number = 10
-  private status = 1
-  private baseData = []
-  // private ountUnread = 0 as any
-  private showIndex = 0
-  private isSearch: boolean = false
-  private isActive: boolean = false
+const ountUnread = computed(() => appStore.statusNumber)
 
-  get tabList() {
-    return [
-      {
-        label: '未读',
-        value: 1,
-        // num: this.ountUnread,
-      },
-      {
-        label: '已读',
-        value: 2,
-        // num: 0,
-      },
-    ]
+// 获取列表数据
+const getData = async () => {
+  const parent = {
+    pageNum: page.value,
+    pageSize: pageSize.value,
+    status: status.value,
   }
-  get ountUnread() {
-    return AppModule.statusNumber
-  }
-  created() {
-    this.getData()
-  }
-  // 获取列表数据
-  async getData() {
-    const parent = {
-      pageNum: this.page,
-      pageSize: this.pageSize,
-      status: this.status,
-    }
-    const { data } = await getInformData(parent)
-    if (data.code === 1) {
-      this.baseData = data.data.records
-      this.counts = data.data.total
-      let objNew = {} as any
-      let arrDetails = []
-      this.baseData.forEach((val) => {
-        // 处理后端返回的状订单字符串转义
-        const arrContent = val.content.split(' ')
-        // 处理催单、闭店详情数据
-        val.arrNew = arrContent
-        objNew = { ...val }
-        objNew.details = eval('(' + objNew.details + ')')
-        arrDetails.push(objNew)
-      })
-
-      this.baseData = arrDetails
-      // this.$message.success('操作成功！')
-    } else {
-      this.$message.error(data.msg)
-    }
-  }
-
-  // 全部已读
-  async handleBatch() {
-    const ids = []
-    this.baseData.forEach((val) => {
-      ids.push(val.id)
+  const { data } = await getInformData(parent)
+  if (data.code === 1) {
+    baseData.value = data.data.records
+    counts.value = data.data.total
+    let objNew = {} as any
+    let arrDetails: any[] = []
+    baseData.value.forEach((val: any) => {
+      const arrContent = val.content.split(' ')
+      val.arrNew = arrContent
+      objNew = { ...val }
+      objNew.details = eval('(' + objNew.details + ')')
+      arrDetails.push(objNew)
     })
-    const { data } = await batchMsg(ids)
-    if (data.code === 1) {
-      // this.status = 2
-      // this.activeIndex = 1
-      this.getCountUnread()
-      this.getData()
-      // this.$message.success('操作成功！')
-    } else {
-      this.$message.error(data.msg)
-    }
-  }
-  // 设置单个订单已读
-  async handleSetStatus(id) {
-    const { data } = await setStatus(id)
-    if (data.code === 1) {
-      // this.status = 2
-      // this.activeIndex = 1
-      if (!this.isActive) {
-        this.getCountUnread()
-        this.getData()
-      }
 
-      // this.reload()
-      // this.$message.success('操作成功！')
-    } else {
-      this.$message.error(data.msg)
-    }
-  }
-  // 获取未读消息
-  async getCountUnread() {
-    const { data } = await getCountUnread()
-    if (data.code === 1) {
-      AppModule.StatusNumber(data.data)
-      // this.$message.success('操作成功！')
-    } else {
-      this.$message.error(data.msg)
-    }
-  }
-  // 触发已读未读按钮
-  handleClass(index) {
-    this.activeIndex = index
-    if (index === 0) {
-      this.status = 1
-    } else {
-      this.status = 2
-    }
-    this.getData()
-  }
-  // 下拉菜单显示
-  toggleShow(id, index) {
-    this.shopShow = true
-    this.showIndex = index
-    let t = 3
-    let timer = setInterval(() => {
-      t--
-      if (t === 0) {
-        if (this.status === 1) {
-          this.isActive = true
-          this.handleSetStatus(id)
-        }
-
-        clearInterval(timer)
-      }
-    }, 1000)
-  }
-  // 下拉菜单隐藏
-  mouseLeaves(index) {
-    this.shopShow = false
-    this.showIndex = index
-  }
-  private handleSizeChange(val: any) {
-    this.pageSize = val
-    this.getData()
-  }
-
-  private handleCurrentChange(val: any) {
-    this.page = val
-    this.getData()
+    baseData.value = arrDetails
+  } else {
+    ElMessage.error(data.msg)
   }
 }
+
+// 全部已读
+const handleBatch = async () => {
+  const ids: any[] = []
+  baseData.value.forEach((val: any) => {
+    ids.push(val.id)
+  })
+  const { data } = await batchMsg(ids)
+  if (data.code === 1) {
+    getCountUnread()
+    getData()
+  } else {
+    ElMessage.error(data.msg)
+  }
+}
+
+// 设置单个订单已读
+const handleSetStatus = async (id: any) => {
+  const { data } = await setStatus(id)
+  if (data.code === 1) {
+    if (!isActive.value) {
+      getCountUnread()
+      getData()
+    }
+  } else {
+    ElMessage.error(data.msg)
+  }
+}
+
+// 获取未读消息
+const getCountUnread = async () => {
+  const { data } = await getCountUnreadApi()
+  if (data.code === 1) {
+    appStore.StatusNumber(data.data)
+  } else {
+    ElMessage.error(data.msg)
+  }
+}
+
+// 触发已读未读按钮
+const handleClass = (index: any) => {
+  activeIndex.value = index
+  if (index === 0) {
+    status.value = 1
+  } else {
+    status.value = 2
+  }
+  getData()
+}
+
+// 下拉菜单显示
+const toggleShow = (id: any, index: any) => {
+  shopShow.value = true
+  showIndex.value = index
+  let t = 3
+  let timer = setInterval(() => {
+    t--
+    if (t === 0) {
+      if (status.value === 1) {
+        isActive.value = true
+        handleSetStatus(id)
+      }
+
+      clearInterval(timer)
+    }
+  }, 1000)
+}
+
+// 下拉菜单隐藏
+const mouseLeaves = (index: any) => {
+  shopShow.value = false
+  showIndex.value = index
+}
+
+const handleSizeChange = (val: any) => {
+  pageSize.value = val
+  getData()
+}
+
+const handleCurrentChange = (val: any) => {
+  page.value = val
+  getData()
+}
+
+getData()
 </script>
 
 <style lang="scss" scoped>

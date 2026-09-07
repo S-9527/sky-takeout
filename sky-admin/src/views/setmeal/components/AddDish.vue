@@ -57,182 +57,164 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Prop, Vue, Watch } from 'vue-property-decorator'
-// import {getDishTypeList, getDishListType} from '@/api/dish';
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+import type { PropType } from 'vue'
 import { getCategoryList, queryDishList } from '@/api/dish'
+import { ElMessage } from 'element-plus'
 import Empty from '@/components/Empty/index.vue'
 
-@Component({
-  name: 'selectInput',
-  components: {
-    Empty
-  }
+const props = defineProps({
+  value: { type: Number, default: '' },
+  checkList: { type: Array as PropType<any[]>, default: () => [] },
+  seachKey: { type: String, default: '' }
 })
-export default class extends Vue {
-  @Prop({ default: '' }) private value!: number
-  @Prop({ default: [] }) private checkList!: any[]
-  @Prop({ default: '' }) private seachKey!: string
-  private dishType: [] = []
-  private dishList: [] = []
-  private allDishList: any[] = []
-  private dishListCache: any[] = []
-  private keyInd = 0
-  private searchValue: string = ''
-  public checkedList: any[] = []
-  private checkedListAll: any[] = []
-  private ids: any = new Set()
-  created() {
-    this.init()
-  }
 
-  @Watch('seachKey')
-  private seachKeyChange(value: any) {
+const emit = defineEmits(['checkList'])
+
+const dishType = ref<any[]>([])
+const dishList = ref<any[]>([])
+const allDishList = ref<any[]>([])
+const dishListCache = ref<any[]>([])
+const keyInd = ref(0)
+const searchValue = ref<string>('')
+const checkedList = ref<any[]>([])
+const checkedListAll = ref<any[]>([])
+const ids = ref<any>(new Set())
+
+watch(
+  () => props.seachKey,
+  (value: any) => {
     if (value.trim()) {
-      this.getDishForName(this.seachKey)
+      getDishForName(props.seachKey)
     }
   }
+)
 
-  public init() {
-    // 菜单列表数据获取
-    this.getDishType()
-    // 初始化选项
-    this.checkedList = this.checkList.map((it: any) => it.name)
-    // 已选项的菜品-详细信息
-    this.checkedListAll = this.checkList.reverse()
-  }
-  // 获取套餐分类
-  public getDishType() {
-    getCategoryList({ type: 1 }).then(res => {
-      if (res && res.data && res.data.code === 1) {
-        this.dishType = res.data.data
-        this.getDishList(res.data.data[0].id)
-      } else {
-        this.$message.error(res.data.msg)
-      }
-      // if (res.data.code == 200) {
-      //   const { data } = res.data
-      //   this.   = data
-      //   this.getDishList(data[0].category_id)
-      // } else {
-      //   this.$message.error(res.data.desc)
-      // }
-    })
-  }
+const getDishType = () => {
+  getCategoryList({ type: 1 }).then(res => {
+    if (res && res.data && res.data.code === 1) {
+      dishType.value = res.data.data
+      getDishList(res.data.data[0].id)
+    } else {
+      ElMessage.error(res.data.msg)
+    }
+  })
+}
 
-  // 通过套餐ID获取菜品列表分类
-  private getDishList(id: number) {
-    queryDishList({ categoryId: id }).then(res => {
-      if (res && res.data && res.data.code === 1) {
-        if (res.data.data.length == 0) {
-          this.dishList = []
-          return
-        }
-        let newArr = res.data.data
-        newArr.forEach((n: any) => {
-          n.dishId = n.id
-          n.copies = 1
-          // n.dishCopies = 1
-          n.dishName = n.name
-        })
-        this.dishList = newArr
-        if (!this.ids.has(id)) {
-          this.allDishList = [...this.allDishList, ...newArr]
-        }
-        this.ids.add(id)
-      } else {
-        this.$message.error(res.data.msg)
+// 通过套餐ID获取菜品列表分类
+const getDishList = (id: number) => {
+  queryDishList({ categoryId: id }).then(res => {
+    if (res && res.data && res.data.code === 1) {
+      if (res.data.data.length == 0) {
+        dishList.value = []
+        return
       }
-    })
-  }
-
-  // 关键词收搜菜品列表分类
-  private getDishForName(name: any) {
-    queryDishList({ name }).then(res => {
-      if (res && res.data && res.data.code === 1) {
-        let newArr = res.data.data
-        newArr.forEach((n: any) => {
-          n.dishId = n.id
-          n.dishName = n.name
-        })
-        this.dishList = newArr
-      } else {
-        this.$message.error(res.data.msg)
-      }
-    })
-  }
-  // 点击分类
-  private checkTypeHandle(ind: number, id: any) {
-    this.keyInd = ind
-    this.getDishList(id)
-  }
-  // 添加菜品
-  private checkedListHandle(value: [string]) {
-    // TODO 实现倒序 由于value是组件内封装无法从前面添加 所有取巧处理倒序添加
-    // 倒序展示 - 数据处理前反正 为正序
-    this.checkedListAll.reverse()
-    // value 是一个只包含菜品名的数组 需要从 dishList中筛选出 对应的详情
-    // 操作添加菜品
-    const list = this.allDishList.filter((item: any) => {
-      let data
-      value.forEach((it: any) => {
-        if (item.name == it) {
-          data = item
-        }
+      let newArr = res.data.data
+      newArr.forEach((n: any) => {
+        n.dishId = n.id
+        n.copies = 1
+        n.dishName = n.name
       })
-      return data
+      dishList.value = newArr
+      if (!ids.value.has(id)) {
+        allDishList.value = [...allDishList.value, ...newArr]
+      }
+      ids.value.add(id)
+    } else {
+      ElMessage.error(res.data.msg)
+    }
+  })
+}
+
+// 关键词收搜菜品列表分类
+const getDishForName = (name: any) => {
+  queryDishList({ name }).then(res => {
+    if (res && res.data && res.data.code === 1) {
+      let newArr = res.data.data
+      newArr.forEach((n: any) => {
+        n.dishId = n.id
+        n.dishName = n.name
+      })
+      dishList.value = newArr
+    } else {
+      ElMessage.error(res.data.msg)
+    }
+  })
+}
+
+// 点击分类
+const checkTypeHandle = (ind: number, id: any) => {
+  keyInd.value = ind
+  getDishList(id)
+}
+
+// 添加菜品
+const checkedListHandle = (value: [string]) => {
+  checkedListAll.value.reverse()
+  const list = allDishList.value.filter((item: any) => {
+    let data
+    value.forEach((it: any) => {
+      if (item.name == it) {
+        data = item
+      }
     })
-    // 编辑的时候需要与已有菜品合并
-    // 与当前请求下的选择性 然后去重就是当前的列表
-    const dishListCat = [...this.checkedListAll, ...list]
-    let arrData: any[] = []
-    this.checkedListAll = dishListCat.filter((item: any) => {
-      let allArrDate
-      if (arrData.length == 0) {
+    return data
+  })
+  const dishListCat = [...checkedListAll.value, ...list]
+  let arrData: any[] = []
+  checkedListAll.value = dishListCat.filter((item: any) => {
+    let allArrDate
+    if (arrData.length == 0) {
+      arrData.push(item.name)
+      allArrDate = item
+    } else {
+      const st = arrData.some(it => item.name == it)
+      if (!st) {
         arrData.push(item.name)
         allArrDate = item
-      } else {
-        const st = arrData.some(it => item.name == it)
-        if (!st) {
-          arrData.push(item.name)
-          allArrDate = item
-        }
       }
-      return allArrDate
-    })
-    // 如果是减菜 走这里
-    if (value.length < arrData.length) {
-      this.checkedListAll = this.checkedListAll.filter((item: any) => {
-        if (value.some(it => it == item.name)) {
-          return item
-        }
-      })
     }
-    this.$emit('checkList', this.checkedListAll)
-    // 数据处理完反转为倒序
-    this.checkedListAll.reverse()
+    return allArrDate
+  })
+  if (value.length < arrData.length) {
+    checkedListAll.value = checkedListAll.value.filter((item: any) => {
+      if (value.some(it => it == item.name)) {
+        return item
+      }
+    })
   }
-
-  open(done: any) {
-    this.dishListCache = JSON.parse(JSON.stringify(this.checkList))
-  }
-
-  close(done: any) {
-    this.checkList = this.dishListCache
-  }
-
-  // 删除
-  private delCheck(name: any) {
-    const index = this.checkedList.findIndex(it => it === name)
-    const indexAll = this.checkedListAll.findIndex(
-      (it: any) => it.name === name
-    )
-
-    this.checkedList.splice(index, 1)
-    this.checkedListAll.splice(indexAll, 1)
-    this.$emit('checkList', this.checkedListAll)
-  }
+  emit('checkList', checkedListAll.value)
+  checkedListAll.value.reverse()
 }
+
+const init = () => {
+  getDishType()
+  checkedList.value = props.checkList.map((it: any) => it.name)
+  checkedListAll.value = props.checkList.reverse()
+}
+
+const open = (done: any) => {
+  dishListCache.value = JSON.parse(JSON.stringify(props.checkList))
+}
+
+const close = (done: any) => {
+  ;(props as any).checkList = dishListCache.value
+}
+
+// 删除
+const delCheck = (name: any) => {
+  const index = checkedList.value.findIndex(it => it === name)
+  const indexAll = checkedListAll.value.findIndex(
+    (it: any) => it.name === name
+  )
+
+  checkedList.value.splice(index, 1)
+  checkedListAll.value.splice(indexAll, 1)
+  emit('checkList', checkedListAll.value)
+}
+
+init()
 </script>
 <style lang="scss">
 .addDish {

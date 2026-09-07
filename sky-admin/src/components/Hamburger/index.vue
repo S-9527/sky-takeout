@@ -1,22 +1,18 @@
 <template>
   <div :class="[{'is-active': isActive}]" @click="toggleClick">
-    <svg-icon name="hamburger" width="20" height="20" />
+    <img class="svg-icon" src="@/assets/icons/hamburger.svg" width="20" height="20" />
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator'
-
-@Component({
-  'name': 'Hamburger'
+<script setup lang="ts">
+defineProps({
+  isActive: { type: Boolean, default: false }
 })
 
-export default class extends Vue {
-  @Prop({ 'default': false }) private isActive!: boolean
+const emit = defineEmits(['toggleClick'])
 
-  private toggleClick() {
-    this.$emit('toggleClick');
-  }
+const toggleClick = () => {
+  emit('toggleClick')
 }
 </script>
 

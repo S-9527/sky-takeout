@@ -12,14 +12,10 @@
   </div>
 </template>
 
-<script lang='ts'>
-import { Vue, Component, Prop } from 'vue-property-decorator'
-@Component({
-  name: 'Empty'
+<script setup lang="ts">
+defineProps({
+  isSearch: { type: Boolean, default: false }
 })
-export default class extends Vue {
-  @Prop({ default: false }) isSearch: boolean //用来区分是搜索还是默认无数据
-}
 </script>
 <style scoped lang="scss">
 .empty-box {

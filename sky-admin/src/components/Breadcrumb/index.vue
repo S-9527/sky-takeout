@@ -21,66 +21,43 @@
   </el-breadcrumb>
 </template>
 
-<script lang="ts">
-import pathToRegexp from 'path-to-regexp'
-import { Component, Vue, Watch } from 'vue-property-decorator'
-import { RouteRecord, Route } from 'vue-router'
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import type { RouteRecordNormalized } from 'vue-router'
 
-@Component({
-  'name': 'Breadcrumb'
-})
+const route = useRoute()
+const router = useRouter()
+const breadcrumbs = ref<RouteRecordNormalized[]>([])
 
-export default class extends Vue {
-  private breadcrumbs: RouteRecord[] = []
-  @Watch('$route')
-  private onRouteChange(route: Route) {
-    // if you go to the redirect page, do not update the breadcrumbs
-    if (route.path.startsWith('/redirect/')) {
+const getBreadcrumb = () => {
+  let matched = route.matched.filter(
+    (item) => item.meta && (item.meta as any).title
+  )
+  breadcrumbs.value = matched.filter((item) => {
+    return item.meta && (item.meta as any).title && (item.meta as any).breadcrumb !== false
+  })
+}
+
+watch(
+  () => route.path,
+  (path) => {
+    if (path.startsWith('/redirect/')) {
       return
     }
-
-    this.getBreadcrumb()
+    getBreadcrumb()
   }
+)
 
-  created () {
-    this.getBreadcrumb()
-  }
+getBreadcrumb()
 
-  private getBreadcrumb () {
-    let matched = this.$route.matched.filter(
-      item => item.meta && item.meta.title
-    )
-    const first = matched[0]
-    // if (!this.isDashboard(first)) {
-    //   matched = [
-    //     { path: '/', meta: { title: '集团管理' } } as RouteRecord
-    //   ].concat(matched)
-    // }
-    this.breadcrumbs = matched.filter(item => {
-      return item.meta && item.meta.title && item.meta.breadcrumb !== false
-    })
+const handleLink = (item: any) => {
+  const { redirect, path } = item
+  if (redirect) {
+    router.push(redirect)
+    return
   }
-
-  private isDashboard (route: RouteRecord) {
-    const name = route && route.meta && route.meta.title
-    return name === '集团管理'
-  }
-
-  private pathCompile (path: string) {
-    // To solve this problem https://github.com/PanJiaChen/vue-element-admin/issues/561
-    const { params } = this.$route
-    const toPath = pathToRegexp.compile(path)
-    return toPath(params)
-  }
-
-  private handleLink (item: any) {
-    const { redirect, path } = item
-    if (redirect) {
-      this.$router.push(redirect)
-      return
-    }
-    this.$router.push(this.pathCompile(path))
-  }
+  router.push(path)
 }
 </script>
 

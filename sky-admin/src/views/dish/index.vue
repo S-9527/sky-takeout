@@ -8,7 +8,7 @@
                   style="width: 14%"
                   clearable
                   @clear="init"
-                  @keyup.enter.native="initFun" />
+                  @keyup.enter="initFun" />
 
         <label style="margin-right: 10px; margin-left: 20px">菜品分类：</label>
         <el-select v-model="categoryId"
@@ -66,26 +66,27 @@
                          label="菜品名称" />
         <el-table-column prop="image"
                          label="图片">
-          <template slot-scope="{ row }">
+          <template #default="{ row }">
             <el-image style="width: 80px; height: 40px; border: none; cursor: pointer"
                       :src="row.image">
-              <div slot="error"
-                   class="image-slot">
-                <img src="./../../assets/noImg.png"
-                     style="width: auto; height: 40px; border: none">
-              </div>
+              <template #error>
+                <div class="image-slot">
+                  <img src="./../../assets/noImg.png"
+                       style="width: auto; height: 40px; border: none">
+                </div>
+              </template>
             </el-image>
           </template>
         </el-table-column>
         <el-table-column prop="categoryName"
                          label="菜品分类" />
         <el-table-column label="售价">
-          <template slot-scope="scope">
+          <template #default="scope">
             <span style="margin-right: 10px">￥{{ (scope.row.price ).toFixed(2)*100/100 }}</span>
           </template>
         </el-table-column>
         <el-table-column label="售卖状态">
-          <template slot-scope="scope">
+          <template #default="scope">
             <div class="tableColumn-status"
                  :class="{ 'stop-use': String(scope.row.status) === '0' }">
               {{ String(scope.row.status) === '0' ? '停售' : '启售' }}
@@ -97,20 +98,20 @@
         <el-table-column label="操作"
                          width="250"
                          align="center">
-          <template slot-scope="scope">
-            <el-button type="text"
+          <template #default="scope">
+            <el-button link
                        size="small"
                        class="blueBug"
                        @click="addDishtype(scope.row.id)">
               修改
             </el-button>
-            <el-button type="text"
+            <el-button link
                        size="small"
                        class="delBut"
                        @click="deleteHandle('单删', scope.row.id)">
               删除
             </el-button>
-            <el-button type="text"
+            <el-button link
                        size="small"
                        class="non"
                        :class="{
@@ -137,194 +138,185 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import HeadLable from '@/components/HeadLable/index.vue'
 import {
   getDishPage,
   editDish,
   deleteDish,
   dishStatusByStatus,
-  dishCategoryList
+  dishCategoryList as dishCategoryListApi
 } from '@/api/dish'
 import InputAutoComplete from '@/components/InputAutoComplete/index.vue'
 import Empty from '@/components/Empty/index.vue'
 import { baseUrl } from '@/config.json'
 
-@Component({
-  name: 'DishType',
-  components: {
-    HeadLable,
-    InputAutoComplete,
-    Empty
+const router = useRouter()
+const input = ref<any>('')
+const counts = ref(0)
+const page = ref(1)
+const pageSize = ref(10)
+const checkList = ref<string[]>([])
+const tableData = ref<any[]>([])
+const dishState = ref<any>('')
+const dishCategoryList = ref<any[]>([])
+const categoryId = ref<any>('')
+const dishStatus = ref<any>('')
+const isSearch = ref(false)
+const saleStatus: any = [
+  {
+    value: 0,
+    label: '停售'
+  },
+  {
+    value: 1,
+    label: '启售'
   }
-})
-export default class extends Vue {
-  private input: any = ''
-  private counts: number = 0
-  private page: number = 1
-  private pageSize: number = 10
-  private checkList: string[] = []
-  private tableData: [] = []
-  private dishState = ''
-  private dishCategoryList = []
-  private categoryId = ''
-  private dishStatus = ''
-  private isSearch: boolean = false
-  private saleStatus: any = [
-    {
-      value: 0,
-      label: '停售'
-    },
-    {
-      value: 1,
-      label: '启售'
-    }
-  ]
+]
 
-  created() {
-    this.init()
-    this.getDishCategoryList()
-  }
+init()
+getDishCategoryList()
 
-  initProp(val) {
-    this.input = val
-    this.initFun()
-  }
+const initProp = (val) => {
+  input.value = val
+  initFun()
+}
 
-  initFun() {
-    this.page = 1
-    this.init()
-  }
+const initFun = () => {
+  page.value = 1
+  init()
+}
 
-  private async init(isSearch?) {
-    this.isSearch = isSearch
-    await getDishPage({
-      page: this.page,
-      pageSize: this.pageSize,
-      name: this.input || undefined,
-      categoryId: this.categoryId || undefined,
-      status: this.dishStatus
+async function init(searchValue?) {
+  isSearch.value = searchValue
+  await getDishPage({
+    page: page.value,
+    pageSize: pageSize.value,
+    name: input.value || undefined,
+    categoryId: categoryId.value || undefined,
+    status: dishStatus.value
+  })
+    .then(res => {
+      if (res.data.code === 1) {
+        tableData.value = res.data && res.data.data && res.data.data.records
+        counts.value = Number(res.data.data.total)
+      }
     })
+    .catch(err => {
+      ElMessage.error('请求出错了：' + err.message)
+    })
+}
+
+// 添加
+const addDishtype = (st: string) => {
+  if (st === 'add') {
+    router.push({ path: '/dish/add' })
+  } else {
+    router.push({ path: '/dish/add', query: { id: st } })
+  }
+}
+
+// 删除
+const deleteHandle = (type: string, id: any) => {
+  if (type === '批量' && id === null) {
+    if (checkList.value.length === 0) {
+      return ElMessage.error('请选择删除对象')
+    }
+  }
+  ElMessageBox.confirm('确认删除该菜品, 是否继续?', '确定删除', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    deleteDish(type === '批量' ? checkList.value.join(',') : id)
       .then(res => {
-        if (res.data.code === 1) {
-          this.tableData = res.data && res.data.data && res.data.data.records
-          this.counts = Number(res.data.data.total)
+        if (res && res.data && res.data.code === 1) {
+          ElMessage.success('删除成功！')
+          init()
+        } else {
+          ElMessage.error(res.data.msg)
         }
       })
       .catch(err => {
-        this.$message.error('请求出错了：' + err.message)
+        ElMessage.error('请求出错了：' + err.message)
       })
-  }
-
-  // 添加
-  private addDishtype(st: string) {
-    if (st === 'add') {
-      this.$router.push({ path: '/dish/add' })
-    } else {
-      this.$router.push({ path: '/dish/add', query: { id: st } })
-    }
-  }
-
-  // 删除
-  private deleteHandle(type: string, id: any) {
-    if (type === '批量' && id === null) {
-      if (this.checkList.length === 0) {
-        return this.$message.error('请选择删除对象')
+  })
+}
+//获取菜品分类下拉数据
+function getDishCategoryList() {
+  dishCategoryListApi({
+    type: 1
+  })
+    .then(res => {
+      if (res && res.data && res.data.code === 1) {
+        dishCategoryList.value = (
+          res.data &&
+          res.data.data &&
+          res.data.data
+        ).map(item => {
+          return { value: item.id, label: item.name }
+        })
       }
+    })
+    .catch(() => {})
+}
+
+//状态更改
+const statusHandle = (row: any) => {
+  let params: any = {}
+  if (typeof row === 'string') {
+    if (checkList.value.length === 0) {
+      ElMessage.error('批量操作，请先勾选操作菜品！')
+      return false
     }
-    this.$confirm('确认删除该菜品, 是否继续?', '确定删除', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }).then(() => {
-      deleteDish(type === '批量' ? this.checkList.join(',') : id)
-        .then(res => {
-          if (res && res.data && res.data.code === 1) {
-            this.$message.success('删除成功！')
-            this.init()
-          } else {
-            this.$message.error(res.data.msg)
-          }
-        })
-        .catch(err => {
-          this.$message.error('请求出错了：' + err.message)
-        })
-    })
+    params.id = checkList.value.join(',')
+    params.status = row
+  } else {
+    params.id = row.id
+    params.status = row.status ? '0' : '1'
   }
-  //获取菜品分类下拉数据
-  private getDishCategoryList() {
-    dishCategoryList({
-      type: 1
-    })
+  dishState.value = params
+  ElMessageBox.confirm('确认更改该菜品状态?', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    // 起售停售---批量起售停售接口
+    dishStatusByStatus(dishState.value)
       .then(res => {
         if (res && res.data && res.data.code === 1) {
-          this.dishCategoryList = (
-            res.data &&
-            res.data.data &&
-            res.data.data
-          ).map(item => {
-            return { value: item.id, label: item.name }
-          })
+          ElMessage.success('菜品状态已经更改成功！')
+          init()
+        } else {
+          ElMessage.error(res.data.msg)
         }
       })
-      .catch(() => {})
-  }
+      .catch(err => {
+        ElMessage.error('请求出错了：' + err.message)
+      })
+  })
+}
 
-  //状态更改
-  private statusHandle(row: any) {
-    let params: any = {}
-    if (typeof row === 'string') {
-      if (this.checkList.length === 0) {
-        this.$message.error('批量操作，请先勾选操作菜品！')
-        return false
-      }
-      params.id = this.checkList.join(',')
-      params.status = row
-    } else {
-      params.id = row.id
-      params.status = row.status ? '0' : '1'
-    }
-    this.dishState = params
-    this.$confirm('确认更改该菜品状态?', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }).then(() => {
-      // 起售停售---批量起售停售接口
-      dishStatusByStatus(this.dishState)
-        .then(res => {
-          if (res && res.data && res.data.code === 1) {
-            this.$message.success('菜品状态已经更改成功！')
-            this.init()
-          } else {
-            this.$message.error(res.data.msg)
-          }
-        })
-        .catch(err => {
-          this.$message.error('请求出错了：' + err.message)
-        })
-    })
-  }
+// 全部操作
+const handleSelectionChange = (val: any) => {
+  let checkArr: any[] = []
+  val.forEach((n: any) => {
+    checkArr.push(n.id)
+  })
+  checkList.value = checkArr
+}
 
-  // 全部操作
-  private handleSelectionChange(val: any) {
-    let checkArr: any[] = []
-    val.forEach((n: any) => {
-      checkArr.push(n.id)
-    })
-    this.checkList = checkArr
-  }
+const handleSizeChange = (val: any) => {
+  pageSize.value = val
+  init()
+}
 
-  private handleSizeChange(val: any) {
-    this.pageSize = val
-    this.init()
-  }
-
-  private handleCurrentChange(val: any) {
-    this.page = val
-    this.init()
-  }
+const handleCurrentChange = (val: any) => {
+  page.value = val
+  init()
 }
 </script>
 <style lang="scss">

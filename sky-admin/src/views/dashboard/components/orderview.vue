@@ -57,16 +57,14 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator'
+<script setup lang="ts">
+import { computed } from 'vue'
 import { getday } from '@/utils/formValidate'
-@Component({
-  name: 'Orderview',
+const props = defineProps({
+  orderviewData: {
+    type: Object,
+    default: () => ({}),
+  },
 })
-export default class extends Vue {
-  @Prop() private orderviewData!: any
-  get days() {
-    return getday()
-  }
-}
+const days = computed(() => getday())
 </script>

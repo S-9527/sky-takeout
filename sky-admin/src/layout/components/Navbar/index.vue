@@ -48,7 +48,7 @@
     </div>
     <!-- 营业状态弹层 -->
     <el-dialog title="营业状态设置"
-               :visible.sync="dialogVisible"
+               v-model="dialogVisible"
                width="25%"
                :show-close="false">
       <el-radio-group v-model="setStatus">
@@ -61,12 +61,13 @@
           <span>当前餐厅处于打烊状态，仅接受营业时间内的预定订单，可点击营业中手动恢复营业状态。</span>
         </el-radio>
       </el-radio-group>
-      <span slot="footer"
-            class="dialog-footer">
-        <el-button @click="dialogVisible = false">取 消</el-button>
-        <el-button type="primary"
-                   @click="handleSave">确 定</el-button>
-      </span>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="dialogVisible = false">取 消</el-button>
+          <el-button type="primary"
+                     @click="handleSave">确 定</el-button>
+        </span>
+      </template>
     </el-dialog>
     <!-- end -->
     <!-- 修改密码 -->
@@ -76,230 +77,167 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator'
-import { AppModule } from '@/store/modules/app'
-import { UserModule } from '@/store/modules/user'
-import Breadcrumb from '@/components/Breadcrumb/index.vue'
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElNotification } from 'element-plus'
+import { useAppStore } from '@/store/modules/app'
+import { useUserStore } from '@/store/modules/user'
 import Hamburger from '@/components/Hamburger/index.vue'
-import { getStatus, setStatus } from '@/api/users'
+import { getStatus as getApiStatus, setStatus as setApiStatus } from '@/api/users'
 import Cookies from 'js-cookie'
-import { debounce, throttle } from '@/utils/common'
-import { setNewData, getNewData } from '@/utils/cookies'
-
-// 接口
-import { getCountUnread } from '@/api/inform'
-// 修改密码弹层
 import Password from '../components/password.vue'
 
-@Component({
-  name: 'Navbar',
-  components: {
-    Breadcrumb,
-    Hamburger,
-    Password,
-  },
+const router = useRouter()
+const appStore = useAppStore()
+const userStore = useUserStore()
+
+const restKey = 0
+const websocket = ref<WebSocket | null>(null)
+const audioVo = ref<HTMLAudioElement>()
+const audioVo2 = ref<HTMLAudioElement>()
+const shopShow = ref(false)
+const dialogVisible = ref(false)
+const status = ref(1)
+const setStatus = ref(1)
+const dialogFormVisible = ref(false)
+
+const sidebar = computed(() => appStore.sidebar)
+
+const name = computed(() => {
+  const user_info = Cookies.get('user_info')
+  return (userStore.userInfo as any).name
+    ? (userStore.userInfo as any).name
+    : user_info
+      ? JSON.parse(user_info).name
+      : ''
 })
-export default class extends Vue {
-  private storeId = this.getStoreId
-  private restKey: number = 0
-  private websocket = null
-  private newOrder = ''
-  private message = ''
-  private audioIsPlaying = false
-  private audioPaused = false
-  private statusValue = true
-  private audioUrl: './../../../assets/preview.mp3'
-  private shopShow = false
-  private dialogVisible = false
-  private status = 1
-  private setStatus = 1
-  private dialogFormVisible = false
-  private ountUnread = 0
-  // get ountUnread() {
-  //   return Number(getNewData())
-  // }
-  get sidebar() {
-    return AppModule.sidebar
-  }
 
-  get device() {
-    return AppModule.device.toString()
-  }
+onMounted(() => {
+  document.addEventListener('click', handleClose)
+  getStatus()
+})
 
-  getuserInfo() {
-    return UserModule.userInfo
+onUnmounted(() => {
+  if (websocket.value) {
+    websocket.value.close()
   }
+})
 
-  get name() {
-    return (UserModule.userInfo as any).name
-      ? (UserModule.userInfo as any).name
-      : JSON.parse(Cookies.get('user_info') as any).name
-  }
-
-  get getStoreId() {
-    let storeId = ''
-    if (UserModule.storeId) {
-      storeId = UserModule.storeId
-    } else if ((UserModule.userInfo as any).stores != null) {
-      storeId = (UserModule.userInfo as any).stores[0].storeId
-    }
-    return storeId
-  }
-  mounted() {
-    document.addEventListener('click', this.handleClose)
-    //console.log(this.$store.state.app.statusNumber)
-    // const msg = {
-    //   data: {
-    //     type: 2,
-    //     content: '订单1653904906519客户催单，已下单23分钟，仍未接单。',
-    //     details: '434'
-    //   }
-    // }
-    this.getStatus()
-  }
-  created() {
-    this.webSocket()
-  }
-  onload() {
-  }
-  destroyed() {
-    this.websocket.close() //离开路由之后断开websocket连接
-  }
-
-  // 添加新订单提示弹窗
-  webSocket() {
-    const that = this as any
-    let clientId = Math.random().toString(36).substr(2)
-    let socketUrl = process.env.VUE_APP_SOCKET_URL + clientId
-    console.log(socketUrl, 'socketUrl')
-    if (typeof WebSocket == 'undefined') {
-      that.$notify({
-        title: '提示',
-        message: '当前浏览器无法接收实时报警信息，请使用谷歌浏览器！',
-        type: 'warning',
-        duration: 0,
-      })
-    } else {
-      this.websocket = new WebSocket(socketUrl)
-      // 监听socket打开
-      this.websocket.onopen = function () {
-        console.log('浏览器WebSocket已打开')
-      }
-      // 监听socket消息接收
-      this.websocket.onmessage = function (msg) {
-        // 转换为json对象
-        that.$refs.audioVo.currentTime = 0
-        that.$refs.audioVo2.currentTime = 0
-
-        console.log(msg, JSON.parse(msg.data), 'msg')
-        // const h = this.$createElement
-        const jsonMsg = JSON.parse(msg.data)
-        if (jsonMsg.type === 1) {
-          that.$refs.audioVo.play()
-        } else if (jsonMsg.type === 2) {
-          that.$refs.audioVo2.play()
-        }
-        that.$notify({
-          title: jsonMsg.type === 1 ? '待接单' : '催单',
-          duration: 0,
-          dangerouslyUseHTMLString: true,
-          onClick: () => {
-            that.$router
-              .push(`/order?orderId=${jsonMsg.orderId}`)
-              .catch((err) => {
-                console.log(err)
-              })
-            setTimeout(() => {
-              location.reload()
-            }, 100)
-          },
-          // 这里也可以把返回信息加入到message中显示
-          message: `${
-            jsonMsg.type === 1
-              ? `<span>您有1个<span style=color:#419EFF>订单待处理</span>,${jsonMsg.content},请及时接单</span>`
-              : `${jsonMsg.content}<span style='color:#419EFF;cursor: pointer'>去处理</span>`
-          }`,
-        })
-      }
-      // 监听socket错误
-      this.websocket.onerror = function () {
-        that.$notify({
-          title: '错误',
-          message: '服务器错误，无法接收实时报警信息',
-          type: 'error',
-          duration: 0,
-        })
-      }
-      // 监听socket关闭
-      this.websocket.onclose = function () {
-        console.log('WebSocket已关闭')
-      }
-    }
-  }
-
-  private toggleSideBar() {
-    AppModule.ToggleSideBar(false)
-  }
-  // 退出
-  private async logout() {
-    this.$store.dispatch('LogOut').then(() => {
-      // location.href = '/'
-      this.$router.replace({ path: '/login' })
+// 添加新订单提示弹窗
+const webSocket = () => {
+  const clientId = Math.random().toString(36).substr(2)
+  const socketUrl = import.meta.env.VITE_SOCKET_URL + clientId
+  console.log(socketUrl, 'socketUrl')
+  if (typeof WebSocket === 'undefined') {
+    ElNotification({
+      title: '提示',
+      message: '当前浏览器无法接收实时报警信息，请使用谷歌浏览器！',
+      type: 'warning',
+      duration: 0
     })
-    // this.$router.push(`/login?redirect=${this.$route.fullPath}`)
-  }
-  // 获取未读消息
-  async getCountUnread() {
-    const { data } = await getCountUnread()
-    if (data.code === 1) {
-      // this.ountUnread = data.data
-      AppModule.StatusNumber(data.data)
-      // setNewData(data.data)
-      // this.$message.success('操作成功！')
-    } else {
-      this.$message.error(data.msg)
+  } else {
+    websocket.value = new WebSocket(socketUrl)
+    // 监听socket打开
+    websocket.value.onopen = function () {
+      console.log('浏览器WebSocket已打开')
+    }
+    // 监听socket消息接收
+    websocket.value.onmessage = function (msg) {
+      if (audioVo.value) audioVo.value.currentTime = 0
+      if (audioVo2.value) audioVo2.value.currentTime = 0
+
+      console.log(msg, JSON.parse(msg.data), 'msg')
+      const jsonMsg = JSON.parse(msg.data)
+      if (jsonMsg.type === 1) {
+        audioVo.value?.play()
+      } else if (jsonMsg.type === 2) {
+        audioVo2.value?.play()
+      }
+      ElNotification({
+        title: jsonMsg.type === 1 ? '待接单' : '催单',
+        duration: 0,
+        dangerouslyUseHTMLString: true,
+        onClick: () => {
+          router
+            .push(`/order?orderId=${jsonMsg.orderId}`)
+            .catch((err) => {
+              console.log(err)
+            })
+          setTimeout(() => {
+            location.reload()
+          }, 100)
+        },
+        message: `${
+          jsonMsg.type === 1
+            ? `<span>您有1个<span style=color:#419EFF>订单待处理</span>,${jsonMsg.content},请及时接单</span>`
+            : `${jsonMsg.content}<span style='color:#419EFF;cursor: pointer'>去处理</span>`
+        }`
+      })
+    }
+    // 监听socket错误
+    websocket.value.onerror = function () {
+      ElNotification({
+        title: '错误',
+        message: '服务器错误，无法接收实时报警信息',
+        type: 'error',
+        duration: 0
+      })
+    }
+    // 监听socket关闭
+    websocket.value.onclose = function () {
+      console.log('WebSocket已关闭')
     }
   }
-  // 营业状态
-  async getStatus() {
-    const { data } = await getStatus()
-    this.status = data.data
-    this.setStatus = this.status
+}
+webSocket()
+
+const toggleSideBar = () => {
+  appStore.ToggleSideBar(false)
+}
+// 退出
+const logout = async () => {
+  userStore.LogOut().then(() => {
+    router.replace({ path: '/login' })
+  })
+}
+// 营业状态
+const getStatus = async () => {
+  const { data } = await getApiStatus()
+  status.value = data.data
+  setStatus.value = status.value
+}
+// 下拉菜单显示
+const toggleShow = () => {
+  shopShow.value = true
+}
+// 下拉菜单隐藏
+const mouseLeaves = () => {
+  shopShow.value = false
+}
+// 触发空白处下来菜单关闭
+const handleClose = () => {
+  // shopShow.value = false
+}
+// 设置营业状态
+const handleStatus = () => {
+  dialogVisible.value = true
+}
+// 营业状态设置
+const handleSave = async () => {
+  const { data } = await setApiStatus(setStatus.value)
+  if (data.code === 1) {
+    dialogVisible.value = false
+    getStatus()
   }
-  // 下拉菜单显示
-  toggleShow() {
-    this.shopShow = true
-  }
-  // 下拉菜单隐藏
-  mouseLeaves() {
-    this.shopShow = false
-  }
-  // 触发空白处下来菜单关闭
-  handleClose() {
-    // clearTimeout(this.leave)
-    // this.shopShow = false
-  }
-  // 设置营业状态
-  handleStatus() {
-    this.dialogVisible = true
-  }
-  // 营业状态设置
-  async handleSave() {
-    const { data } = await setStatus(this.setStatus)
-    if (data.code === 1) {
-      this.dialogVisible = false
-      this.getStatus()
-    }
-  }
-  // 修改密码
-  handlePwd() {
-    this.dialogFormVisible = true
-  }
-  // 关闭密码编辑弹层
-  handlePwdClose() {
-    this.dialogFormVisible = false
-  }
+}
+// 修改密码
+const handlePwd = () => {
+  dialogFormVisible.value = true
+}
+// 关闭密码编辑弹层
+const handlePwdClose = () => {
+  dialogFormVisible.value = false
 }
 </script>
 
@@ -394,11 +332,6 @@ export default class extends Vue {
         }
       }
     }
-
-    // .avatar-container {
-    // margin-right: 30px;
-
-    // }
   }
   .rightStatus {
     height: 100%;
@@ -442,6 +375,7 @@ export default class extends Vue {
       // padding: 11px 12px 10px;
       padding-left: 12px;
       text-align: left;
+      justify-content: flex-start;
       border: 0 none;
       height: 32px;
       line-height: 32px;
@@ -501,9 +435,6 @@ export default class extends Vue {
   .el-notification__title {
     margin-bottom: 14px;
     color: #333;
-    .el-notification__content {
-      color: #333;
-    }
   }
 }
 .navbar {
@@ -555,10 +486,6 @@ export default class extends Vue {
       padding: 14px 22px;
       margin-top: 20px;
     }
-    .el-radio__input.is-checked + .el-radio__label {
-      span {
-      }
-    }
   }
   .el-badge__content.is-fixed {
     top: 24px;
@@ -567,7 +494,6 @@ export default class extends Vue {
     height: 18px;
     font-size: 10px;
     line-height: 16px;
-    font-size: 10px;
     border-radius: 50%;
     padding: 0;
   }
@@ -605,15 +531,8 @@ export default class extends Vue {
   line-height: 32px;
   padding: 0 0 5px;
   height: 105px;
-  // .active {
-  //   top: 0;
-  //   left: 0;
-  // }
   .userList {
     width: 95%;
-    // // margin-top: -5px;
-    // position: absolute;
-    // top: 35px;
     padding-left: 5px;
   }
   p {
@@ -623,7 +542,6 @@ export default class extends Vue {
     padding: 0 5px 0 7px;
     i {
       margin-left: 10px;
-
       vertical-align: middle;
       margin-top: 4px;
       float: right;
@@ -637,22 +555,4 @@ export default class extends Vue {
   color: #419eff;
   padding: 0 5px;
 }
-// .el-dropdown{
-//   .el-button--primary{
-//     height: 32px;
-//     background: rgba(255,255,255,0.52);
-//     border-radius: 4px;
-//     padding-top: 0px;
-//     padding-bottom: 0px;
-//   }
-//   margin-top: 2px;
-// }
-// .el-popper{
-//   top: 45px !important;
-//   padding-top: 50px !important;
-//   border-radius: 0 0 4px 4px;
-// }
-// .el-popper[x-placement^=bottom] .popper__arrow::after,.popper__arrow{
-//   display: none !important;
-// }
 </style>

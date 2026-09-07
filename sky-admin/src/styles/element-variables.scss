@@ -1,24 +1,38 @@
-/* Element Variables */
+/* Element Plus Variables Override */
 
-// Override Element UI variables
+:root {
+  --el-color-primary: #FFC200;
+  --el-color-primary-light-3: #fdd24c;
+  --el-color-primary-light-5: #ffe37f;
+  --el-color-primary-light-7: #ffefb2;
+  --el-color-primary-light-8: #fff5cc;
+  --el-color-primary-light-9: #fffbef;
+  --el-color-primary-dark-2: #efb602;
 
-$--color-success: #13ce66;
-$--color-danger: #ff4949;
-$--color-info: #5d5d5d;
-$--button-font-weight: 400;
-$--border-color-light: #dfe4ed;
-$--border-color-lighter: #e6ebf5;
-$--table-border:1px solid #dfe6ec;
-$--color-primary:#FFC200;
-$--color-warning:#FFB302;
-$--color-text-primary:#20232A;
-$--color-text-regular:#818693;
-$--color-text-placeholder:#BAC0CD;
-$--border-color-base:#D8DDE3;
-$--background-color-base:#F3F4F7;
+  --el-color-success: #13ce66;
+  --el-color-danger: #ff4949;
+  --el-color-info: #5d5d5d;
+  --el-color-warning: #FFB302;
 
-// Icon font path, required
-$--font-path: '~element-ui/lib/theme-chalk/fonts';
+  --el-text-color-primary: #20232A;
+  --el-text-color-regular: #818693;
+  --el-text-color-placeholder: #BAC0CD;
 
-// Apply overrided variables in Element UI
-@import '~element-ui/packages/theme-chalk/src/index';
+  --el-border-color: #D8DDE3;
+  --el-border-color-light: #dfe4ed;
+  --el-border-color-lighter: #e6ebf5;
+
+  --el-fill-color-blank: #ffffff;
+  --el-fill-color-light: #F3F4F7;
+  --el-fill-color-base: #F3F4F7;
+}
+
+.el-table .el-table__cell {
+  padding: 12px 0;
+}
+
+.pageList {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}

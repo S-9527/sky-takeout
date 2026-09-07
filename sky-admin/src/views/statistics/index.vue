@@ -22,8 +22,8 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
+<script setup lang="ts">
+import { ref, nextTick } from 'vue'
 import {
   get1stAndToday,
   past7Day,
@@ -49,115 +49,94 @@ import UserStatistics from './components/userStatistics.vue'
 import OrderStatistics from './components/orderStatistics.vue'
 // 排名
 import Top from './components/top10.vue'
-@Component({
-  name: 'Dashboard',
-  components: {
-    TitleIndex,
-    TurnoverStatistics,
-    UserStatistics,
-    OrderStatistics,
-    Top,
-  },
-})
-export default class extends Vue {
-  private overviewData = {} as any
-  private flag = 2
-  private tateData = []
-  private turnoverData = {} as any
-  private userData = {}
-  private orderData = {
-    data: {},
-  } as any
-  private top10Data = {}
-  created() {
-    //this.init(this.flag)
-    this.getTitleNum(2);
-  }
-  // 获取基本数据
-  init(begin: any,end:any) {
-    this.$nextTick(() => {
-      this.getTurnoverStatisticsData(begin,end)
-      this.getUserStatisticsData(begin,end)
-      this.getOrderStatisticsData(begin,end)
-      this.getTopData(begin,end)
-    })
-  }
 
-  // 获取营业额统计数据
-  async getTurnoverStatisticsData(begin: any ,end:any) {
-    const data = await getTurnoverStatistics({ begin: begin,end:end })
-    const turnoverData = data.data.data
-    this.turnoverData = {
-      dateList: turnoverData.dateList.split(','),
-      turnoverList: turnoverData.turnoverList.split(',')
-    }
-    // this.tateData = this.turnoverData.date
-    // const arr = []
-    // this.tateData.forEach((val) => {
-    //   let date = new Date()
-    //   let year = date.getFullYear()
-    //   arr.push(year + '-' + val)
-    // })
-    // this.tateData = arr
-  }
-  // 获取用户统计数据
-  async getUserStatisticsData(begin: any ,end:any) {
-    const data = await getUserStatistics({ begin: begin,end:end })
-    const userData = data.data.data
-    this.userData = {
-      dateList: userData.dateList.split(','),
-      totalUserList: userData.totalUserList.split(','),
-      newUserList: userData.newUserList.split(','),
-    }
-  }
-  // 获取订单统计数据
-  async getOrderStatisticsData(begin: any ,end:any) {
-    const data = await getOrderStatistics({begin: begin,end:end })
-    const orderData = data.data.data
-    this.orderData = {
-      data: {
-        dateList: orderData.dateList.split(','),
-        orderCountList: orderData.orderCountList.split(','),
-        validOrderCountList: orderData.validOrderCountList.split(','),
-        //orderCompletionRateList: orderData.orderCompletionRateList.split(','),
-      },
-      totalOrderCount: orderData.totalOrderCount,
-      validOrderCount: orderData.validOrderCount,
-      orderCompletionRate: orderData.orderCompletionRate
-    }
-  }
-  // 获取排行数据
-  async getTopData(begin: any ,end:any) {
-    const data = await getTop({begin: begin,end:end })
-    const top10Data = data.data.data
-    this.top10Data = {
-      nameList: top10Data.nameList.split(',').reverse(),
-      numberList: top10Data.numberList.split(',').reverse(),
-    }
-    console.log(this.top10Data)
-  }
-  // 获取当前选中的tab时间
-  getTitleNum(data) {
-    switch (data) {
-      case 1:
-        this.tateData = get1stAndToday()
-        break
-      case 2:
-        this.tateData = past7Day()
-        break
-      case 3:
-        this.tateData = past30Day()
-        break
-      case 4:
-        this.tateData = pastWeek()
-        break
-      case 5:
-        this.tateData = pastMonth()
-        break
-    }
-    this.init(this.tateData[0],this.tateData[1])
+const overviewData = ref<any>({})
+const flag = ref(2)
+const tateData = ref<any[]>([])
+const turnoverData = ref<any>({})
+const userData = ref<any>({})
+const orderData = ref<any>({
+  data: {},
+})
+const top10Data = ref<any>({})
+
+// 获取基本数据
+function init(begin: any, end: any) {
+  nextTick(() => {
+    getTurnoverStatisticsData(begin, end)
+    getUserStatisticsData(begin, end)
+    getOrderStatisticsData(begin, end)
+    getTopData(begin, end)
+  })
+}
+
+// 获取营业额统计数据
+async function getTurnoverStatisticsData(begin: any, end: any) {
+  const data = await getTurnoverStatistics({ begin: begin, end: end })
+  const turnoverDataRes = data.data.data
+  turnoverData.value = {
+    dateList: turnoverDataRes.dateList.split(','),
+    turnoverList: turnoverDataRes.turnoverList.split(','),
   }
 }
+// 获取用户统计数据
+async function getUserStatisticsData(begin: any, end: any) {
+  const data = await getUserStatistics({ begin: begin, end: end })
+  const userDataRes = data.data.data
+  userData.value = {
+    dateList: userDataRes.dateList.split(','),
+    totalUserList: userDataRes.totalUserList.split(','),
+    newUserList: userDataRes.newUserList.split(','),
+  }
+}
+// 获取订单统计数据
+async function getOrderStatisticsData(begin: any, end: any) {
+  const data = await getOrderStatistics({ begin: begin, end: end })
+  const orderDataRes = data.data.data
+  orderData.value = {
+    data: {
+      dateList: orderDataRes.dateList.split(','),
+      orderCountList: orderDataRes.orderCountList.split(','),
+      validOrderCountList: orderDataRes.validOrderCountList.split(','),
+    },
+    totalOrderCount: orderDataRes.totalOrderCount,
+    validOrderCount: orderDataRes.validOrderCount,
+    orderCompletionRate: orderDataRes.orderCompletionRate
+  }
+}
+// 获取排行数据
+async function getTopData(begin: any, end: any) {
+  const data = await getTop({ begin: begin, end: end })
+  const top10DataRes = data.data.data
+  top10Data.value = {
+    nameList: top10DataRes.nameList.split(',').reverse(),
+    numberList: top10DataRes.numberList.split(',').reverse(),
+  }
+  console.log(top10Data.value)
+}
+// 获取当前选中的tab时间
+function getTitleNum(data) {
+  switch (data) {
+    case 1:
+      tateData.value = get1stAndToday()
+      break
+    case 2:
+      tateData.value = past7Day()
+      break
+    case 3:
+      tateData.value = past30Day()
+      break
+    case 4:
+      tateData.value = pastWeek()
+      break
+    case 5:
+      tateData.value = pastMonth()
+      break
+  }
+  init(tateData.value[0], tateData.value[1])
+}
+
+getTitleNum(2)
 </script>
 
 <style lang="scss">

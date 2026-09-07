@@ -1,5 +1,5 @@
 export const checkProcessEnv =() => {
-  return process.env.VUE_APP_DELETE_PERMISSIONS==='true'
+  return import.meta.env.VITE_DELETE_PERMISSIONS === 'true'
 }
 export const debounce=(fn, time)=> {
   time = time || 200

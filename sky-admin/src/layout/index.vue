@@ -1,7 +1,7 @@
 <template>
   <div :class="classObj" class="app-wrapper">
     <div
-      v-if="classObj.mobile && sidebar.opened"
+      v-if="classObj.mobile && sidebarState.opened"
       class="drawer-bg"
       @click="handleClickOutside"
     />
@@ -13,34 +13,29 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component } from 'vue-property-decorator'
-import { mixins } from 'vue-class-component'
-import { DeviceType, AppModule } from '@/store/modules/app'
+<script setup lang="ts">
+import { computed } from 'vue'
+import { DeviceType, useAppStore } from '@/store/modules/app'
 import { AppMain, Navbar, Sidebar } from './components'
-import ResizeMixin from './mixin/resize'
+import useResize from './mixin/resize'
 
-@Component({
-  name: 'Layout',
-  components: {
-    AppMain,
-    Navbar,
-    Sidebar,
-  },
+useResize()
+
+const appStore = useAppStore()
+const sidebarState = computed(() => appStore.sidebar)
+const device = computed(() => appStore.device)
+
+const classObj = computed(() => {
+  return {
+    hideSidebar: !sidebarState.value.opened,
+    openSidebar: sidebarState.value.opened,
+    withoutAnimation: sidebarState.value.withoutAnimation,
+    mobile: device.value === DeviceType.Mobile
+  }
 })
-export default class extends mixins(ResizeMixin) {
-  get classObj() {
-    return {
-      hideSidebar: !this.sidebar.opened,
-      openSidebar: this.sidebar.opened,
-      withoutAnimation: this.sidebar.withoutAnimation,
-      mobile: this.device === DeviceType.Mobile,
-    }
-  }
 
-  private handleClickOutside() {
-    AppModule.CloseSideBar(false)
-  }
+const handleClickOutside = () => {
+  appStore.CloseSideBar(false)
 }
 </script>
 

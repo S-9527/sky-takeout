@@ -3,7 +3,7 @@
     <HeadLable :title="title"
                :goback="true" />
     <div class="container">
-      <el-form ref="ruleForm"
+      <el-form ref="ruleFormRef"
                :model="ruleForm"
                :rules="rules"
                :inline="false"
@@ -92,203 +92,160 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue } from 'vue-property-decorator'
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import HeadLable from '@/components/HeadLable/index.vue'
 import { queryEmployeeById, addEmployee, editEmployee } from '@/api/employee'
 
-@Component({
-  name: 'addShop',
-  components: {
-    HeadLable
-  }
+const route = useRoute()
+const router = useRouter()
+
+const title = ref('添加员工')
+const actionType = ref('')
+const ruleForm = ref({
+  name: '',
+  phone: '',
+  sex: '男',
+  idNumber: '',
+  username: ''
 })
-export default class extends Vue {
-  private title = '添加员工'
-  private actionType = ''
-  private ruleForm = {
-    name: '',
-    phone: '',
-    // 'password': '',
-    // 'rePassword': '',
-    sex: '男',
-    idNumber: '',
-    username: ''
+const ruleFormRef = ref<any>()
+
+const isCellPhone = (val: any) => {
+  if (!/^1(3|4|5|6|7|8)\d{9}$/.test(val)) {
+    return false
+  } else {
+    return true
   }
+}
 
-  // private validateRepassword (rule:any, value:any, callback:any) {
-  //   if (value === '') {
-  //     callback(new Error('请再次输入密码'))
-  //   } else if (value !== this.ruleForm.password) {
-  //     callback(new Error('两次输入密码不一致!'))
-  //   } else {
-  //     callback()
-  //   }
-  // }
-
-  private isCellPhone(val: any) {
-    if (!/^1(3|4|5|6|7|8)\d{9}$/.test(val)) {
-      return false
-    } else {
-      return true
-    }
+const checkphone = (rule: any, value: any, callback: any) => {
+  if (value == '') {
+    callback(new Error('请输入手机号'))
+  } else if (!isCellPhone(value)) {
+    callback(new Error('请输入正确的手机号!'))
+  } else {
+    callback()
   }
+}
 
-  private checkphone(rule: any, value: any, callback: any) {
-    // let phoneReg = /(^1[3|4|5|6|7|8|9]\d{9}$)|(^09\d{8}$)/;
-    if (value == '') {
-      callback(new Error('请输入手机号'))
-    } else if (!this.isCellPhone(value)) {
-      //引入methods中封装的检查手机格式的方法
-      callback(new Error('请输入正确的手机号!'))
-    } else {
-      callback()
-    }
+const validID = (rule: any, value: any, callback: any) => {
+  let reg = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/
+  if (value == '') {
+    callback(new Error('请输入身份证号码'))
+  } else if (reg.test(value)) {
+    callback()
+  } else {
+    callback(new Error('身份证号码不正确'))
   }
+}
 
-  private validID(rule: any, value: any, callback: any) {
-    // 身份证号码为15位或者18位，15位时全为数字，18位前17位为数字，最后一位是校验位，可能为数字或字符X
-    let reg = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/
-    if (value == '') {
-      callback(new Error('请输入身份证号码'))
-    } else if (reg.test(value)) {
-      callback()
-    } else {
-      callback(new Error('身份证号码不正确'))
-    }
-  }
-
-  get rules() {
-    return {
-      name: [
-        {
-          required: true,
-          // 'message': '请输入员工姓名',
-          validator: (rule: any, value: string, callback: Function) => {
-            if (!value) {
-              callback(new Error('请输入员工姓名'))
+const rules = computed(() => {
+  return {
+    name: [
+      {
+        required: true,
+        validator: (rule: any, value: string, callback: Function) => {
+          if (!value) {
+            callback(new Error('请输入员工姓名'))
+          } else {
+            callback()
+          }
+        },
+        trigger: 'blur'
+      }
+    ],
+    username: [
+      {
+        required: true,
+        validator: (rule: any, value: string, callback: Function) => {
+          if (!value) {
+            callback(new Error('请输入账号'))
+          } else {
+            const reg = /^([a-z]|[0-9]){3,20}$/
+            if (!reg.test(value)) {
+              callback(new Error('账号输入不符，请输入3-20个字符'))
             } else {
-              // const reg = /^[\u4e00-\u9fa5_a-zA-Z]{1,12}$/
-              // if (!reg.test(value)) {
-              //   callback(new Error('姓名输入不符，请输入1-12个字符'))
-              // } else {
-              //   callback()
-              // }
               callback()
             }
-          },
-          trigger: 'blur'
-        }
-      ],
-      username: [
-        {
-          required: true,
-          // message: '请输入账号',
-          validator: (rule: any, value: string, callback: Function) => {
-            if (!value) {
-              callback(new Error('请输入账号'))
-            } else {
-              const reg = /^([a-z]|[0-9]){3,20}$/
-              if (!reg.test(value)) {
-                callback(new Error('账号输入不符，请输入3-20个字符'))
-              } else {
-                callback()
-              }
-            }
-          },
-          trigger: 'blur'
-        }
-      ],
-      phone: [{ required: true, validator: this.checkphone, trigger: 'blur' }],
-      idNumber: [{ required: true, validator: this.validID, trigger: 'blur' }]
-    }
-  }
-
-  created() {
-    this.actionType = this.$route.query.id ? 'edit' : 'add'
-    if (this.$route.query.id) {
-      this.title = '修改员工信息'
-      this.init()
-    }
-  }
-
-  private async init() {
-    const id = this.$route.query.id
-    queryEmployeeById(id).then((res: any) => {
-      // String(res.status) === '200'
-      if (res.data.code === 1) {
-        this.ruleForm = res.data.data
-        this.ruleForm.sex = res.data.data.sex === '0' ? '女' : '男'
-        // this.ruleForm.password = ''
-      } else {
-        this.$message.error(res.data.msg)
-      }
-      // if (res.data.code == 200) {
-      //   const { data } = res.data
-      //   this.ruleForm = data
-      //   this.ruleForm.password = ''
-      //   // this.ruleForm.rePassword = '' //JSON.parse(JSON.stringify(data.password));
-      // } else {
-      //   this.$message.error(res.data.desc)
-      // }
-    })
-  }
-
-  private submitForm(formName: any, st: any) {
-    ;(this.$refs[formName] as any).validate((valid: any) => {
-      if (valid) {
-        if (this.actionType === 'add') {
-          const params = {
-            ...this.ruleForm,
-            sex: this.ruleForm.sex === '女' ? '0' : '1'
           }
-          addEmployee(params)
-            .then((res: any) => {
-              if (res.data.code === 1) {
-                this.$message.success('员工添加成功！')
-                if (!st) {
-                  this.$router.push({ path: '/employee' })
-                } else {
-                  this.ruleForm = {
-                    username: '',
-                    name: '',
-                    phone: '',
-                    // 'password': '',
-                    // 'rePassword': '',/
-                    sex: '男',
-                    idNumber: ''
-                  }
+        },
+        trigger: 'blur'
+      }
+    ],
+    phone: [{ required: true, validator: checkphone, trigger: 'blur' }],
+    idNumber: [{ required: true, validator: validID, trigger: 'blur' }]
+  }
+})
+
+const init = async () => {
+  const id = route.query.id
+  queryEmployeeById(id).then((res: any) => {
+    if (res.data.code === 1) {
+      ruleForm.value = res.data.data
+      ruleForm.value.sex = res.data.data.sex === '0' ? '女' : '男'
+    } else {
+      ElMessage.error(res.data.msg)
+    }
+  })
+}
+
+const submitForm = (formName: any, st: any) => {
+  ;(ruleFormRef.value as any).validate((valid: any) => {
+    if (valid) {
+      if (actionType.value === 'add') {
+        const params = {
+          ...ruleForm.value,
+          sex: ruleForm.value.sex === '女' ? '0' : '1'
+        }
+        addEmployee(params)
+          .then((res: any) => {
+            if (res.data.code === 1) {
+              ElMessage.success('员工添加成功！')
+              if (!st) {
+                router.push({ path: '/employee' })
+              } else {
+                ruleForm.value = {
+                  username: '',
+                  name: '',
+                  phone: '',
+                  sex: '男',
+                  idNumber: ''
                 }
-              } else {
-                this.$message.error(res.data.msg)
               }
-            })
-            .catch(() => {
-              // this.$message.error('请求出错了：' + err.message)
-            })
-        } else {
-          const params = {
-            ...this.ruleForm,
-            sex: this.ruleForm.sex === '女' ? '0' : '1'
-          }
-          editEmployee(params)
-            .then((res: any) => {
-              if (res.data.code === 1) {
-                this.$message.success('员工信息修改成功！')
-                this.$router.push({ path: '/employee' })
-              } else {
-                this.$message.error(res.data.msg)
-              }
-            })
-            .catch(() => {
-              // this.$message.error('请求出错了：' + err.message)
-            })
-        }
+            } else {
+              ElMessage.error(res.data.msg)
+            }
+          })
+          .catch(() => {})
       } else {
-        return false
+        const params = {
+          ...ruleForm.value,
+          sex: ruleForm.value.sex === '女' ? '0' : '1'
+        }
+        editEmployee(params)
+          .then((res: any) => {
+            if (res.data.code === 1) {
+              ElMessage.success('员工信息修改成功！')
+              router.push({ path: '/employee' })
+            } else {
+              ElMessage.error(res.data.msg)
+            }
+          })
+          .catch(() => {})
       }
-    })
-  }
+    } else {
+      return false
+    }
+  })
+}
+
+actionType.value = route.query.id ? 'edit' : 'add'
+if (route.query.id) {
+  title.value = '修改员工信息'
+  init()
 }
 </script>
 

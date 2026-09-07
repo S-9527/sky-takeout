@@ -27,26 +27,28 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop, Watch } from 'vue-property-decorator'
+<script setup lang="ts">
+import { nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
-@Component({
-  name: 'OrderStatistics',
-})
-export default class extends Vue {
-  @Prop() private orderdata!: any
-  @Prop() private overviewData!: any
 
-  @Watch('orderdata')
-  getData() {
-    this.$nextTick(() => {
-      this.initChart()
+const props = defineProps({
+  orderdata: { type: Object, default: undefined },
+  overviewData: { type: Object, default: undefined },
+})
+
+watch(
+  () => props.orderdata,
+  () => {
+    nextTick(() => {
+      initChart()
     })
   }
-  initChart() {
-    type EChartsOption = echarts.EChartsOption
-    const chartDom = document.getElementById('ordermain') as any
-    const myChart = echarts.init(chartDom)
+)
+
+function initChart() {
+  type EChartsOption = echarts.EChartsOption
+  const chartDom = document.getElementById('ordermain') as any
+  const myChart = echarts.init(chartDom)
     // // 循环遍历出x轴的数据
     // const baseDate = this.orderdata.list.map((item) => {
     //   return (item as any).date
@@ -60,7 +62,7 @@ export default class extends Vue {
     // const baseAccomplishNum = this.orderdata.list.map((item) => {
     //   return (item as any).accomplishNum
     // })
-    console.log(this.orderdata)
+    console.log(props.orderdata)
     var option: any
     option = {
       // legend: {
@@ -105,7 +107,7 @@ export default class extends Vue {
             width: 1, //x轴线的宽度
           },
         },
-        data: this.orderdata.data.dateList, //后端传来的动态数据
+        data: props.orderdata.data.dateList, //后端传来的动态数据
       },
       yAxis: [
         {
@@ -145,7 +147,7 @@ export default class extends Vue {
             },
           },
 
-          data: this.orderdata.data.orderCountList,
+          data: props.orderdata.data.orderCountList,
         },
         {
           name: '有效订单',
@@ -170,11 +172,10 @@ export default class extends Vue {
             },
           },
 
-          data: this.orderdata.data.validOrderCountList,
+          data: props.orderdata.data.validOrderCountList,
         }
       ],
     }
     option && myChart.setOption(option)
   }
-}
 </script>

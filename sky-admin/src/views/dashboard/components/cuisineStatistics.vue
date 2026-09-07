@@ -24,14 +24,12 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Prop } from 'vue-property-decorator'
+<script setup lang="ts">
 import orderList from './orderList.vue'
-@Component({
-  components: { orderList },
-  name: 'cuisineview',
+const props = defineProps({
+  dishesData: {
+    type: Object,
+    default: () => ({}),
+  },
 })
-export default class extends Vue {
-  @Prop() private dishesData!: any
-}
 </script>

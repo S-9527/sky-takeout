@@ -3,7 +3,7 @@
        class="addBrand-container">
     <div :key="restKey"
          class="container">
-      <el-form ref="ruleForm"
+      <el-form ref="ruleFormRef"
                :model="ruleForm"
                :rules="rules"
                :inline="true"
@@ -71,8 +71,8 @@
                   </div>
                 </div>
                 <div v-if="
-                       !!this.leftDishFlavors.length &&
-                         this.dishFlavors.length < this.dishFlavorsData.length
+                       !!leftDishFlavors.length &&
+                         dishFlavors.length < dishFlavorsData.length
                      "
                      class="addBut"
                      @click="addFlavore">
@@ -121,8 +121,11 @@
   </div>
 </template>
 
-<script lang="ts">
-import { Component, Vue, Watch } from 'vue-property-decorator'
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import type { FormInstance } from 'element-plus'
 import HeadLable from '@/components/HeadLable/index.vue'
 import SelectInput from './components/SelectInput.vue'
 import ImageUpload from '@/components/ImgUpload/index.vue'
@@ -136,291 +139,282 @@ import {
 } from '@/api/dish'
 import { baseUrl } from '@/config.json'
 import { getToken } from '@/utils/cookies'
-@Component({
-  name: 'addShop',
-  components: {
-    HeadLable,
-    SelectInput,
-    ImageUpload
-  }
-})
-export default class extends Vue {
-  private restKey: number = 0
-  private textarea: string = ''
-  private value: string = ''
-  private imageUrl: string = ''
-  private actionType: string = ''
-  private dishList: string[] = []
-  private dishFlavorsData: any[] = [] //原始口味数据
-  private dishFlavors: any[] = [] //待上传口味的数据
-  private leftDishFlavors: any[] = [] //下拉框剩余可选择的口味数据
-  private vueRest = '1'
-  private index = 0
-  private inputStyle = { flex: 1 }
-  private headers = {
-    token: getToken()
-  }
-  private ruleForm = {
-    name: '',
-    id: '',
-    price: '',
-    code: '',
-    image: '',
-    description: '',
-    dishFlavors: [],
-    status: true,
-    categoryId: ''
-  }
 
-  get rules() {
-    return {
-      name: [
-        {
-          required: true,
-          validator: (rule: any, value: string, callback: Function) => {
-            if (!value) {
-              callback(new Error('请输入菜品名称'))
-            } else {
-              const reg = /^([A-Za-z0-9\u4e00-\u9fa5]){2,20}$/
-              if (!reg.test(value)) {
-                callback(new Error('菜品名称输入不符，请输入2-20个字符'))
-              } else {
-                callback()
-              }
-            }
-          },
-          trigger: 'blur'
-        }
-      ],
-      categoryId: [
-        { required: true, message: '请选择菜品分类', trigger: 'change' }
-      ],
-      image: {
+const route = useRoute()
+const router = useRouter()
+
+const restKey = ref(0)
+const textarea = ref('')
+const value = ref('')
+const imageUrl = ref('')
+const actionType = ref('')
+const dishList = ref<any[]>([])
+const dishFlavorsData = ref<any[]>([]) //原始口味数据
+const dishFlavors = ref<any[]>([]) //待上传口味的数据
+const leftDishFlavors = ref<any[]>([]) //下拉框剩余可选择的口味数据
+const vueRest = ref('1')
+const index = ref(0)
+const inputStyle = ref({ flex: 1 })
+const headers = {
+  token: getToken()
+}
+const ruleForm = ref<any>({
+  name: '',
+  id: '',
+  price: '',
+  code: '',
+  image: '',
+  description: '',
+  dishFlavors: [],
+  status: true,
+  categoryId: ''
+})
+const ruleFormRef = ref<FormInstance>()
+
+const rules = computed(() => {
+  return {
+    name: [
+      {
         required: true,
-        message: '菜品图片不能为空'
-      },
-      price: [
-        {
-          required: true,
-          // 'message': '请填写菜品价格',
-          validator: (rules: any, value: string, callback: Function) => {
-            const reg = /^([1-9]\d{0,5}|0)(\.\d{1,2})?$/
-            if (!reg.test(value) || Number(value) <= 0) {
-              callback(
-                new Error(
-                  '菜品价格格式有误，请输入大于零且最多保留两位小数的金额'
-                )
-              )
+        validator: (rule: any, value: string, callback: Function) => {
+          if (!value) {
+            callback(new Error('请输入菜品名称'))
+          } else {
+            const reg = /^([A-Za-z0-9\u4e00-\u9fa5]){2,20}$/
+            if (!reg.test(value)) {
+              callback(new Error('菜品名称输入不符，请输入2-20个字符'))
             } else {
               callback()
             }
-          },
-          trigger: 'blur'
-        }
-      ],
-      code: [{ required: true, message: '请填写商品码', trigger: 'blur' }]
-    }
-  }
-
-  created() {
-    this.getDishList()
-    // 口味临时数据
-    this.getFlavorListHand()
-    this.actionType = this.$route.query.id ? 'edit' : 'add'
-    if (this.$route.query.id) {
-      this.init()
-    }
-  }
-
-  mounted() {}
-  @Watch('dishFlavors')
-  changeDishFlavors() {
-    this.getLeftDishFlavors()
-  }
-
-  //过滤已选择的口味下拉框无法再次选择
-  getLeftDishFlavors() {
-    let arr = []
-    this.dishFlavorsData.map(item => {
-      if (
-        this.dishFlavors.findIndex(item1 => item.name === item1.name) === -1
-      ) {
-        arr.push(item)
+          }
+        },
+        trigger: 'blur'
       }
-    })
-    this.leftDishFlavors = arr
-  }
-
-  private selectHandle(val: any, key: any, ind: any) {
-    const arrDate = [...this.dishFlavors]
-    const index = this.dishFlavorsData.findIndex(item => item.name === val)
-    arrDate[key] = JSON.parse(JSON.stringify(this.dishFlavorsData[index]))
-    this.dishFlavors = arrDate
-  }
-
-  private async init() {
-    queryDishById(this.$route.query.id).then(res => {
-      if (res && res.data && res.data.code === 1) {
-        this.ruleForm = { ...res.data.data }
-        this.ruleForm.price = String(res.data.data.price)
-        this.ruleForm.status = res.data.data.status == '1'
-        this.dishFlavors =
-          res.data.data.flavors &&
-          res.data.data.flavors.map(obj => ({
-            ...obj,
-            value: JSON.parse(obj.value)
-          }))
-        let arr = []
-        this.getLeftDishFlavors()
-        this.imageUrl = res.data.data.image
-      } else {
-        this.$message.error(res.data.msg)
+    ],
+    categoryId: [
+      { required: true, message: '请选择菜品分类', trigger: 'change' }
+    ],
+    image: {
+      required: true,
+      message: '菜品图片不能为空'
+    },
+    price: [
+      {
+        required: true,
+        // 'message': '请填写菜品价格',
+        validator: (rules: any, value: string, callback: Function) => {
+          const reg = /^([1-9]\d{0,5}|0)(\.\d{1,2})?$/
+          if (!reg.test(value) || Number(value) <= 0) {
+            callback(
+              new Error(
+                '菜品价格格式有误，请输入大于零且最多保留两位小数的金额'
+              )
+            )
+          } else {
+            callback()
+          }
+        },
+        trigger: 'blur'
       }
-    })
+    ],
+    code: [{ required: true, message: '请填写商品码', trigger: 'blur' }]
   }
+})
 
-  // 按钮 - 添加口味
-  private addFlavore() {
-    this.dishFlavors.push({ name: '', value: [] }) // JSON.parse(JSON.stringify(this.dishFlavorsData))
-  }
+getDishList()
+// 口味临时数据
+getFlavorListHand()
+actionType.value = route.query.id ? 'edit' : 'add'
+if (route.query.id) {
+  init()
+}
 
-  // 按钮 - 删除口味
-  private delFlavor(name: string) {
-    let ind = this.dishFlavors.findIndex(item => item.name === name)
-    this.dishFlavors.splice(ind, 1)
-  }
+watch(dishFlavors, () => {
+  getLeftDishFlavors()
+})
 
-  // 按钮 - 删除口味标签
-  private delFlavorLabel(index: number, ind: number) {
-    this.dishFlavors[index].value.splice(ind, 1)
-  }
-
-  //口味位置记录
-  private flavorPosition(index: number) {
-    this.index = index
-  }
-
-  // 添加口味标签
-  private keyDownHandle(val: any) {
-    if (event) {
-      event.cancelBubble = true
-      event.preventDefault()
-      event.stopPropagation()
+//过滤已选择的口味下拉框无法再次选择
+const getLeftDishFlavors = () => {
+  let arr = []
+  dishFlavorsData.value.map(item => {
+    if (
+      dishFlavors.value.findIndex(item1 => item.name === item1.name) === -1
+    ) {
+      arr.push(item)
     }
+  })
+  leftDishFlavors.value = arr
+}
 
-    if (val.target.innerText.trim() != '') {
-      this.dishFlavors[this.index].flavorData.push(val.target.innerText)
-      val.target.innerText = ''
-    }
-  }
+const selectHandle = (val: any, key: any, ind: any) => {
+  const arrDate = [...dishFlavors.value]
+  const idx = dishFlavorsData.value.findIndex(item => item.name === val)
+  arrDate[key] = JSON.parse(JSON.stringify(dishFlavorsData.value[idx]))
+  dishFlavors.value = arrDate
+}
 
-  // 获取菜品分类
-  private getDishList() {
-    getCategoryList({ type: 1 }).then(res => {
-      if (res.data.code === 1) {
-        this.dishList = res && res.data && res.data.data
-      } else {
-        this.$message.error(res.data.msg)
-      }
-      // if (res.data.code == 200) {
-      //   const {data} = res.data
-      //   this.dishList = data
-      // } else {
-      //   this.$message.error(res.data.desc)
-      // }
-    })
-  }
-
-  // 获取口味列表
-  private getFlavorListHand() {
-    // flavor flavorData
-    this.dishFlavorsData = [
-      { name: '甜味', value: ['无糖', '少糖', '半糖', '多糖', '全糖'] },
-      { name: '温度', value: ['热饮', '常温', '去冰', '少冰', '多冰'] },
-      { name: '忌口', value: ['不要葱', '不要蒜', '不要香菜', '不要辣'] },
-      { name: '辣度', value: ['不辣', '微辣', '中辣', '重辣'] }
-    ]
-  }
-
-  private submitForm(formName: any, st: any) {
-    ;(this.$refs[formName] as any).validate((valid: any) => {
-      console.log(valid, 'valid')
-      if (valid) {
-        if (!this.ruleForm.image) return this.$message.error('菜品图片不能为空')
-        let params: any = { ...this.ruleForm }
-        // params.flavors = this.dishFlavors
-        params.status =
-          this.actionType === 'add' ? 0 : this.ruleForm.status ? 1 : 0
-        // params.price *= 100
-        params.categoryId = this.ruleForm.categoryId
-        params.flavors = this.dishFlavors.map(obj => ({
+async function init() {
+  queryDishById(route.query.id).then(res => {
+    if (res && res.data && res.data.code === 1) {
+      ruleForm.value = { ...res.data.data }
+      ruleForm.value.price = String(res.data.data.price)
+      ruleForm.value.status = res.data.data.status == '1'
+      dishFlavors.value =
+        res.data.data.flavors &&
+        res.data.data.flavors.map(obj => ({
           ...obj,
-          value: JSON.stringify(obj.value)
+          value: JSON.parse(obj.value)
         }))
-        delete params.dishFlavors
-        if (this.actionType == 'add') {
-          delete params.id
-          addDish(params)
-            .then(res => {
-              if (res.data.code === 1) {
-                this.$message.success('菜品添加成功！')
-                if (!st) {
-                  this.$router.push({ path: '/dish' })
-                } else {
-                  this.dishFlavors = []
-                  // this.dishFlavorsData = []
-                  this.imageUrl = ''
-                  this.ruleForm = {
-                    name: '',
-                    id: '',
-                    price: '',
-                    code: '',
-                    image: '',
-                    description: '',
-                    dishFlavors: [],
-                    status: true,
-                    categoryId: ''
-                  }
-                  this.restKey++
-                }
-              } else {
-                this.$message.error(res.data.desc || res.data.msg)
-              }
-            })
-            .catch(err => {
-              this.$message.error('请求出错了：' + err.message)
-            })
-        } else {
-          delete params.createTime
-          delete params.updateTime
-          editDish(params)
-            .then(res => {
-              if (res && res.data && res.data.code === 1) {
-                this.$router.push({ path: '/dish' })
-                this.$message.success('菜品修改成功！')
-              } else {
-                this.$message.error(res.data.desc || res.data.msg)
-              }
-              // if (res.data.code == 200) {
-              //   this.$router.push({'path': '/dish'})
-              //   this.$message.success('菜品修改成功！')
-              // } else {
-              //   this.$message.error(res.data.desc || res.data.message)
-              // }
-            })
-            .catch(err => {
-              this.$message.error('请求出错了：' + err.message)
-            })
-        }
-      } else {
-        return false
-      }
-    })
+      let arr = []
+      getLeftDishFlavors()
+      imageUrl.value = res.data.data.image
+    } else {
+      ElMessage.error(res.data.msg)
+    }
+  })
+}
+
+// 按钮 - 添加口味
+const addFlavore = () => {
+  dishFlavors.value.push({ name: '', value: [] }) // JSON.parse(JSON.stringify(this.dishFlavorsData))
+}
+
+// 按钮 - 删除口味
+const delFlavor = (name: string) => {
+  let ind = dishFlavors.value.findIndex(item => item.name === name)
+  dishFlavors.value.splice(ind, 1)
+}
+
+// 按钮 - 删除口味标签
+const delFlavorLabel = (index2: number, ind: number) => {
+  dishFlavors.value[index2].value.splice(ind, 1)
+}
+
+//口味位置记录
+const flavorPosition = (pos: number) => {
+  index.value = pos
+}
+
+// 添加口味标签
+const keyDownHandle = (val: any) => {
+  if (event) {
+    event.cancelBubble = true
+    event.preventDefault()
+    event.stopPropagation()
   }
 
-  imageChange(value: any) {
-    this.ruleForm.image = value
+  if (val.target.innerText.trim() != '') {
+    dishFlavors.value[index.value].flavorData.push(val.target.innerText)
+    val.target.innerText = ''
   }
+}
+
+// 获取菜品分类
+function getDishList() {
+  getCategoryList({ type: 1 }).then(res => {
+    if (res.data.code === 1) {
+      dishList.value = res && res.data && res.data.data
+    } else {
+      ElMessage.error(res.data.msg)
+    }
+    // if (res.data.code == 200) {
+    //   const {data} = res.data
+    //   this.dishList = data
+    // } else {
+    //   ElMessage.error(res.data.desc)
+    // }
+  })
+}
+
+// 获取口味列表
+function getFlavorListHand() {
+  // flavor flavorData
+  dishFlavorsData.value = [
+    { name: '甜味', value: ['无糖', '少糖', '半糖', '多糖', '全糖'] },
+    { name: '温度', value: ['热饮', '常温', '去冰', '少冰', '多冰'] },
+    { name: '忌口', value: ['不要葱', '不要蒜', '不要香菜', '不要辣'] },
+    { name: '辣度', value: ['不辣', '微辣', '中辣', '重辣'] }
+  ]
+}
+
+const submitForm = (formName: any, st: any) => {
+  ;(ruleFormRef.value as any).validate((valid: any) => {
+    console.log(valid, 'valid')
+    if (valid) {
+      if (!ruleForm.value.image) return ElMessage.error('菜品图片不能为空')
+      let params: any = { ...ruleForm.value }
+      // params.flavors = this.dishFlavors
+      params.status =
+        actionType.value === 'add' ? 0 : ruleForm.value.status ? 1 : 0
+      // params.price *= 100
+      params.categoryId = ruleForm.value.categoryId
+      params.flavors = dishFlavors.value.map(obj => ({
+        ...obj,
+        value: JSON.stringify(obj.value)
+      }))
+      delete params.dishFlavors
+      if (actionType.value == 'add') {
+        delete params.id
+        addDish(params)
+          .then(res => {
+            if (res.data.code === 1) {
+              ElMessage.success('菜品添加成功！')
+              if (!st) {
+                router.push({ path: '/dish' })
+              } else {
+                dishFlavors.value = []
+                // this.dishFlavorsData = []
+                imageUrl.value = ''
+                ruleForm.value = {
+                  name: '',
+                  id: '',
+                  price: '',
+                  code: '',
+                  image: '',
+                  description: '',
+                  dishFlavors: [],
+                  status: true,
+                  categoryId: ''
+                }
+                restKey.value++
+              }
+            } else {
+              ElMessage.error(res.data.desc || res.data.msg)
+            }
+          })
+          .catch(err => {
+            ElMessage.error('请求出错了：' + err.message)
+          })
+      } else {
+        delete params.createTime
+        delete params.updateTime
+        editDish(params)
+          .then(res => {
+            if (res && res.data && res.data.code === 1) {
+              router.push({ path: '/dish' })
+              ElMessage.success('菜品修改成功！')
+            } else {
+              ElMessage.error(res.data.desc || res.data.msg)
+            }
+            // if (res.data.code == 200) {
+            //   router.push({'path': '/dish'})
+            //   ElMessage.success('菜品修改成功！')
+            // } else {
+            //   ElMessage.error(res.data.desc || res.data.message)
+            // }
+          })
+          .catch(err => {
+            ElMessage.error('请求出错了：' + err.message)
+          })
+      }
+    } else {
+      return false
+    }
+  })
+}
+
+const imageChange = (value: any) => {
+  ruleForm.value.image = value
 }
 </script>
 <style lang="scss" scoped>

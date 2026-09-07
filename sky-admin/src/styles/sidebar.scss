@@ -45,27 +45,28 @@
     .is-active {
       color: rgb(191, 203, 217) !important;
     }
+  }
 
-    .el-menu--collapse {
-      .el-menu-item,
-      .el-sub-menu__title {
-        padding: 0 !important;
-        display: flex;
-        justify-content: center;
-      }
+  // EP2 把 el-menu--collapse 直接加在 .el-menu 自身上,不能嵌套在 .el-menu 里写
+  .el-menu--collapse {
+    .el-menu-item,
+    .el-sub-menu__title {
+      padding: 0 !important;
+      display: flex;
+      justify-content: center;
+    }
 
-      .el-menu-item > span,
-      .el-sub-menu > .el-sub-menu__title > span {
-        display: none;
-      }
+    .el-menu-item > span,
+    .el-sub-menu > .el-sub-menu__title > span {
+      display: none;
+    }
 
-      .el-sub-menu__icon-arrow {
-        display: none;
-      }
+    .el-sub-menu__icon-arrow {
+      display: none;
+    }
 
-      .el-menu-item i {
-        font-size: 20px;
-      }
+    .el-menu-item i {
+      font-size: 20px;
     }
   }
 

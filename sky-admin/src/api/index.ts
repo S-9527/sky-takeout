@@ -42,15 +42,6 @@ request({
  * 报表数据
  *
  **/
-// 统计
-// 获取当日销售数据 -> 顶部数据
-// export const getDataes = (params: any) =>
-//   request({
-//     'url': `/report/amountCollect/${params.date}`,
-//     'method': 'get'
-//   })
-
-
 // 营业额统计
 export const getTurnoverStatistics= (params: any) =>
   request({

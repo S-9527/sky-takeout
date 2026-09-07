@@ -138,5 +138,3 @@ function getTitleNum(data: number) {
 getTitleNum(2)
 </script>
 
-<style lang="scss">
-</style>

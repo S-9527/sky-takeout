@@ -11,7 +11,7 @@
     >
       <template #prefix>
         <el-icon
-          class="el-input__icon el-icon-search"
+          class="el-input__icon"
           style="cursor: pointer"
           @click="init"
         >

@@ -17,7 +17,7 @@
            class="avatar">
 
       <i v-else
-         class="el-icon-plus avatar-uploader-icon" />
+         class="upload-placeholder avatar-uploader-icon" />
       <span v-if="imageUrl"
             class="el-upload-list__item-actions">
         <span class="el-upload-span"
@@ -93,7 +93,7 @@ const beforeAvatarUpload = (file: any) => {
 }
 </style>
 <style scoped lang="scss">
-.avatar-uploader .el-icon-plus:after {
+.avatar-uploader .upload-placeholder:after {
   position: absolute;
   display: inline-block;
   content: ' ' !important;

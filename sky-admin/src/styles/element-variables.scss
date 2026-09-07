@@ -1,7 +1,8 @@
-/* Element Plus Variables Override */
+/* Element Plus 主题变量覆盖 */
+/* 颜色统一从 _variables.scss 引用,改主题只改一处 */
 
 :root {
-  --el-color-primary: #FFC200;
+  --el-color-primary: #{$mine};
   --el-color-primary-light-3: #fdd24c;
   --el-color-primary-light-5: #ffe37f;
   --el-color-primary-light-7: #ffefb2;
@@ -12,27 +13,17 @@
   --el-color-success: #13ce66;
   --el-color-danger: #ff4949;
   --el-color-info: #5d5d5d;
-  --el-color-warning: #FFB302;
+  --el-color-warning: #{$yellow};
 
-  --el-text-color-primary: #20232A;
-  --el-text-color-regular: #818693;
-  --el-text-color-placeholder: #BAC0CD;
+  --el-text-color-primary: #{$gray-1};
+  --el-text-color-regular: #{$gray-2};
+  --el-text-color-placeholder: #{$gray-3};
 
-  --el-border-color: #D8DDE3;
+  --el-border-color: #{$gray-4};
   --el-border-color-light: #dfe4ed;
   --el-border-color-lighter: #e6ebf5;
 
-  --el-fill-color-blank: #ffffff;
-  --el-fill-color-light: #F3F4F7;
-  --el-fill-color-base: #F3F4F7;
-}
-
-.el-table .el-table__cell {
-  padding: 12px 0;
-}
-
-.pageList {
-  display: flex;
-  justify-content: center;
-  width: 100%;
+  --el-fill-color-blank: #{$white};
+  --el-fill-color-light: #{$gray-5};
+  --el-fill-color-base: #{$gray-5};
 }

@@ -1,32 +1,17 @@
 /* Variables */
+/* 仅保留实际被引用的变量;菜单配色在 Sidebar/index.vue 内联定义 */
 
-// Base color
-$mine:#FFC200;
-$loginBg: #FFCFAC;
-$blue:#2892E5;
-$green: #1DC779;
-$yellow:#FFB302;
-$pink: #F56C6C;
-$block:#000;
+// 品牌色
+$mine: #FFC200;
+$yellow: #FFB302;
+$white: #fff;
+
+// 中性色阶
 $gray-1: #20232A;
 $gray-2: #818693;
 $gray-3: #BAC0CD;
 $gray-4: #D8DDE3;
 $gray-5: #F3F4F7;
-$gray-6: #EBEEF5;
-$bgColor: #FAFAFB;
-$white: #fff;
 
-// Sidebar
+// 布局
 $sideBarWidth: 190px;
-$subMenuBg:#272A36;
-$subMenuHover:#272A36;
-$subMenuActiveText:#f4f4f5;
-$menuBg:#343744;
-$menuText:#bfcbd9;
-$menuActiveText:$mine; //Also see settings.sidebarTextTheme
-
-// Login page
-$lightGray: #080808;
-$darkGray:#889aa4;
-$loginCursorColor: #080808;

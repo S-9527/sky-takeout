@@ -156,7 +156,7 @@
                 size="small"
                 clearable>
         <template #prefix>
-          <el-icon class="el-input__icon el-icon-search"
+          <el-icon class="el-input__icon"
                    style="cursor: pointer"
                    @click="seachHandle">
             <Search />

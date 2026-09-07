@@ -5,13 +5,6 @@ import request from '@/utils/request'
  *
  **/
 
-// 获取当日销售数据 -> 顶部数据
-export const getDataes = (params: any) =>
-  request({
-    'url': `/report/amountCollect/${params.date}`,
-    'method': 'get'
-  })
-
 // 获取当日销售数据 -> 顶部数据 - 营收概况
 export const getChartsDataes = (params: any) =>
   request({

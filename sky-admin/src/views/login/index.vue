@@ -115,7 +115,7 @@ const handleLogin = () => {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .login {
   display: flex;
   justify-content: center;
@@ -135,12 +135,6 @@ const handleLogin = () => {
   }
 }
 
-.title {
-  margin: 0px auto 10px auto;
-  text-align: left;
-  color: #707070;
-}
-
 .login-form {
   background: #ffffff;
   width: 40%;
@@ -148,28 +142,28 @@ const handleLogin = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  .el-form {
+  :deep(.el-form) {
     width: 214px;
     height: 307px;
   }
-  .el-form-item {
+  :deep(.el-form-item) {
     margin-bottom: 30px;
   }
-  .el-input__wrapper {
+  :deep(.el-input__wrapper) {
     box-shadow: none;
     padding: 0 2px;
     border-bottom: 1px solid #e9e9e8;
     border-radius: 0;
   }
-  .el-input.is-focus .el-input__wrapper {
+  :deep(.el-input.is-focus .el-input__wrapper) {
     box-shadow: none !important;
   }
-  .el-form-item.is-error .el-input__wrapper,
-  .el-form-item.is-error .el-input.is-focus .el-input__wrapper {
+  :deep(.el-form-item.is-error .el-input__wrapper),
+  :deep(.el-form-item.is-error .el-input.is-focus .el-input__wrapper) {
     box-shadow: none !important;
     border-bottom: 1px solid #fd7065;
   }
-  .el-input__inner {
+  :deep(.el-input__inner) {
     border: 0;
     border-radius: 0;
     font-size: 12px;
@@ -178,7 +172,7 @@ const handleLogin = () => {
     height: 32px;
     line-height: 32px;
   }
-  .el-input__inner::placeholder {
+  :deep(.el-input__inner::placeholder) {
     color: #aeb5c4;
   }
 }

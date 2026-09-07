@@ -110,6 +110,7 @@
     </div>
     <el-dialog :title="classData.title"
                v-model="classData.dialogVisible"
+               class="el-dialog--wide"
                width="30%"
                :before-close="handleClose">
       <el-form ref="classDataRef"

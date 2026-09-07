@@ -96,5 +96,3 @@ function getOrderListBy3Status() {
 }
 </script>
 
-<style lang="scss">
-</style>

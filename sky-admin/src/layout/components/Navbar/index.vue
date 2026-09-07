@@ -439,7 +439,6 @@ const handlePwdClose = () => {
 }
 .navbar {
   .el-dialog {
-    min-width: auto !important;
     padding: 0;
   }
   .el-dialog__header {

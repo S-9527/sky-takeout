@@ -71,7 +71,7 @@ function tabChange(val: number) {
   emit('tabChange', val)
 }
 </script>
-<style lang="scss">
+<style lang="scss" scoped>
 .tab-change {
   display: flex;
   border-radius: 4px;
@@ -88,13 +88,13 @@ function tabChange(val: number) {
     border-left: none;
     cursor: pointer;
     .special-item {
-      .el-badge__content {
+      :deep(.el-badge__content) {
         width: 20px;
         padding: 0 5px;
       }
     }
     .item {
-      .el-badge__content {
+      :deep(.el-badge__content) {
         background-color: #fd3333 !important;
         line-height: 18px;
         height: auto;
@@ -102,7 +102,7 @@ function tabChange(val: number) {
         min-height: 18px;
         // border-radius: 50%;
       }
-      .el-badge__content.is-fixed {
+      :deep(.el-badge__content.is-fixed) {
         top: 14px;
         right: 2px;
       }

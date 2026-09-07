@@ -93,6 +93,16 @@
 
 /* ========== Table ========== */
 
+/* EP2 默认表体文字取 --el-text-color-regular(#818693)偏灰,对齐 Vue2 原版 */
+.el-table {
+  --el-table-text-color: #333333;
+  --el-table-header-text-color: #666666;
+}
+
+.el-table thead th {
+  font-weight: 700;
+}
+
 .el-table .el-table__cell {
   padding: 12px 0;
 }

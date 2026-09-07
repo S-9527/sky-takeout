@@ -468,6 +468,13 @@ if (actionType.value == 'edit') {
       width: 777px !important;
     }
   }
+
+  /* EP2 把 .el-form-item__content 改成 flex,.subBox 的 text-align: center 对它失效,
+     底部按钮组因此贴左,这里补 flex 居中(按钮本身尺寸不动) */
+  .subBox .el-form-item__content {
+    justify-content: center;
+  }
+
   .el-input__prefix {
     top: 2px;
   }

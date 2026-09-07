@@ -87,13 +87,11 @@ function tabChange(val: number) {
     background-color: white;
     border-left: none;
     cursor: pointer;
-    .special-item {
-      :deep(.el-badge__content) {
-        width: 20px;
-        padding: 0 5px;
-      }
-    }
+    /* EP2 的 .el-badge 默认 vertical-align: middle,文字会比原版低 2px;
+       Element UI 为 top,改回 top 对齐原版 */
     .item {
+      vertical-align: top;
+
       :deep(.el-badge__content) {
         background-color: #fd3333 !important;
         line-height: 18px;
@@ -105,6 +103,12 @@ function tabChange(val: number) {
       :deep(.el-badge__content.is-fixed) {
         top: 14px;
         right: 2px;
+      }
+    }
+    .special-item {
+      :deep(.el-badge__content) {
+        width: 20px;
+        padding: 0 5px;
       }
     }
   }

@@ -3,8 +3,6 @@ import 'normalize.css'
 import ElementPlus from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
-import moment from 'moment'
-import * as echarts from 'echarts'
 import '@/styles/element-variables.scss'
 import '@/styles/index.scss'
 import '@/styles/home.scss'
@@ -20,8 +18,5 @@ const app = createApp(App)
 app.use(ElementPlus, { locale: zhCn })
 app.use(pinia)
 app.use(router)
-
-app.config.globalProperties.moment = moment
-app.config.globalProperties.$echarts = echarts
 
 app.mount('#app')

@@ -14,7 +14,6 @@ import App from '@/App.vue'
 import pinia from '@/store'
 import router from '@/router'
 import '@/permission'
-import { checkProcessEnv } from '@/utils/common'
 
 const app = createApp(App)
 
@@ -23,7 +22,6 @@ app.use(pinia)
 app.use(router)
 
 app.config.globalProperties.moment = moment
-app.config.globalProperties.$checkProcessEnv = checkProcessEnv
 app.config.globalProperties.$echarts = echarts
 
 app.mount('#app')

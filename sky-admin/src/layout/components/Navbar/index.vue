@@ -473,19 +473,20 @@ const handlePwdClose = () => {
         background: #333;
       }
     }
+    /* EP2 把 group/radio 改成 flex,描述文字会被挤进 label 宽度并缩进;
+       改回 Element UI 的 inline-block 以对齐原版布局 */
     .el-radio-group {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
+      display: inline-block;
       width: 100%;
       & > .is-checked {
         border: 1px solid #ffc200;
       }
     }
     .el-radio {
+      display: inline-block;
+      line-height: 1;
       width: 100%;
       height: auto;
-      flex-shrink: 0;
       margin-right: 0;
       background: #fbfbfa;
       border: 1px solid #e5e4e4;

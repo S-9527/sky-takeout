@@ -76,6 +76,11 @@
   color: #333;
 }
 
+.el-input__inner,
+.el-textarea__inner {
+  color: #333333;
+}
+
 .el-input__inner {
   border-color: #E5E4E4;
 }
@@ -84,6 +89,11 @@
 .el-input__inner::-moz-placeholder,
 .el-input__inner::-ms-input-placeholder {
   color: #BDBDBD;
+}
+
+/* EP2 默认取 --el-text-color-regular(#818693)偏浅,Vue2 原版为 #606266 */
+.el-select-dropdown__item {
+  color: #606266;
 }
 
 .el-input__suffix,

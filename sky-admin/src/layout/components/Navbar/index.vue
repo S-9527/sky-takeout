@@ -52,11 +52,11 @@
                width="25%"
                :show-close="false">
       <el-radio-group v-model="setStatus">
-        <el-radio :label="1">
+        <el-radio :value="1">
           营业中
           <span>当前餐厅处于营业状态，自动接收任何订单，可点击打烊进入店铺打烊状态。</span>
         </el-radio>
-        <el-radio :label="0">
+        <el-radio :value="0">
           打烊中
           <span>当前餐厅处于打烊状态，仅接受营业时间内的预定订单，可点击营业中手动恢复营业状态。</span>
         </el-radio>
@@ -440,6 +440,7 @@ const handlePwdClose = () => {
 .navbar {
   .el-dialog {
     min-width: auto !important;
+    padding: 0;
   }
   .el-dialog__header {
     height: 61px;
@@ -474,12 +475,19 @@ const handlePwdClose = () => {
       }
     }
     .el-radio-group {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: 100%;
       & > .is-checked {
         border: 1px solid #ffc200;
       }
     }
     .el-radio {
       width: 100%;
+      height: auto;
+      flex-shrink: 0;
+      margin-right: 0;
       background: #fbfbfa;
       border: 1px solid #e5e4e4;
       border-radius: 4px;

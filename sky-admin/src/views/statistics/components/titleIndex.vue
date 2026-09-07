@@ -34,11 +34,18 @@ import { ref, watch } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { exportInfor } from '@/api/index'
 
-const props = defineProps({
-  flag: { default: undefined },
-  tateData: { default: undefined },
-  turnoverData: { default: undefined },
-})
+const props = withDefaults(
+  defineProps<{
+    flag?: number
+    tateData?: string[]
+    turnoverData?: any
+  }>(),
+  {
+    flag: 0,
+    tateData: () => [],
+    turnoverData: () => ({})
+  }
+)
 const emit = defineEmits(['sendTitleInd'])
 
 const nowIndex = ref(2 - 1)
@@ -75,6 +82,5 @@ function handleExport() {
       a.click()
       window.URL.revokeObjectURL(url)
     })
-    .then((response) => {})
 }
 </script>

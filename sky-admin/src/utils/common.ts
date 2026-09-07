@@ -1,40 +1,35 @@
-export const checkProcessEnv =() => {
+export const checkProcessEnv = () => {
   return import.meta.env.VITE_DELETE_PERMISSIONS === 'true'
 }
-export const debounce=(fn, time)=> {
-  time = time || 200
+export const debounce = (fn: (...args: any[]) => void, time = 200) => {
   // 定时器
-  let timer = null
-  return function(...args) {
-    var _this = this
+  let timer: ReturnType<typeof setTimeout> | null = null
+  return function (this: unknown, ...args: any[]) {
     if (timer) {
       clearTimeout(timer)
     }
-    timer = setTimeout(function() {
+    timer = setTimeout(() => {
       timer = null
-      fn.apply(_this, args)
+      fn.apply(this, args)
     }, time)
   }
-  
-};
+}
 //节流
-export const throttle = (fn, time)=> {
-  let timer = null
-  time = time || 1000
-  return function(...args) {
+export const throttle = (fn: (...args: any[]) => void, time = 1000) => {
+  let timer: ReturnType<typeof setTimeout> | null = null
+  return function (this: unknown, ...args: any[]) {
     if (timer) {
       return
     }
-    const _this = this
     timer = setTimeout(() => {
       timer = null
     }, time)
-    fn.apply(_this, args)
+    fn.apply(this, args)
   }
 }
 // 判断正、负
-export const strIncrease = (str)=>{
-  if(str.slice(0,1) ==='-'){
+export const strIncrease = (str: string) => {
+  if (str.slice(0, 1) === '-') {
     return true
-    }
+  }
 }

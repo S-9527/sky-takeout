@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<{
   chartData: () => ({})
 })
 
-const chart = ref<echarts.ECharts | null>(null)
+const chart = ref<any>(null)
 
 useChartResize(() => chart.value)
 

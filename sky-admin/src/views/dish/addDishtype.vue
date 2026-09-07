@@ -19,6 +19,7 @@
           <el-form-item label="菜品分类:"
                         prop="categoryId">
             <el-select v-model="ruleForm.categoryId"
+                       style="width: 240px"
                        placeholder="请选择菜品分类">
               <el-option v-for="(item, index) in dishList"
                          :key="index"
@@ -62,7 +63,7 @@
                          style="display: flex">
                       <span v-for="(it, ind) in item.value"
                             :key="ind">{{ it }}
-                        <i @click="delFlavorLabel(index, ind)">X</i></span>
+                        <i @click="delFlavorLabel(index, ind as number)">X</i></span>
                       <div class="inputBox"
                            :style="inputStyle" />
                     </div>
@@ -126,7 +127,6 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import HeadLable from '@/components/HeadLable/index.vue'
 import SelectInput from './components/SelectInput.vue'
 import ImageUpload from '@/components/ImgUpload/index.vue'
 // getFlavorList口味列表暂时不做 getDishTypeList
@@ -134,18 +134,13 @@ import {
   queryDishById,
   addDish,
   editDish,
-  getCategoryList,
-  commonDownload
+  getCategoryList
 } from '@/api/dish'
-import { baseUrl } from '@/config.json'
-import { getToken } from '@/utils/cookies'
 
 const route = useRoute()
 const router = useRouter()
 
 const restKey = ref(0)
-const textarea = ref('')
-const value = ref('')
 const imageUrl = ref('')
 const actionType = ref('')
 const dishList = ref<any[]>([])
@@ -153,11 +148,7 @@ const dishFlavorsData = ref<any[]>([]) //原始口味数据
 const dishFlavors = ref<any[]>([]) //待上传口味的数据
 const leftDishFlavors = ref<any[]>([]) //下拉框剩余可选择的口味数据
 const vueRest = ref('1')
-const index = ref(0)
 const inputStyle = ref({ flex: 1 })
-const headers = {
-  token: getToken()
-}
 const ruleForm = ref<any>({
   name: '',
   id: '',
@@ -176,7 +167,7 @@ const rules = computed(() => {
     name: [
       {
         required: true,
-        validator: (rule: any, value: string, callback: Function) => {
+        validator: (_rule: any, value: string, callback: Function) => {
           if (!value) {
             callback(new Error('请输入菜品名称'))
           } else {
@@ -202,7 +193,7 @@ const rules = computed(() => {
       {
         required: true,
         // 'message': '请填写菜品价格',
-        validator: (rules: any, value: string, callback: Function) => {
+        validator: (_rules: any, value: string, callback: Function) => {
           const reg = /^([1-9]\d{0,5}|0)(\.\d{1,2})?$/
           if (!reg.test(value) || Number(value) <= 0) {
             callback(
@@ -235,7 +226,7 @@ watch(dishFlavors, () => {
 
 //过滤已选择的口味下拉框无法再次选择
 const getLeftDishFlavors = () => {
-  let arr = []
+  let arr: any[] = []
   dishFlavorsData.value.map(item => {
     if (
       dishFlavors.value.findIndex(item1 => item.name === item1.name) === -1
@@ -246,7 +237,7 @@ const getLeftDishFlavors = () => {
   leftDishFlavors.value = arr
 }
 
-const selectHandle = (val: any, key: any, ind: any) => {
+const selectHandle = (val: any, key: any, _ind: any) => {
   const arrDate = [...dishFlavors.value]
   const idx = dishFlavorsData.value.findIndex(item => item.name === val)
   arrDate[key] = JSON.parse(JSON.stringify(dishFlavorsData.value[idx]))
@@ -254,18 +245,17 @@ const selectHandle = (val: any, key: any, ind: any) => {
 }
 
 async function init() {
-  queryDishById(route.query.id).then(res => {
+  queryDishById(String(route.query.id)).then(res => {
     if (res && res.data && res.data.code === 1) {
       ruleForm.value = { ...res.data.data }
       ruleForm.value.price = String(res.data.data.price)
       ruleForm.value.status = res.data.data.status == '1'
       dishFlavors.value =
         res.data.data.flavors &&
-        res.data.data.flavors.map(obj => ({
+        res.data.data.flavors.map((obj: any) => ({
           ...obj,
           value: JSON.parse(obj.value)
         }))
-      let arr = []
       getLeftDishFlavors()
       imageUrl.value = res.data.data.image
     } else {
@@ -288,25 +278,6 @@ const delFlavor = (name: string) => {
 // 按钮 - 删除口味标签
 const delFlavorLabel = (index2: number, ind: number) => {
   dishFlavors.value[index2].value.splice(ind, 1)
-}
-
-//口味位置记录
-const flavorPosition = (pos: number) => {
-  index.value = pos
-}
-
-// 添加口味标签
-const keyDownHandle = (val: any) => {
-  if (event) {
-    event.cancelBubble = true
-    event.preventDefault()
-    event.stopPropagation()
-  }
-
-  if (val.target.innerText.trim() != '') {
-    dishFlavors.value[index.value].flavorData.push(val.target.innerText)
-    val.target.innerText = ''
-  }
 }
 
 // 获取菜品分类
@@ -337,7 +308,7 @@ function getFlavorListHand() {
   ]
 }
 
-const submitForm = (formName: any, st: any) => {
+const submitForm = (_formName: any, st?: any) => {
   ;(ruleFormRef.value as any).validate((valid: any) => {
     console.log(valid, 'valid')
     if (valid) {

@@ -3,11 +3,11 @@ import Layout from "@/layout/index.vue";
 
 const router = createRouter({
   history: createWebHistory('/'),
-  scrollBehavior: (to, from, savedPosition) => {
+  scrollBehavior: (_to, _from, savedPosition) => {
     if (savedPosition) {
       return savedPosition;
     }
-    return { x: 0, y: 0 };
+    return { left: 0, top: 0 };
   },
   routes: [
     {

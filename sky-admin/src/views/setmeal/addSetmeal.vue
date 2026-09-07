@@ -17,6 +17,7 @@
           <el-form-item label="套餐分类:"
                         prop="idType">
             <el-select v-model="ruleForm.idType"
+                       style="width: 240px"
                        placeholder="请选择套餐分类"
                        @change="$forceUpdate()">
               <el-option v-for="(item, index) in setMealList"
@@ -61,7 +62,7 @@
                                        width="180"
                                        align="center">
                         <template #default="scope">
-                          {{ (Number(scope.row.price).toFixed(2) * 100) / 100 }}
+                          {{ (Number(Number(scope.row.price).toFixed(2)) * 100) / 100 }}
                         </template>
                       </el-table-column>
                       <el-table-column prop="address"
@@ -184,8 +185,8 @@ import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
-import ImgUpload from '@/components/ImgUpload/index.vue'
 import AddDish from './components/AddDish.vue'
+import ImageUpload from '@/components/ImgUpload/index.vue'
 import { querySetmealById, addSetmeal, editSetmeal } from '@/api/setMeal'
 import { getCategoryList } from '@/api/dish'
 
@@ -218,7 +219,7 @@ const rules = computed(() => {
   return {
     name: {
       required: true,
-      validator: (rule: any, value: string, callback: Function) => {
+      validator: (_rule: any, value: string, callback: Function) => {
         if (!value) {
           callback(new Error('请输入套餐名称'))
         } else {
@@ -243,7 +244,7 @@ const rules = computed(() => {
     },
     price: {
       required: true,
-      validator: (rules: any, value: string, callback: Function) => {
+      validator: (_rules: any, value: string, callback: Function) => {
         const reg = /^([1-9]\d{0,5}|0)(\.\d{1,2})?$/
         if (!reg.test(value) || Number(value) <= 0) {
           callback(
@@ -262,7 +263,7 @@ const rules = computed(() => {
 })
 
 const init = async () => {
-  querySetmealById(route.query.id).then(res => {
+  querySetmealById(String(route.query.id)).then(res => {
     if (res && res.data && res.data.code === 1) {
       ruleForm.value = res.data.data
       ruleForm.value.status = res.data.data.status == '1'
@@ -307,13 +308,13 @@ const getCheckList = (value: any) => {
 }
 
 // 添加菜品
-const openAddDish = (st: string) => {
+const openAddDish = (_st: string) => {
   seachKey.value = ''
   dialogVisible.value = true
 }
 
 // 取消添加菜品
-const handleClose = (done: any) => {
+const handleClose = (_done: any) => {
   dialogVisible.value = false
   checkList.value = JSON.parse(JSON.stringify(dishTable.value))
 }
@@ -327,7 +328,7 @@ const addTableList = () => {
   dialogVisible.value = false
 }
 
-const submitForm = (formName: any, st: any) => {
+const submitForm = (_formName: any, st: any) => {
   ;(ruleFormRef.value as any).validate((valid: any) => {
     if (valid) {
       if (dishTable.value.length === 0) {

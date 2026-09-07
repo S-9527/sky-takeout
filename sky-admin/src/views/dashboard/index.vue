@@ -28,7 +28,6 @@ import { nextTick, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   getBusinessData as getBusinessDataApi,
-  getDataOverView, //营业数据
   getOrderData, //订单管理今日订单
   getOverviewDishes, //菜品总览
   getSetMealStatistics, //套餐总览
@@ -46,18 +45,10 @@ import SetMealStatistics from './components/setMealStatistics.vue'
 // 订单列表
 import OrderList from './components/orderList.vue'
 
-const todayData = ref({} as any)
 const overviewData = ref({})
 const orderviewData = ref({} as any)
-const flag = ref(2)
-const tateData = ref([])
 const dishesData = ref({} as any)
 const setMealData = ref({})
-const orderListData = ref([])
-const counts = ref(0)
-const page = ref<number>(1)
-const pageSize = ref<number>(10)
-const status = ref(2)
 const orderStatics = ref({} as any)
 
 init()

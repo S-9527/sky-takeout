@@ -32,7 +32,6 @@ import {
   pastMonth,
 } from '@/utils/formValidate'
 import {
-  getDataOverView, //数据概览
   getTurnoverStatistics,
   getUserStatistics,
   getOrderStatistics,
@@ -115,7 +114,7 @@ async function getTopData(begin: any, end: any) {
   console.log(top10Data.value)
 }
 // 获取当前选中的tab时间
-function getTitleNum(data) {
+function getTitleNum(data: number) {
   switch (data) {
     case 1:
       tateData.value = get1stAndToday()

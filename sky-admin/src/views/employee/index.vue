@@ -86,15 +86,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getEmployeeList, enableOrDisableEmployee } from '@/api/employee'
-import { useUserStore } from '@/store/modules/user'
 import Empty from '@/components/Empty/index.vue'
 
 const router = useRouter()
-const userStore = useUserStore()
 
 const input = ref<any>('')
 const counts = ref<number>(0)
@@ -105,20 +103,13 @@ const id = ref('')
 const status = ref('')
 const isSearch = ref<boolean>(false)
 
-const userName = computed(() => userStore.username)
-
-const initProp = (val: any) => {
-  input.value = val
-  initFun()
-}
-
 const initFun = () => {
   page.value = 1
   init()
 }
 
 async function init(isSearchVal?: boolean) {
-  isSearch.value = isSearchVal
+  isSearch.value = isSearchVal ?? false
   const params = {
     page: page.value,
     pageSize: pageSize.value,
@@ -137,7 +128,7 @@ async function init(isSearchVal?: boolean) {
 }
 
 // 添加
-const addEmployeeHandle = (st: string, username: string) => {
+const addEmployeeHandle = (st: string, username?: string) => {
   if (st === 'add') {
     router.push({ path: '/employee/add' })
   } else {

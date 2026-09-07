@@ -31,10 +31,16 @@
 import { nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
 
-const props = defineProps({
-  orderdata: { type: Object, default: undefined },
-  overviewData: { type: Object, default: undefined },
-})
+const props = withDefaults(
+  defineProps<{
+    orderdata?: any
+    overviewData?: any
+  }>(),
+  {
+    orderdata: () => ({ data: {} }),
+    overviewData: () => ({})
+  }
+)
 
 watch(
   () => props.orderdata,
@@ -46,7 +52,6 @@ watch(
 )
 
 function initChart() {
-  type EChartsOption = echarts.EChartsOption
   const chartDom = document.getElementById('ordermain') as any
   const myChart = echarts.init(chartDom)
     // // 循环遍历出x轴的数据
@@ -95,10 +100,8 @@ function initChart() {
         boundaryGap: false,
         axisLabel: {
           //X轴字体颜色
-          textStyle: {
-            color: '#666',
-            fontSize: '12px',
-          },
+          color: '#666',
+          fontSize: 12,
         },
         axisLine: {
           //X轴线颜色
@@ -116,10 +119,8 @@ function initChart() {
           //max: 500,
           interval: 50,
           axisLabel: {
-            textStyle: {
-              color: '#666',
-              fontSize: '12px',
-            },
+            color: '#666',
+            fontSize: 12,
             // formatter: "{value} ml",//单位
           },
         }, //左侧值
@@ -134,13 +135,13 @@ function initChart() {
           symbolSize: 10,
           // symbol:"circle", //设置折线点定位实心点
           itemStyle: {
-            normal: {
-              color: '#FFD000',
-              lineStyle: {
-                color: '#FFD000',
-              },
-            },
-            emphasis: {
+            color: '#FFD000',
+          },
+          lineStyle: {
+            color: '#FFD000',
+          },
+          emphasis: {
+            itemStyle: {
               color: '#fff',
               borderWidth: 5,
               borderColor: '#FFC100',
@@ -158,13 +159,13 @@ function initChart() {
           symbolSize: 10, //圆点大小
           // symbol:"circle", //设置折线点定位实心点
           itemStyle: {
-            normal: {
-              color: '#FD7F7F',
-              lineStyle: {
-                color: '#FD7F7F',
-              },
-            },
-            emphasis: {
+            color: '#FD7F7F',
+          },
+          lineStyle: {
+            color: '#FD7F7F',
+          },
+          emphasis: {
+            itemStyle: {
               // 圆点颜色
               color: '#fff',
               borderWidth: 5,

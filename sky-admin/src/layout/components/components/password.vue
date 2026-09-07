@@ -53,7 +53,7 @@ const emit = defineEmits(['handleclose'])
 const form = ref({} as any)
 const formRef = ref<FormInstance>()
 
-const validatePwd = (rule: any, value: any, callback: Function) => {
+const validatePwd = (_rule: any, value: any, callback: Function) => {
   const reg = /^[0-9A-Za-z]{6,20}$/
   if (!value) {
     callback(new Error('请输入'))
@@ -63,7 +63,7 @@ const validatePwd = (rule: any, value: any, callback: Function) => {
     callback()
   }
 }
-const validatePass2 = (rule: any, value: any, callback: Function) => {
+const validatePass2 = (_rule: any, value: any, callback: Function) => {
   if (!value) {
     callback(new Error('请再次输入密码'))
   } else if (value !== form.value.newPassword) {
@@ -88,8 +88,6 @@ const handleSave = () => {
       await editPassword(parnt)
       emit('handleclose')
       formRef.value?.resetFields()
-    } else {
-      return false
     }
   })
 }

@@ -14,9 +14,14 @@
 import { nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
 
-const props = defineProps({
-  turnoverdata: { type: Object, default: undefined },
-})
+const props = withDefaults(
+  defineProps<{
+    turnoverdata?: any
+  }>(),
+  {
+    turnoverdata: () => ({})
+  }
+)
 
 watch(
   () => props.turnoverdata,
@@ -28,7 +33,6 @@ watch(
 )
 
 function initChart() {
-  type EChartsOption = echarts.EChartsOption
   const chartDom = document.getElementById('main') as any
   const myChart = echarts.init(chartDom)
 
@@ -59,10 +63,8 @@ function initChart() {
       boundaryGap: false,
       axisLabel: {
         //X轴字体颜色
-        textStyle: {
-          color: '#666',
-          fontSize: '12px',
-        },
+        color: '#666',
+        fontSize: 12,
       },
       axisLine: {
         //X轴线颜色
@@ -80,10 +82,8 @@ function initChart() {
         //max: 50000,
         //interval: 1000,
         axisLabel: {
-          textStyle: {
-            color: '#666',
-            fontSize: '12px',
-          }
+          color: '#666',
+          fontSize: 12,
           // formatter: "{value} ml",//单位
         }
       }
@@ -98,17 +98,9 @@ function initChart() {
         symbolSize: 10,
         // symbol:"circle", //设置折线点定位实心点
         itemStyle: {
-          normal: {
-            color: '#F29C1B',
-            lineStyle: {
-              color: '#FFD000',
-            },
-          },
-          emphasis: {
-            color: '#fff',
-            borderWidth: 5,
-            borderColor: '#FFC100',
-          },
+          color: '#FFD000',
+          borderColor: '#FFC100',
+          borderWidth: 5,
         },
 
         data: props.turnoverdata.turnoverList,

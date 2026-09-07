@@ -157,6 +157,8 @@ import Empty from '@/components/Empty/index.vue'
 
 const router = useRouter()
 
+void moment
+
 const input = ref<any>('')
 const counts = ref<number>(0)
 const page = ref<number>(1)
@@ -178,18 +180,13 @@ const saleStatus = ref<any>([
   }
 ])
 
-const initProp = (val: any) => {
-  input.value = val
-  initFun()
-}
-
 const initFun = () => {
   page.value = 1
   init()
 }
 
 async function init(isSearchVal?: boolean) {
-  isSearch.value = isSearchVal
+  isSearch.value = isSearchVal ?? false
   await getSetmealPage({
     page: page.value,
     pageSize: pageSize.value,
@@ -220,7 +217,7 @@ const addSetMeal = (st: any) => {
 }
 
 // 删除
-const deleteHandle = (type: string, id: any) => {
+const deleteHandle = (type: string, id?: any) => {
   if (type === '批量' && id === null) {
     if (checkList.value.length === 0) {
       return ElMessage.error('请选择删除对象')

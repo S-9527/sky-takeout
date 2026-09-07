@@ -189,7 +189,6 @@ import BarChart from '@/components/Charts/BarChart.vue'
 import MixedChart from '@/components/Charts/MixedChart.vue'
 import moment from 'moment'
 import {
-  getDataes,
   getDayPayType,
   getprivilege,
   getDayDataes,
@@ -202,9 +201,6 @@ import {
   getTimeQuantumDiscount,
   getChartsDataes,
 } from '@/api/charts'
-import request from '@/utils/request'
-
-const isBoolean = (v: any) => typeof v === 'boolean'
 
 const dataTime = ref<any>('')
 const restKey = ref(0)

@@ -65,14 +65,14 @@ const router = useRouter()
 const userStore = useUserStore()
 const loginFormRef = ref<FormInstance>()
 
-const validateUsername = (rule: any, value: string, callback: Function) => {
+const validateUsername = (_rule: any, value: string, callback: Function) => {
   if (!value) {
     callback(new Error('请输入用户名'))
   } else {
     callback()
   }
 }
-const validatePassword = (rule: any, value: string, callback: Function) => {
+const validatePassword = (_rule: any, value: string, callback: Function) => {
   if (value.length < 6) {
     callback(new Error('密码必须在6位以上'))
   } else {
@@ -110,8 +110,6 @@ const handleLogin = () => {
         .catch(() => {
           loading.value = false
         })
-    } else {
-      return false
     }
   })
 }

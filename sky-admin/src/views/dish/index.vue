@@ -142,17 +142,13 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import HeadLable from '@/components/HeadLable/index.vue'
 import {
   getDishPage,
-  editDish,
   deleteDish,
   dishStatusByStatus,
   dishCategoryList as dishCategoryListApi
 } from '@/api/dish'
-import InputAutoComplete from '@/components/InputAutoComplete/index.vue'
 import Empty from '@/components/Empty/index.vue'
-import { baseUrl } from '@/config.json'
 
 const router = useRouter()
 const input = ref<any>('')
@@ -180,17 +176,12 @@ const saleStatus: any = [
 init()
 getDishCategoryList()
 
-const initProp = (val) => {
-  input.value = val
-  initFun()
-}
-
 const initFun = () => {
   page.value = 1
   init()
 }
 
-async function init(searchValue?) {
+async function init(searchValue?: any) {
   isSearch.value = searchValue
   await getDishPage({
     page: page.value,
@@ -256,7 +247,7 @@ function getDishCategoryList() {
           res.data &&
           res.data.data &&
           res.data.data
-        ).map(item => {
+        ).map((item: any) => {
           return { value: item.id, label: item.name }
         })
       }

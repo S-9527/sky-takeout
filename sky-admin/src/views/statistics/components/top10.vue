@@ -11,9 +11,14 @@
 import { nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
 
-const props = defineProps({
-  top10data: { type: Object, default: undefined },
-})
+const props = withDefaults(
+  defineProps<{
+    top10data?: any
+  }>(),
+  {
+    top10data: () => ({})
+  }
+)
 
 watch(
   () => props.top10data,
@@ -25,7 +30,6 @@ watch(
 )
 
 function initChart() {
-  type EChartsOption = echarts.EChartsOption
   const chartDom = document.getElementById('top') as any
   const myChart = echarts.init(chartDom)
   var option: any
@@ -63,10 +67,8 @@ function initChart() {
       type: 'category',
       // interval: 100,
       axisLabel: {
-        textStyle: {
-          color: '#666',
-          fontSize: '12px',
-        },
+        color: '#666',
+        fontSize: 12,
         // formatter: "{value} ml",//单位
       },
       data: props.top10data.nameList,
@@ -84,31 +86,26 @@ function initChart() {
         barCategoryGap: '80%' /*多个并排柱子设置柱子之间的间距*/,
 
         itemStyle: {
-          emphasis: {
-            barBorderRadius: 30,
-          },
-          normal: {
-            barBorderRadius: [0, 10, 10, 0], // 圆角
-            color: new echarts.graphic.LinearGradient( // 渐变色
-              1,
-              0,
-              0,
-              0, // 渐变色的起止位置, 右/下/左/上
-              [
-                // offset 位置
-                { offset: 0, color: '#FFBD00' },
-                { offset: 1, color: '#FFD000' },
-              ]
-            ),
-            label: {
-              //内容样式
-              show: true,
-              formatter: '{@score}',
-              color: '#333',
-              // position: "insideLeft", //内部左对齐
-              position: ['8', '5'], //自定义位置第一个参数为x轴方向，第二个参数为y轴方向，左上角为起点，向右向下为正数，向上向左为负数
-            },
-          },
+          borderRadius: [0, 10, 10, 0], // 圆角
+          color: new echarts.graphic.LinearGradient( // 渐变色
+            1,
+            0,
+            0,
+            0, // 渐变色的起止位置, 右/下/左/上
+            [
+              // offset 位置
+              { offset: 0, color: '#FFBD00' },
+              { offset: 1, color: '#FFD000' },
+            ]
+          ),
+        },
+        label: {
+          //内容样式
+          show: true,
+          formatter: '{@score}',
+          color: '#333',
+          // position: "insideLeft", //内部左对齐
+          position: ['8', '5'], //自定义位置第一个参数为x轴方向，第二个参数为y轴方向，左上角为起点，向右向下为正数，向上向左为负数
         },
         // label: {
         //   show: true,

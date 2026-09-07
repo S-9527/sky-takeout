@@ -65,7 +65,7 @@ const handleError = (err: any, file: any, fileList: any) => {
   })
 }
 
-const handleAvatarSuccess = (response: any, file: any, fileList: any) => {
+const handleAvatarSuccess = (response: any, _file: any, _fileList: any) => {
   imageUrl.value = `${response.data}`
   emit('imageChange', imageUrl.value)
 }

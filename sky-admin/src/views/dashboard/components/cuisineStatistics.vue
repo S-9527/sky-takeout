@@ -25,8 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import orderList from './orderList.vue'
-const props = defineProps({
+defineProps({
   dishesData: {
     type: Object,
     default: () => ({}),

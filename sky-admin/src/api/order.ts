@@ -60,7 +60,7 @@ export const orderReject = (params: any) => {
 }
 
 //获取待处理，待派送，派送中数量
-export const getOrderListBy = (params: any) => {
+export const getOrderListBy = (_params?: any) => {
   return request({
     url: '/order/statistics',
     method: 'get' /*  */

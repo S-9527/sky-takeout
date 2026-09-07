@@ -283,7 +283,7 @@
                 <span class="amount-name">菜品小计：</span>
                 <span class="amount-price"
                   >￥{{
-                    ((diaForm.amount - 6 - diaForm.packAmount).toFixed(2) *
+                    (Number((Number(diaForm.amount) - 6 - Number(diaForm.packAmount)).toFixed(2)) *
                       100) /
                     100
                   }}</span
@@ -427,7 +427,6 @@ import {
   orderCancel,
   orderReject as apiOrderReject,
   orderAccept as apiOrderAccept,
-  getOrderListBy,
 } from '@/api/order'
 
 const props = defineProps({
@@ -543,7 +542,7 @@ const tabList = computed(() => [
 
 getOrderListData(status.value)
 // // 获取订单数据
-async function getOrderListData(val) {
+async function getOrderListData(val: number) {
   const params = {
     page: page.value,
     pageSize: pageSize.value,
@@ -608,7 +607,7 @@ function orderReject(row: any, event: any) {
   cancelReason.value = ''
 }
 //确认取消或拒绝订单并填写原因
-function confirmCancel(type: any) {
+function confirmCancel(_type: any) {
   if (!cancelReason.value) {
     return ElMessage.error(`请选择${cancelDialogTitle.value}原因`)
   } else if (cancelReason.value === '自定义原因' && !remark.value) {
@@ -685,7 +684,7 @@ function handleClass(index: any) {
   }
 }
 // 触发table某一行
-function handleTable(row: any, column: any, event: any) {
+function handleTable(row: any, _column: any, event: any) {
   event.stopPropagation()
   goDetail(row.id, row.status, row, event)
 }

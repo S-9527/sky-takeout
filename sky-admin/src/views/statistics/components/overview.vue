@@ -120,14 +120,12 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue'
-import { getday } from '@/utils/formValidate'
-
-const props = defineProps({
-  overviewData: { type: Object, default: undefined },
-})
-
-const days = computed(() => {
-  return getday()
-})
+withDefaults(
+  defineProps<{
+    overviewData?: any
+  }>(),
+  {
+    overviewData: () => ({})
+  }
+)
 </script>

@@ -22,13 +22,13 @@
                  :key="item.name + item.id"
                  class="items">
               <el-checkbox :key="index"
-                           :label="item.name">
+                           :value="item.name">
                 <div class="item">
                   <span style="flex: 3; text-align: left">{{
                     item.dishName
                   }}</span>
                   <span>{{ item.status == 0 ? '停售' : '在售' }}</span>
-                  <span>{{ (Number(item.price) ).toFixed(2)*100/100 }}</span>
+                  <span>{{ Number(Number(item.price).toFixed(2))*100/100 }}</span>
                 </div>
               </el-checkbox>
             </div>
@@ -45,7 +45,7 @@
              :key="ind"
              class="item">
           <span>{{ item.dishName || item.name }}</span>
-          <span class="price">￥ {{ (Number(item.price) ).toFixed(2)*100/100 }} </span>
+          <span class="price">￥ {{ Number(Number(item.price).toFixed(2))*100/100 }} </span>
           <span class="del"
                 @click="delCheck(item.name)">
             <img src="./../../../assets/icons/btn_clean@2x.png"
@@ -65,7 +65,6 @@ import { ElMessage } from 'element-plus'
 import Empty from '@/components/Empty/index.vue'
 
 const props = defineProps({
-  value: { type: Number, default: '' },
   checkList: { type: Array as PropType<any[]>, default: () => [] },
   seachKey: { type: String, default: '' }
 })
@@ -75,9 +74,7 @@ const emit = defineEmits(['checkList'])
 const dishType = ref<any[]>([])
 const dishList = ref<any[]>([])
 const allDishList = ref<any[]>([])
-const dishListCache = ref<any[]>([])
 const keyInd = ref(0)
-const searchValue = ref<string>('')
 const checkedList = ref<any[]>([])
 const checkedListAll = ref<any[]>([])
 const ids = ref<any>(new Set())
@@ -191,15 +188,7 @@ const checkedListHandle = (value: [string]) => {
 const init = () => {
   getDishType()
   checkedList.value = props.checkList.map((it: any) => it.name)
-  checkedListAll.value = props.checkList.reverse()
-}
-
-const open = (done: any) => {
-  dishListCache.value = JSON.parse(JSON.stringify(props.checkList))
-}
-
-const close = (done: any) => {
-  ;(props as any).checkList = dishListCache.value
+  checkedListAll.value = props.checkList.slice().reverse()
 }
 
 // 删除

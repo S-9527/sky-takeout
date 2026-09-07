@@ -18,21 +18,22 @@
         @click="checkOption(it, ind)"
         >{{ it.name }}</span
       >
-      <span v-if="dishFlavorsData == []" class="none">无数据</span>
+      <span v-if="!dishFlavorsData.length" class="none">无数据</span>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import type { PropType } from 'vue'
 
 const props = defineProps({
-  selectFlavorsData: { type: Array, default: () => [] },
-  dishFlavorsData: { type: Array, default: () => [] },
+  selectFlavorsData: { type: Array as PropType<any[]>, default: () => [] },
+  dishFlavorsData: { type: Array as PropType<any[]>, default: () => [] },
   value: { type: [String, Number], default: '' },
   index: { type: Number, default: 0 }
 })
-const emit = defineEmits(['select'])
+const emit = defineEmits(['select', 'update:value'])
 
 const keyValue = ref(NaN)
 
@@ -53,10 +54,6 @@ const outSelect = (st: boolean) => {
   setTimeout(() => {
     mak.value = st
   }, 200)
-}
-
-const inputHandle = (val: any) => {
-  selectFlavor(false)
 }
 
 const checkOption = (val: any, ind: any) => {

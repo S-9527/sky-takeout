@@ -6,8 +6,6 @@ import {
   removeToken,
   getStoreId,
   setStoreId,
-  removeStoreId,
-  setUserInfo,
   getUserInfo,
   removeUserInfo
 } from '@/utils/cookies'
@@ -69,7 +67,7 @@ export const useUserStore = defineStore('user', {
         throw Error('GetUserInfo: token is undefined!')
       }
 
-      const data = JSON.parse(<string>getUserInfo())
+      const data = JSON.parse(getUserInfo() as string)
       if (!data) {
         throw Error('Verification failed, please Login again.')
       }
@@ -80,8 +78,7 @@ export const useUserStore = defineStore('user', {
         avatar,
         introduction,
         applicant,
-        storeManagerName,
-        storeId = ''
+        storeManagerName
       } = data
       if (!roles || roles.length <= 0) {
         throw Error('GetUserInfo: roles must be a non-null array!')
@@ -94,7 +91,7 @@ export const useUserStore = defineStore('user', {
       this.introduction = introduction
     },
     async LogOut() {
-      const { data } = await userLogout({})
+      await userLogout({})
       removeToken()
       this.token = ''
       this.roles = []

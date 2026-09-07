@@ -32,7 +32,7 @@
           clearable
           value-format="yyyy-MM-dd HH:mm:ss"
           range-separator="至"
-          :default-time="['00:00:00', '23:59:59']"
+          :default-time="defaultTime"
           type="daterange"
           start-placeholder="开始日期"
           end-placeholder="结束日期"
@@ -342,7 +342,7 @@
                 <span class="amount-name">菜品小计：</span>
                 <span class="amount-price"
                   >￥{{
-                    ((diaForm.amount - 6 - diaForm.packAmount).toFixed(2) *
+                    (Number((diaForm.amount - 6 - diaForm.packAmount).toFixed(2)) *
                       100) /
                     100
                   }}</span
@@ -475,8 +475,6 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import HeadLable from '@/components/HeadLable/index.vue'
-import InputAutoComplete from '@/components/InputAutoComplete/index.vue'
 import TabChange from './tabChange.vue'
 import Empty from '@/components/Empty/index.vue'
 import {
@@ -498,11 +496,11 @@ const orderStatics = ref<any>({})
 const row = ref<any>({})
 const isAutoNext = ref(true)
 const isTableOperateBtn = ref(true)
-const currentPageIndex = ref(0) //记录查看详情数据的index
 const orderId = ref('') //订单号
 const input = ref('') //搜索条件的订单号
 const phone = ref('') //搜索条件的手机号
 const valueTime = ref<any[]>([])
+const defaultTime = [new Date(2000, 0, 1, 0, 0, 0), new Date(2000, 0, 1, 23, 59, 59)]
 const dialogVisible = ref(false) //详情弹窗
 const cancelDialogVisible = ref(false) //取消，拒单弹窗
 const cancelDialogTitle = ref('') //取消，拒绝弹窗标题
@@ -620,7 +618,7 @@ function getOrderListBy3Status() {
 }
 
 function init(activeIndex: number = 0, isSearchVal?: boolean) {
-  isSearch.value = isSearchVal
+  isSearch.value = isSearchVal ?? false
   const params = {
     page: page.value,
     pageSize: pageSize.value,
@@ -737,7 +735,7 @@ function cancelOrder(rowData: any) {
 }
 
 //确认取消或拒绝订单并填写原因
-function confirmCancel(type: any) {
+function confirmCancel(_type: any) {
   if (!cancelReason.value) {
     return ElMessage.error(`请选择${cancelDialogTitle.value}原因`)
   } else if (cancelReason.value === '自定义原因' && !remark.value) {

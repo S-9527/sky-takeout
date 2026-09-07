@@ -25,7 +25,7 @@ const props = withDefaults(defineProps<{
   title: 'Requests'
 })
 
-const chart = ref<echarts.ECharts | null>(null)
+const chart = ref<any>(null)
 
 useChartResize(() => chart.value)
 

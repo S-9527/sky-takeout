@@ -18,7 +18,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { getOrderDetailPage } from '@/api/order'
 
 const props = defineProps({
   orderStatics: { type: Object, default: '' },
@@ -26,7 +25,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['tabChange'])
 
-const activeIndex = ref<number>(props.defaultActivity || 0)
+const activeIndex = ref<number>(Number(props.defaultActivity) || 0)
 
 watch(
   () => props.defaultActivity,

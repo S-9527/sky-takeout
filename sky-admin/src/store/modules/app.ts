@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia'
-import { getSidebarStatus, setSidebarStatus } from '@/utils/cookies'
+import { setSidebarStatus } from '@/utils/cookies'
 
-export enum DeviceType {
-  Mobile,
-  Desktop
-}
+export const DeviceType = {
+  Mobile: 'Mobile',
+  Desktop: 'Desktop'
+} as const
+
+export type DeviceType = (typeof DeviceType)[keyof typeof DeviceType]
 
 export interface IAppState {
   device: DeviceType
@@ -12,7 +14,7 @@ export interface IAppState {
     opened: boolean
     withoutAnimation: boolean
   }
-  statusNumber: Number
+  statusNumber: number
 }
 
 export const useAppStore = defineStore('app', {

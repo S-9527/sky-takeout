@@ -59,8 +59,8 @@
         <el-form-item label="性别:"
                       prop="sex">
           <el-radio-group v-model="ruleForm.sex">
-            <el-radio label="男" />
-            <el-radio label="女" />
+            <el-radio :value="'男'">男</el-radio>
+            <el-radio :value="'女'">女</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="身份证号:"
@@ -121,7 +121,7 @@ const isCellPhone = (val: any) => {
   }
 }
 
-const checkphone = (rule: any, value: any, callback: any) => {
+const checkphone = (_rule: any, value: any, callback: any) => {
   if (value == '') {
     callback(new Error('请输入手机号'))
   } else if (!isCellPhone(value)) {
@@ -131,7 +131,7 @@ const checkphone = (rule: any, value: any, callback: any) => {
   }
 }
 
-const validID = (rule: any, value: any, callback: any) => {
+const validID = (_rule: any, value: any, callback: any) => {
   let reg = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/
   if (value == '') {
     callback(new Error('请输入身份证号码'))
@@ -147,7 +147,7 @@ const rules = computed(() => {
     name: [
       {
         required: true,
-        validator: (rule: any, value: string, callback: Function) => {
+        validator: (_rule: any, value: string, callback: Function) => {
           if (!value) {
             callback(new Error('请输入员工姓名'))
           } else {
@@ -160,7 +160,7 @@ const rules = computed(() => {
     username: [
       {
         required: true,
-        validator: (rule: any, value: string, callback: Function) => {
+        validator: (_rule: any, value: string, callback: Function) => {
           if (!value) {
             callback(new Error('请输入账号'))
           } else {
@@ -182,7 +182,7 @@ const rules = computed(() => {
 
 const init = async () => {
   const id = route.query.id
-  queryEmployeeById(id).then((res: any) => {
+  queryEmployeeById(String(id)).then((res: any) => {
     if (res.data.code === 1) {
       ruleForm.value = res.data.data
       ruleForm.value.sex = res.data.data.sex === '0' ? '女' : '男'
@@ -192,7 +192,7 @@ const init = async () => {
   })
 }
 
-const submitForm = (formName: any, st: any) => {
+const submitForm = (_formName: any, st: any) => {
   ;(ruleFormRef.value as any).validate((valid: any) => {
     if (valid) {
       if (actionType.value === 'add') {

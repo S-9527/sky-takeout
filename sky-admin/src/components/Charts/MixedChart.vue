@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<{
   chartData: () => ({})
 })
 
-const chart = ref<echarts.ECharts | null>(null)
+const chart = ref<any>(null)
 
 useChartResize(() => chart.value)
 
@@ -127,25 +127,23 @@ const initChart = () => {
       'barMaxWidth': 15,
       'barGap': '10%',
       'itemStyle': {
-        'normal': {
-          'barBorderRadius':[10, 10, 0, 0],
-          'color': new echarts.graphic.LinearGradient(
-            0, 0, 0, 1,
-            [
-              {'offset': 0, 'color': '#55A9FF'},
-              {'offset': 1, 'color': '#379AFF'}
-            ]
-          )
+        'borderRadius': [10, 10, 0, 0],
+        'color': new echarts.graphic.LinearGradient(
+          0, 0, 0, 1,
+          [
+            {'offset': 0, 'color': '#55A9FF'},
+            {'offset': 1, 'color': '#379AFF'}
+          ]
+        )
+      },
+      'label': {
+        'show': true,
+        'textStyle': {
+          'color': '#fff'
         },
-        'label': {
-          'show': true,
-          'textStyle': {
-            'color': '#fff'
-          },
-          'position': 'insideTop',
-          formatter(p: any) {
-            return p.value > 0 ? p.value : '';
-          }
+        'position': 'insideTop',
+        formatter(p: any) {
+          return p.value > 0 ? p.value : '';
         }
       },
       'data': props.chartData.yData

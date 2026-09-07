@@ -133,7 +133,7 @@
         <span class="dialog-footer">
           <el-button size="default"
                      @click="
-            ;(classData.dialogVisible = false), classDataRef.resetFields()
+            ;(classData.dialogVisible = false), classDataRef?.resetFields()
                      ">取 消</el-button>
           <el-button type="primary"
                      :class="{ continue: actionType === 'add' }"
@@ -155,7 +155,6 @@
 import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import HeadLable from '@/components/HeadLable/index.vue'
 import {
   getCategoryPage,
   deleCategory,
@@ -202,7 +201,7 @@ const rules = computed(() => {
       {
         required: true,
         trigger: 'blur',
-        validator: (rule: any, value: string, callback: Function) => {
+        validator: (_rule: any, value: string, callback: Function) => {
           // const reg = /[\u4e00-\u9fa5]/
           var reg = new RegExp('^[A-Za-z\u4e00-\u9fa5]+$')
           if (!value) {
@@ -221,7 +220,7 @@ const rules = computed(() => {
       {
         required: true,
         trigger: 'blur',
-        validator: (rule: any, value: string, callback: Function) => {
+        validator: (_rule: any, value: string, callback: Function) => {
           if (value || String(value) === '0') {
             const reg = /^\d+$/
             if (!reg.test(value)) {
@@ -294,11 +293,11 @@ const editHandle = (dat: any) => {
 }
 
 // 关闭弹窗
-const handleClose = (st: string) => {
+const handleClose = (_st: string) => {
   console.log(classDataRef.value, '$refs.classData')
   classData.dialogVisible = false
   //对该表单项进行重置，将其值重置为初始值并移除校验结果
-  classDataRef.value.resetFields()
+  classDataRef.value?.resetFields()
 }
 
 //状态修改
@@ -347,9 +346,9 @@ const deleteHandle = (id: any) => {
 }
 
 //数据提交
-const submitForm = (st: any) => {
+const submitForm = (st?: any) => {
   if (action.value === 'add') {
-    classDataRef.value.validate((value: boolean) => {
+    classDataRef.value?.validate((value: boolean) => {
       if (value) {
         addCategory({
           name: classData.name,
@@ -359,7 +358,7 @@ const submitForm = (st: any) => {
           .then(res => {
             if (res.data.code === 1) {
               ElMessage.success('分类添加成功！')
-              classDataRef.value.resetFields()
+              classDataRef.value?.resetFields()
               if (!st) {
                 classData.dialogVisible = false
               }
@@ -374,7 +373,7 @@ const submitForm = (st: any) => {
       }
     })
   } else {
-    classDataRef.value.validate((value: boolean) => {
+    classDataRef.value?.validate((value: boolean) => {
       if (value) {
         editCategory({
           id: classData.id,
@@ -385,7 +384,7 @@ const submitForm = (st: any) => {
             if (res.data.code === 1) {
               ElMessage.success('分类修改成功！')
               classData.dialogVisible = false
-              classDataRef.value.resetFields()
+              classDataRef.value?.resetFields()
               init()
             } else {
               ElMessage.error(res.data.desc || res.data.msg)

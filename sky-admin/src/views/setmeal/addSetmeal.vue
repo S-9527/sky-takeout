@@ -477,6 +477,26 @@ if (actionType.value == 'edit') {
       width: 130px;
     }
 
+    .el-input-number {
+      width: 130px;
+    }
+
+    /* EP2 的 input-number 外框由 wrapper 的 inset 阴影绘制,聚焦/悬浮会换色出现一圈描边;
+       Element UI 聚焦无任何变化,这里固定为黄框 */
+    .el-input-number .el-input {
+      --el-input-height: 32px;
+      --el-input-inner-height: 30px;
+    }
+
+    .el-input-number .el-input__wrapper {
+      box-shadow: 0 0 0 1px #fbe396 inset !important;
+      font-size: 13px;
+    }
+
+    .el-input-number .el-input__inner {
+      border: none;
+    }
+
     .el-input-number__increase {
       border-left: solid 1px #fbe396;
       background: #fffbf0;
@@ -487,20 +507,20 @@ if (actionType.value == 'edit') {
       background: #fffbf0;
     }
 
-    input {
-      border: 1px solid #fbe396;
-    }
-
     .table {
       border: solid 1px #ebeef5;
       border-radius: 3px;
 
+      /* EP2 的 .el-form-item__content line-height 是 32px(Element UI 为 40px),
+         表头/行高因此比原版矮,这里按原版尺寸补齐 */
       th {
         padding: 5px 0;
+        height: 51px;
       }
 
       td {
         padding: 7px 0;
+        height: 48px;
       }
     }
   }

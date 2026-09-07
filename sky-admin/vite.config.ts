@@ -15,9 +15,10 @@ export default defineConfig(({ mode }) => {
     css: {
       preprocessorOptions: {
         scss: {
+          loadPaths: [fileURLToPath(new URL('./src/styles', import.meta.url))],
           additionalData:
-            `@import "${fileURLToPath(new URL('./src/styles/_variables.scss', import.meta.url))}";\n` +
-            `@import "${fileURLToPath(new URL('./src/styles/_mixins.scss', import.meta.url))}";\n`
+            `@use 'variables' as *;\n` +
+            `@use 'mixins' as *;\n`
         }
       }
     },

@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { login, userLogout } from '@/api/employee'
 import {
@@ -12,92 +13,98 @@ import {
 import Cookies from 'js-cookie'
 import { ElMessage } from 'element-plus'
 
-export interface IUserState {
-  token: string
-  name: string
-  avatar: string
-  storeId: string
-  introduction: string
-  userInfo: any
-  roles: string[]
-  username: string
-}
+export const useUserStore = defineStore('user', () => {
+  const token = ref<string>(getToken() || '')
+  const name = ref('')
+  const avatar = ref('')
+  const storeId = ref<string>(getStoreId() || '')
+  const introduction = ref('')
+  const userInfo = ref<any>({})
+  const roles = ref<string[]>([])
+  const username = ref<string>(Cookies.get('username') || '')
 
-export const useUserStore = defineStore('user', {
-  state: (): IUserState => ({
-    token: getToken() || '',
-    name: '',
-    avatar: '',
-    storeId: getStoreId() || '',
-    introduction: '',
-    userInfo: {},
-    roles: [],
-    username: Cookies.get('username') || ''
-  }),
-  actions: {
-    async Login(userInfo: { username: string; password: string }) {
-      let { username, password } = userInfo
-      username = username.trim()
-      this.username = username
-      Cookies.set('username', username)
-      const { data } = await login({ username, password })
-      if (String(data.code) === '1') {
-        this.token = data.data.token
-        setToken(data.data.token)
-        this.userInfo = { ...data.data }
-        Cookies.set('user_info', JSON.stringify(data.data))
-        return data
-      } else {
-        return ElMessage.error(data.msg)
-      }
-    },
-    ResetToken() {
-      removeToken()
-      this.token = ''
-      this.roles = []
-    },
-    async changeStore(data: any) {
-      this.storeId = data.data
-      this.token = data.authorization
-      setStoreId(data.data)
-      setToken(data.authorization)
-    },
-    async GetUserInfo() {
-      if (this.token === '') {
-        throw Error('GetUserInfo: token is undefined!')
-      }
-
-      const data = JSON.parse(getUserInfo() as string)
-      if (!data) {
-        throw Error('Verification failed, please Login again.')
-      }
-
-      const {
-        roles,
-        name,
-        avatar,
-        introduction,
-        applicant,
-        storeManagerName
-      } = data
-      if (!roles || roles.length <= 0) {
-        throw Error('GetUserInfo: roles must be a non-null array!')
-      }
-
-      this.roles = roles
-      this.userInfo = { ...data }
-      this.name = name || applicant || storeManagerName
-      this.avatar = avatar
-      this.introduction = introduction
-    },
-    async LogOut() {
-      await userLogout({})
-      removeToken()
-      this.token = ''
-      this.roles = []
-      Cookies.remove('username')
-      Cookies.remove('user_info')
-      removeUserInfo()
+  async function Login(params: { username: string; password: string }) {
+    let { username: uname, password } = params
+    uname = uname.trim()
+    username.value = uname
+    Cookies.set('username', uname)
+    const { data } = await login({ username: uname, password })
+    if (String(data.code) === '1') {
+      token.value = data.data.token
+      setToken(data.data.token)
+      userInfo.value = { ...data.data }
+      Cookies.set('user_info', JSON.stringify(data.data))
+      return data
+    } else {
+      return ElMessage.error(data.msg)
     }
+  }
+
+  function ResetToken() {
+    removeToken()
+    token.value = ''
+    roles.value = []
+  }
+
+  async function changeStore(data: any) {
+    storeId.value = data.data
+    token.value = data.authorization
+    setStoreId(data.data)
+    setToken(data.authorization)
+  }
+
+  async function GetUserInfo() {
+    if (token.value === '') {
+      throw Error('GetUserInfo: token is undefined!')
+    }
+
+    const data = JSON.parse(getUserInfo() as string)
+    if (!data) {
+      throw Error('Verification failed, please Login again.')
+    }
+
+    const {
+      roles: roleList,
+      name: userName,
+      avatar: userAvatar,
+      introduction: userIntroduction,
+      applicant,
+      storeManagerName
+    } = data
+    if (!roleList || roleList.length <= 0) {
+      throw Error('GetUserInfo: roles must be a non-null array!')
+    }
+
+    roles.value = roleList
+    userInfo.value = { ...data }
+    name.value = userName || applicant || storeManagerName
+    avatar.value = userAvatar
+    introduction.value = userIntroduction
+  }
+
+  async function LogOut() {
+    await userLogout({})
+    removeToken()
+    token.value = ''
+    roles.value = []
+    Cookies.remove('username')
+    Cookies.remove('user_info')
+    removeUserInfo()
+  }
+
+  return {
+    token,
+    name,
+    avatar,
+    storeId,
+    introduction,
+    userInfo,
+    roles,
+    username,
+    Login,
+    ResetToken,
+    changeStore,
+    GetUserInfo,
+    LogOut
   }
 })

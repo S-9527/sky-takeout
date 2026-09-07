@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { setSidebarStatus } from '@/utils/cookies'
 
@@ -8,44 +9,45 @@ export const DeviceType = {
 
 export type DeviceType = (typeof DeviceType)[keyof typeof DeviceType]
 
-export interface IAppState {
-  device: DeviceType
-  sidebar: {
-    opened: boolean
-    withoutAnimation: boolean
-  }
-  statusNumber: number
-}
+export const useAppStore = defineStore('app', () => {
+  const device = ref<DeviceType>(DeviceType.Desktop)
+  const sidebar = ref({
+    opened: true,
+    withoutAnimation: false
+  })
+  const statusNumber = ref(0)
 
-export const useAppStore = defineStore('app', {
-  state: (): IAppState => ({
-    sidebar: {
-      opened: true,
-      withoutAnimation: false
-    },
-    device: DeviceType.Desktop,
-    statusNumber: 0
-  }),
-  actions: {
-    ToggleSideBar(withoutAnimation: boolean) {
-      this.sidebar.opened = !this.sidebar.opened
-      this.sidebar.withoutAnimation = withoutAnimation
-      if (this.sidebar.opened) {
-        setSidebarStatus('opened')
-      } else {
-        setSidebarStatus('closed')
-      }
-    },
-    CloseSideBar(withoutAnimation: boolean) {
-      this.sidebar.opened = false
-      this.sidebar.withoutAnimation = withoutAnimation
+  function ToggleSideBar(withoutAnimation: boolean) {
+    sidebar.value.opened = !sidebar.value.opened
+    sidebar.value.withoutAnimation = withoutAnimation
+    if (sidebar.value.opened) {
+      setSidebarStatus('opened')
+    } else {
       setSidebarStatus('closed')
-    },
-    ToggleDevice(device: DeviceType) {
-      this.device = device
-    },
-    StatusNumber(device: any) {
-      this.statusNumber = device
     }
+  }
+
+  function CloseSideBar(withoutAnimation: boolean) {
+    sidebar.value.opened = false
+    sidebar.value.withoutAnimation = withoutAnimation
+    setSidebarStatus('closed')
+  }
+
+  function ToggleDevice(type: DeviceType) {
+    device.value = type
+  }
+
+  function StatusNumber(val: any) {
+    statusNumber.value = val
+  }
+
+  return {
+    device,
+    sidebar,
+    statusNumber,
+    ToggleSideBar,
+    CloseSideBar,
+    ToggleDevice,
+    StatusNumber
   }
 })

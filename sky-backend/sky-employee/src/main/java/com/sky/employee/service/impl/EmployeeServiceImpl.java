@@ -16,6 +16,7 @@ import com.sky.exception.AccountLockedException;
 import com.sky.exception.AccountNotFoundException;
 import com.sky.exception.BaseException;
 import com.sky.exception.PasswordErrorException;
+import com.sky.result.ResultCode;
 import com.sky.employee.mapper.EmployeeMapper;
 import com.sky.result.PageResult;
 import com.sky.employee.service.EmployeeService;
@@ -98,7 +99,7 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @param employeePageQueryDTO
      * @return
      */
-    public PageResult pageQuery(EmployeePageQueryDTO employeePageQueryDTO) {
+    public PageResult<Employee> pageQuery(EmployeePageQueryDTO employeePageQueryDTO) {
         IPage<Employee> page = employeeMapper.pageQuery(
                 new Page<>(employeePageQueryDTO.getPage(), employeePageQueryDTO.getPageSize()),
                 employeePageQueryDTO);
@@ -106,7 +107,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         long total = page.getTotal();
         List<Employee> records = page.getRecords();
 
-        return new PageResult(total, records);
+        return new PageResult<>(total, records);
     }
 
     /**
@@ -118,7 +119,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     public void startOrStop(Integer status, Long id) {
         AccountStatus accountStatus = AccountStatus.fromCode(status);
         if (accountStatus == null) {
-            throw new BaseException("非法的账号状态值：" + status);
+            throw new BaseException(ResultCode.UNPROCESSABLE_ENTITY.getCode(), "非法的账号状态值：" + status);
         }
 
         Employee employee = Employee.builder()

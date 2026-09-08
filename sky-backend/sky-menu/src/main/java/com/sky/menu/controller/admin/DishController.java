@@ -53,7 +53,7 @@ public class DishController {
      */
     @GetMapping("/page")
     @Operation(summary = "菜品分页查询")
-    public Result<PageResult> page(DishPageQueryDTO dishPageQueryDTO) {
+    public Result<PageResult<DishVO>> page(DishPageQueryDTO dishPageQueryDTO) {
         PageResult pageResult = dishService.pageQuery(dishPageQueryDTO);
         return Result.success(pageResult);
     }

@@ -54,11 +54,11 @@ public class CategoryServiceImpl implements CategoryService {
      * @param categoryPageQueryDTO
      * @return
      */
-    public PageResult pageQuery(CategoryPageQueryDTO categoryPageQueryDTO) {
+    public PageResult<Category> pageQuery(CategoryPageQueryDTO categoryPageQueryDTO) {
         IPage<Category> page = categoryMapper.pageQuery(
                 new Page<>(categoryPageQueryDTO.getPage(), categoryPageQueryDTO.getPageSize()),
                 categoryPageQueryDTO);
-        return new PageResult(page.getTotal(), page.getRecords());
+        return new PageResult<>(page.getTotal(), page.getRecords());
     }
 
     /**

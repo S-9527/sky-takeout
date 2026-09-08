@@ -33,6 +33,7 @@ import com.sky.user.service.UserService;
 import com.sky.order.mapper.OrderDetailMapper;
 import com.sky.order.mapper.OrderMapper;
 import com.sky.result.PageResult;
+import com.sky.result.ResultCode;
 import com.sky.order.service.OrderService;
 import com.sky.pay.PaymentGateway;
 import com.sky.utils.HttpClientUtil;
@@ -231,7 +232,7 @@ public class OrderServiceImpl implements OrderService {
         );
 
         if (jsonObject.getString("code") != null && jsonObject.getString("code").equals("ORDERPAID")) {
-            throw new OrderBusinessException("该订单已支付");
+            throw new OrderBusinessException(ResultCode.CONFLICT.getCode(), "该订单已支付");
         }
 
         OrderPaymentVO vo = jsonObject.toJavaObject(OrderPaymentVO.class);
@@ -280,7 +281,7 @@ public class OrderServiceImpl implements OrderService {
      * @param status
      * @return
      */
-    public PageResult pageQuery4User(int pageNum, int pageSize, Integer status) {
+    public PageResult<OrderVO> pageQuery4User(int pageNum, int pageSize, Integer status) {
         OrdersPageQueryDTO ordersPageQueryDTO = new OrdersPageQueryDTO();
         ordersPageQueryDTO.setUserId(BaseContext.getCurrentId());
         ordersPageQueryDTO.setStatus(status);
@@ -289,7 +290,7 @@ public class OrderServiceImpl implements OrderService {
         IPage<Orders> page = orderMapper.pageQuery(
                 new Page<>(pageNum, pageSize), ordersPageQueryDTO);
 
-        List<OrderVO> list = new ArrayList();
+        List<OrderVO> list = new ArrayList<>();
 
         // 查询出订单明细，并封装入OrderVO进行响应
         if (page != null && page.getTotal() > 0) {
@@ -307,7 +308,7 @@ public class OrderServiceImpl implements OrderService {
                 list.add(orderVO);
             }
         }
-        return new PageResult(page.getTotal(), list);
+        return new PageResult<>(page.getTotal(), list);
     }
 
     /**
@@ -349,7 +350,7 @@ public class OrderServiceImpl implements OrderService {
 
         OrderStatus from = OrderStatus.fromCode(ordersDB.getStatus());
         if (from != OrderStatus.PENDING_PAYMENT && from != OrderStatus.TO_BE_CONFIRMED) {
-            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+            throw new OrderBusinessException(ResultCode.CONFLICT.getCode(), MessageConstant.ORDER_STATUS_ERROR);
         }
 
         // 订单处于待接单状态下取消，需要进行退款
@@ -403,7 +404,7 @@ public class OrderServiceImpl implements OrderService {
      * @param ordersPageQueryDTO
      * @return
      */
-    public PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO) {
+    public PageResult<OrderVO> conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO) {
         IPage<Orders> page = orderMapper.pageQuery(
                 new Page<>(ordersPageQueryDTO.getPage(), ordersPageQueryDTO.getPageSize()),
                 ordersPageQueryDTO);
@@ -411,7 +412,7 @@ public class OrderServiceImpl implements OrderService {
         // 部分订单状态，需要额外返回订单菜品信息，将Orders转化为OrderVO
         List<OrderVO> orderVOList = getOrderVOList(page.getRecords());
 
-        return new PageResult(page.getTotal(), orderVOList);
+        return new PageResult<>(page.getTotal(), orderVOList);
     }
 
     private List<OrderVO> getOrderVOList(List<Orders> ordersList) {
@@ -496,8 +497,12 @@ public class OrderServiceImpl implements OrderService {
     public void rejection(OrdersRejectionDTO ordersRejectionDTO) throws Exception {
         Orders ordersDB = orderMapper.selectById(ordersRejectionDTO.getId());
 
-        if (ordersDB == null || !OrderStatus.TO_BE_CONFIRMED.getCode().equals(ordersDB.getStatus())) {
-            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        if (ordersDB == null) {
+            throw new OrderBusinessException(ResultCode.NOT_FOUND.getCode(), MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        if (!OrderStatus.TO_BE_CONFIRMED.getCode().equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException(ResultCode.CONFLICT.getCode(), MessageConstant.ORDER_STATUS_ERROR);
         }
 
         // 已支付则退款
@@ -526,13 +531,13 @@ public class OrderServiceImpl implements OrderService {
         Orders ordersDB = orderMapper.selectById(ordersCancelDTO.getId());
 
         if (ordersDB == null) {
-            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+            throw new OrderBusinessException(ResultCode.NOT_FOUND.getCode(), MessageConstant.ORDER_NOT_FOUND);
         }
 
         // 先校验当前状态是否允许取消，避免对不可取消订单误触发退款
         OrderStatus from = OrderStatus.fromCode(ordersDB.getStatus());
         if (!orderStateMachine.canTransition(from, OrderStatus.CANCELLED)) {
-            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+            throw new OrderBusinessException(ResultCode.CONFLICT.getCode(), MessageConstant.ORDER_STATUS_ERROR);
         }
 
         // 已支付则退款
@@ -561,8 +566,12 @@ public class OrderServiceImpl implements OrderService {
     public void delivery(Long id) {
         Orders ordersDB = orderMapper.selectById(id);
 
-        if (ordersDB == null || !OrderStatus.CONFIRMED.getCode().equals(ordersDB.getStatus())) {
-            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        if (ordersDB == null) {
+            throw new OrderBusinessException(ResultCode.NOT_FOUND.getCode(), MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        if (!OrderStatus.CONFIRMED.getCode().equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException(ResultCode.CONFLICT.getCode(), MessageConstant.ORDER_STATUS_ERROR);
         }
 
         orderStateMachine.transition(ordersDB, OrderStatus.DELIVERY_IN_PROGRESS, null);
@@ -577,8 +586,12 @@ public class OrderServiceImpl implements OrderService {
     public void complete(Long id) {
         Orders ordersDB = orderMapper.selectById(id);
 
-        if (ordersDB == null || !OrderStatus.DELIVERY_IN_PROGRESS.getCode().equals(ordersDB.getStatus())) {
-            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        if (ordersDB == null) {
+            throw new OrderBusinessException(ResultCode.NOT_FOUND.getCode(), MessageConstant.ORDER_NOT_FOUND);
+        }
+
+        if (!OrderStatus.DELIVERY_IN_PROGRESS.getCode().equals(ordersDB.getStatus())) {
+            throw new OrderBusinessException(ResultCode.CONFLICT.getCode(), MessageConstant.ORDER_STATUS_ERROR);
         }
 
         orderStateMachine.transition(ordersDB, OrderStatus.COMPLETED, o -> o.setDeliveryTime(LocalDateTime.now()));
@@ -595,7 +608,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 校验订单是否存在
         if (ordersDB == null) {
-            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+            throw new OrderBusinessException(ResultCode.NOT_FOUND.getCode(), MessageConstant.ORDER_NOT_FOUND);
         }
 
         // 客户催单事件由 OrderEventListener 负责推送

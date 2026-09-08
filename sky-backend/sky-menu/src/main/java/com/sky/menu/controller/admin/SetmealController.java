@@ -47,7 +47,7 @@ public class SetmealController {
      */
     @GetMapping("/page")
     @Operation(summary = "分页查询")
-    public Result<PageResult> page(SetmealPageQueryDTO setmealPageQueryDTO) {
+    public Result<PageResult<SetmealVO>> page(SetmealPageQueryDTO setmealPageQueryDTO) {
         PageResult pageResult = setmealService.pageQuery(setmealPageQueryDTO);
         return Result.success(pageResult);
     }

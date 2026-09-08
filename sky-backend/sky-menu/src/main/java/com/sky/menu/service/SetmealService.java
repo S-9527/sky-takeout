@@ -39,7 +39,7 @@ public interface SetmealService {
      * @param setmealPageQueryDTO
      * @return
      */
-    PageResult pageQuery(SetmealPageQueryDTO setmealPageQueryDTO);
+    PageResult<SetmealVO> pageQuery(SetmealPageQueryDTO setmealPageQueryDTO);
 
     /**
      * 批量删除套餐

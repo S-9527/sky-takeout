@@ -1,5 +1,6 @@
 package com.sky.result;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -16,23 +17,32 @@ public class Result<T> implements Serializable {
     private T data; //数据
 
     public static <T> Result<T> success() {
-        Result<T> result = new Result<T>();
-        result.code = 1;
+        Result<T> result = new Result<>();
+        result.code = ResultCode.SUCCESS.getCode();
         return result;
     }
 
     public static <T> Result<T> success(T object) {
-        Result<T> result = new Result<T>();
+        Result<T> result = new Result<>();
         result.data = object;
-        result.code = 1;
+        result.code = ResultCode.SUCCESS.getCode();
         return result;
     }
 
     public static <T> Result<T> error(String msg) {
-        Result result = new Result();
+        return error(ResultCode.ERROR.getCode(), msg);
+    }
+
+    public static <T> Result<T> error(int code, String msg) {
+        Result<T> result = new Result<>();
         result.msg = msg;
-        result.code = 0;
+        result.code = code;
         return result;
+    }
+
+    @JsonIgnore
+    public boolean isSuccess() {
+        return ResultCode.SUCCESS.getCode().equals(code);
     }
 
 }

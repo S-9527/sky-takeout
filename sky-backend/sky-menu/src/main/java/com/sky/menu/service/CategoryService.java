@@ -19,7 +19,7 @@ public interface CategoryService {
      * @param categoryPageQueryDTO
      * @return
      */
-    PageResult pageQuery(CategoryPageQueryDTO categoryPageQueryDTO);
+    PageResult<Category> pageQuery(CategoryPageQueryDTO categoryPageQueryDTO);
 
     /**
      * 根据id删除分类

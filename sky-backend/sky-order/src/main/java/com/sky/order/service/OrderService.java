@@ -45,7 +45,7 @@ public interface OrderService {
      * @param status
      * @return
      */
-    PageResult pageQuery4User(int page, int pageSize, Integer status);
+    PageResult<OrderVO> pageQuery4User(int page, int pageSize, Integer status);
 
     /**
      * 查询订单详情
@@ -71,7 +71,7 @@ public interface OrderService {
      * @param ordersPageQueryDTO
      * @return
      */
-    PageResult conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO);
+    PageResult<OrderVO> conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO);
 
     /**
      * 各个状态的订单数量统计

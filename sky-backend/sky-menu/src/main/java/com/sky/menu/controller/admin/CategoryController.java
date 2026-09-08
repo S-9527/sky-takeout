@@ -42,7 +42,7 @@ public class CategoryController {
      */
     @GetMapping("/page")
     @Operation(summary = "分类分页查询")
-    public Result<PageResult> page(CategoryPageQueryDTO categoryPageQueryDTO){
+    public Result<PageResult<Category>> page(CategoryPageQueryDTO categoryPageQueryDTO){
         PageResult pageResult = categoryService.pageQuery(categoryPageQueryDTO);
         return Result.success(pageResult);
     }

@@ -56,7 +56,7 @@ public class OrderController {
      */
     @GetMapping("/historyOrders")
     @Operation(summary = "历史订单查询")
-    public Result<PageResult> page(int page, int pageSize, Integer status) {
+    public Result<PageResult<OrderVO>> page(int page, int pageSize, Integer status) {
         PageResult pageResult = orderService.pageQuery4User(page, pageSize, status);
         return Result.success(pageResult);
     }

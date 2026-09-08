@@ -73,11 +73,11 @@ public class DishServiceImpl implements DishService {
      * @param dishPageQueryDTO
      * @return
      */
-    public PageResult pageQuery(DishPageQueryDTO dishPageQueryDTO) {
+    public PageResult<DishVO> pageQuery(DishPageQueryDTO dishPageQueryDTO) {
         IPage<DishVO> page = dishMapper.pageQuery(
                 new Page<>(dishPageQueryDTO.getPage(), dishPageQueryDTO.getPageSize()),
                 dishPageQueryDTO);
-        return new PageResult(page.getTotal(), page.getRecords());
+        return new PageResult<>(page.getTotal(), page.getRecords());
     }
 
     /**

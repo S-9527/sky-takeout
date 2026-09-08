@@ -57,6 +57,7 @@ public class SecurityConfig {
                                 "/user/shop/status",
                                 "/notify/**",
                                 "/ws/**",
+                                "/files/**",
                                 "/error",
                                 "/doc.html",
                                 "/swagger-ui/**",

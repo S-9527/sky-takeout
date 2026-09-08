@@ -529,6 +529,12 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
 
+        // 先校验当前状态是否允许取消，避免对不可取消订单误触发退款
+        OrderStatus from = OrderStatus.fromCode(ordersDB.getStatus());
+        if (!orderStateMachine.canTransition(from, OrderStatus.CANCELLED)) {
+            throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+        }
+
         // 已支付则退款
         if (OrderPayStatus.PAID.getCode().equals(ordersDB.getPayStatus())) {
             String refund = paymentGateway.refund(
@@ -537,6 +543,7 @@ public class OrderServiceImpl implements OrderService {
                     new BigDecimal(0.01),
                     new BigDecimal(0.01));
             log.info("申请退款：{}", refund);
+            ordersDB.setPayStatus(OrderPayStatus.REFUND.getCode());
         }
 
         orderStateMachine.transition(ordersDB, OrderStatus.CANCELLED, o -> {

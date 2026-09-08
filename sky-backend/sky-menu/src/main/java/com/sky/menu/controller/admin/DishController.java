@@ -36,7 +36,7 @@ public class DishController {
      */
     @PostMapping
     @Operation(summary = "新增菜品")
-    public Result save(@RequestBody DishDTO dishDTO) {
+    public Result<String> save(@RequestBody DishDTO dishDTO) {
         dishService.saveWithFlavor(dishDTO);
 
         //清理缓存数据
@@ -54,7 +54,7 @@ public class DishController {
     @GetMapping("/page")
     @Operation(summary = "菜品分页查询")
     public Result<PageResult<DishVO>> page(DishPageQueryDTO dishPageQueryDTO) {
-        PageResult pageResult = dishService.pageQuery(dishPageQueryDTO);
+        PageResult<DishVO> pageResult = dishService.pageQuery(dishPageQueryDTO);
         return Result.success(pageResult);
     }
 
@@ -66,7 +66,7 @@ public class DishController {
      */
     @DeleteMapping
     @Operation(summary = "菜品批量删除")
-    public Result delete(@RequestParam List<Long> ids) {
+    public Result<String> delete(@RequestParam List<Long> ids) {
         dishService.deleteBatch(ids);
 
         //将所有的菜品缓存数据清理掉，所有以dish_开头的key
@@ -96,7 +96,7 @@ public class DishController {
      */
     @PutMapping
     @Operation(summary = "修改菜品")
-    public Result update(@RequestBody DishDTO dishDTO) {
+    public Result<String> update(@RequestBody DishDTO dishDTO) {
         dishService.updateWithFlavor(dishDTO);
 
         //将所有的菜品缓存数据清理掉，所有以dish_开头的key

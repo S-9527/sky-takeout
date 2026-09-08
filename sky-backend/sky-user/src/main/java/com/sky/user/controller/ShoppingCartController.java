@@ -26,7 +26,7 @@ public class ShoppingCartController {
      */
     @PostMapping("/add")
     @Operation(summary = "添加购物车")
-    public Result add(@RequestBody ShoppingCartDTO shoppingCartDTO){
+    public Result<String> add(@RequestBody ShoppingCartDTO shoppingCartDTO){
         shoppingCartService.addShoppingCart(shoppingCartDTO);
         return Result.success();
     }
@@ -48,7 +48,7 @@ public class ShoppingCartController {
      */
     @DeleteMapping("/clean")
     @Operation(summary = "清空购物车")
-    public Result clean(){
+    public Result<String> clean(){
         shoppingCartService.cleanShoppingCart();
         return Result.success();
     }
@@ -60,7 +60,7 @@ public class ShoppingCartController {
      */
     @PostMapping("/sub")
     @Operation(summary = "删除购物车中一个商品")
-    public Result sub(@RequestBody ShoppingCartDTO shoppingCartDTO){
+    public Result<String> sub(@RequestBody ShoppingCartDTO shoppingCartDTO){
         shoppingCartService.subShoppingCart(shoppingCartDTO);
         return Result.success();
     }

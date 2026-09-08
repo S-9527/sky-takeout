@@ -34,7 +34,7 @@ public class OrderController {
     @GetMapping("/conditionSearch")
     @Operation(summary = "订单搜索")
     public Result<PageResult<OrderVO>> conditionSearch(OrdersPageQueryDTO ordersPageQueryDTO) {
-        PageResult pageResult = orderService.conditionSearch(ordersPageQueryDTO);
+        PageResult<OrderVO> pageResult = orderService.conditionSearch(ordersPageQueryDTO);
         return Result.success(pageResult);
     }
 
@@ -70,7 +70,7 @@ public class OrderController {
      */
     @PutMapping("/confirm")
     @Operation(summary = "接单")
-    public Result confirm(@RequestBody OrdersConfirmDTO ordersConfirmDTO) {
+    public Result<String> confirm(@RequestBody OrdersConfirmDTO ordersConfirmDTO) {
         orderService.confirm(ordersConfirmDTO);
         return Result.success();
     }
@@ -82,7 +82,7 @@ public class OrderController {
      */
     @PutMapping("/rejection")
     @Operation(summary = "拒单")
-    public Result rejection(@RequestBody OrdersRejectionDTO ordersRejectionDTO) throws Exception {
+    public Result<String> rejection(@RequestBody OrdersRejectionDTO ordersRejectionDTO) throws Exception {
         orderService.rejection(ordersRejectionDTO);
         return Result.success();
     }
@@ -94,7 +94,7 @@ public class OrderController {
      */
     @PutMapping("/cancel")
     @Operation(summary = "取消订单")
-    public Result cancel(@RequestBody OrdersCancelDTO ordersCancelDTO) throws Exception {
+    public Result<String> cancel(@RequestBody OrdersCancelDTO ordersCancelDTO) throws Exception {
         orderService.cancel(ordersCancelDTO);
         return Result.success();
     }
@@ -106,7 +106,7 @@ public class OrderController {
      */
     @PutMapping("/delivery/{id}")
     @Operation(summary = "派送订单")
-    public Result delivery(@PathVariable("id") Long id) {
+    public Result<String> delivery(@PathVariable("id") Long id) {
         orderService.delivery(id);
         return Result.success();
     }
@@ -118,7 +118,7 @@ public class OrderController {
      */
     @PutMapping("/complete/{id}")
     @Operation(summary = "完成订单")
-    public Result complete(@PathVariable("id") Long id) {
+    public Result<String> complete(@PathVariable("id") Long id) {
         orderService.complete(id);
         return Result.success();
     }

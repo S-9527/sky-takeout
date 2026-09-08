@@ -57,7 +57,7 @@ public class OrderController {
     @GetMapping("/historyOrders")
     @Operation(summary = "历史订单查询")
     public Result<PageResult<OrderVO>> page(int page, int pageSize, Integer status) {
-        PageResult pageResult = orderService.pageQuery4User(page, pageSize, status);
+        PageResult<OrderVO> pageResult = orderService.pageQuery4User(page, pageSize, status);
         return Result.success(pageResult);
     }
 
@@ -81,7 +81,7 @@ public class OrderController {
      */
     @PutMapping("/cancel/{id}")
     @Operation(summary = "取消订单")
-    public Result cancel(@PathVariable("id") Long id) throws Exception {
+    public Result<String> cancel(@PathVariable("id") Long id) throws Exception {
         orderService.userCancelById(id);
         return Result.success();
     }
@@ -94,7 +94,7 @@ public class OrderController {
      */
     @PostMapping("/repetition/{id}")
     @Operation(summary = "再来一单")
-    public Result repetition(@PathVariable Long id) {
+    public Result<String> repetition(@PathVariable Long id) {
         orderService.repetition(id);
         return Result.success();
     }
@@ -106,7 +106,7 @@ public class OrderController {
      */
     @GetMapping("/reminder/{id}")
     @Operation(summary = "客户催单")
-    public Result reminder(@PathVariable("id") Long id){
+    public Result<String> reminder(@PathVariable("id") Long id){
         orderService.reminder(id);
         return Result.success();
     }

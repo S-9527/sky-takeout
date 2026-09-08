@@ -62,7 +62,7 @@ public class EmployeeController {
      */
     @PostMapping
     @Operation(summary = "新增员工")
-    public Result save(@RequestBody EmployeeDTO employeeDTO){
+    public Result<String> save(@RequestBody EmployeeDTO employeeDTO){
         employeeService.save(employeeDTO);
         return Result.success();
     }
@@ -75,7 +75,7 @@ public class EmployeeController {
     @GetMapping("/page")
     @Operation(summary = "员工分页查询")
     public Result<PageResult<Employee>> page(EmployeePageQueryDTO employeePageQueryDTO){
-        PageResult pageResult = employeeService.pageQuery(employeePageQueryDTO);
+        PageResult<Employee> pageResult = employeeService.pageQuery(employeePageQueryDTO);
         return Result.success(pageResult);
     }
 
@@ -87,7 +87,7 @@ public class EmployeeController {
      */
     @PostMapping("/status/{status}")
     @Operation(summary = "启用禁用员工账号")
-    public Result startOrStop(@PathVariable Integer status,Long id){
+    public Result<String> startOrStop(@PathVariable Integer status,Long id){
         employeeService.startOrStop(status,id);
         return Result.success();
     }
@@ -111,7 +111,7 @@ public class EmployeeController {
      */
     @PutMapping
     @Operation(summary = "编辑员工信息")
-    public Result update(@RequestBody EmployeeDTO employeeDTO){
+    public Result<String> update(@RequestBody EmployeeDTO employeeDTO){
         employeeService.update(employeeDTO);
         return Result.success();
     }
@@ -123,7 +123,7 @@ public class EmployeeController {
      */
     @PutMapping("/editPassword")
     @Operation(summary = "修改密码")
-    public Result editPassword(@RequestBody PasswordEditDTO passwordEditDTO){
+    public Result<String> editPassword(@RequestBody PasswordEditDTO passwordEditDTO){
         employeeService.editPassword(passwordEditDTO);
         return Result.success();
     }

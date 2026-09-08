@@ -40,7 +40,7 @@ public class AddressBookController {
      */
     @PostMapping
     @Operation(summary = "新增地址")
-    public Result save(@RequestBody AddressBook addressBook) {
+    public Result<String> save(@RequestBody AddressBook addressBook) {
         addressBookService.save(addressBook);
         return Result.success();
     }
@@ -60,7 +60,7 @@ public class AddressBookController {
      */
     @PutMapping
     @Operation(summary = "根据id修改地址")
-    public Result update(@RequestBody AddressBook addressBook) {
+    public Result<String> update(@RequestBody AddressBook addressBook) {
         addressBookService.update(addressBook);
         return Result.success();
     }
@@ -73,7 +73,7 @@ public class AddressBookController {
      */
     @PutMapping("/default")
     @Operation(summary = "设置默认地址")
-    public Result setDefault(@RequestBody AddressBook addressBook) {
+    public Result<String> setDefault(@RequestBody AddressBook addressBook) {
         addressBookService.setDefault(addressBook);
         return Result.success();
     }
@@ -86,7 +86,7 @@ public class AddressBookController {
      */
     @DeleteMapping
     @Operation(summary = "根据id删除地址")
-    public Result deleteById(Long id) {
+    public Result<String> deleteById(Long id) {
         addressBookService.deleteById(id);
         return Result.success();
     }

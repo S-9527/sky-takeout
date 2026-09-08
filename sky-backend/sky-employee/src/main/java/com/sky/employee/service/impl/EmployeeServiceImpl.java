@@ -20,6 +20,8 @@ import com.sky.result.ResultCode;
 import com.sky.employee.mapper.EmployeeMapper;
 import com.sky.result.PageResult;
 import com.sky.employee.service.EmployeeService;
+import com.sky.employee.vo.EmployeeLoginVO;
+import com.sky.token.JwtTokenService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -38,13 +40,15 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final JwtTokenService jwtTokenService;
+
     /**
      * 员工登录
      *
      * @param employeeLoginDTO
      * @return
      */
-    public Employee login(EmployeeLoginDTO employeeLoginDTO) {
+    public EmployeeLoginVO login(EmployeeLoginDTO employeeLoginDTO) {
         String username = employeeLoginDTO.getUsername();
         String password = employeeLoginDTO.getPassword();
 
@@ -69,8 +73,14 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new AccountLockedException(MessageConstant.ACCOUNT_LOCKED);
         }
 
-        //3、返回实体对象
-        return employee;
+        //3、登录成功，签发JWT令牌并组装登录结果
+        String token = jwtTokenService.createAdminToken(employee.getId());
+        return EmployeeLoginVO.builder()
+                .id(employee.getId())
+                .userName(employee.getUsername())
+                .name(employee.getName())
+                .token(token)
+                .build();
     }
 
     /**

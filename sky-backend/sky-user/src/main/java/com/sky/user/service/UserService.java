@@ -2,6 +2,7 @@ package com.sky.user.service;
 
 import com.sky.user.dto.UserLoginDTO;
 import com.sky.user.entity.User;
+import com.sky.user.vo.UserLoginVO;
 
 import java.util.Map;
 
@@ -12,7 +13,7 @@ public interface UserService {
      * @param userLoginDTO
      * @return
      */
-    User wxLogin(UserLoginDTO userLoginDTO);
+    UserLoginVO wxLogin(UserLoginDTO userLoginDTO);
 
     /**
      * 根据id查询用户

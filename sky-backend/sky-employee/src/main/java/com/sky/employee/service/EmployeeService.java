@@ -5,6 +5,7 @@ import com.sky.employee.dto.EmployeeLoginDTO;
 import com.sky.employee.dto.EmployeePageQueryDTO;
 import com.sky.employee.dto.PasswordEditDTO;
 import com.sky.employee.entity.Employee;
+import com.sky.employee.vo.EmployeeLoginVO;
 import com.sky.result.PageResult;
 
 public interface EmployeeService {
@@ -14,7 +15,7 @@ public interface EmployeeService {
      * @param employeeLoginDTO
      * @return
      */
-    Employee login(EmployeeLoginDTO employeeLoginDTO);
+    EmployeeLoginVO login(EmployeeLoginDTO employeeLoginDTO);
 
     /**
      * 新增员工

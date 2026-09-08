@@ -1,24 +1,18 @@
 package com.sky.employee.controller;
 
-import com.sky.constant.JwtClaimsConstant;
 import com.sky.employee.dto.EmployeeDTO;
 import com.sky.employee.dto.EmployeeLoginDTO;
 import com.sky.employee.dto.EmployeePageQueryDTO;
 import com.sky.employee.dto.PasswordEditDTO;
 import com.sky.employee.entity.Employee;
-import com.sky.properties.JwtProperties;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.employee.service.EmployeeService;
-import com.sky.utils.JwtUtil;
 import com.sky.employee.vo.EmployeeLoginVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -32,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
-    private final JwtProperties jwtProperties;
 
     /**
      * 登录
@@ -45,24 +38,7 @@ public class EmployeeController {
     public Result<EmployeeLoginVO> login(@RequestBody EmployeeLoginDTO employeeLoginDTO) {
         log.info("员工登录：{}", employeeLoginDTO.getUsername());
 
-        Employee employee = employeeService.login(employeeLoginDTO);
-
-        //登录成功后，生成jwt令牌
-        Map<String, Object> claims = new HashMap<>();
-        claims.put(JwtClaimsConstant.EMP_ID, employee.getId());
-        String token = JwtUtil.createJWT(
-                jwtProperties.getAdminSecretKey(),
-                jwtProperties.getAdminTtl(),
-                claims);
-
-        EmployeeLoginVO employeeLoginVO = EmployeeLoginVO.builder()
-                .id(employee.getId())
-                .userName(employee.getUsername())
-                .name(employee.getName())
-                .token(token)
-                .build();
-
-        return Result.success(employeeLoginVO);
+        return Result.success(employeeService.login(employeeLoginDTO));
     }
 
     /**

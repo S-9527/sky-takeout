@@ -10,6 +10,8 @@ import com.sky.exception.LoginFailedException;
 import com.sky.user.mapper.UserMapper;
 import com.sky.properties.WeChatProperties;
 import com.sky.user.service.UserService;
+import com.sky.user.vo.UserLoginVO;
+import com.sky.token.JwtTokenService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -17,7 +19,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -32,13 +33,14 @@ public class UserServiceImpl implements UserService {
     private final WeChatProperties weChatProperties;
     private final UserMapper userMapper;
     private final RestClient.Builder restClientBuilder;
+    private final JwtTokenService jwtTokenService;
 
     /**
      * 微信登录
      * @param userLoginDTO
      * @return
      */
-    public User wxLogin(UserLoginDTO userLoginDTO) {
+    public UserLoginVO wxLogin(UserLoginDTO userLoginDTO) {
         String openid = getOpenid(userLoginDTO.getCode());
 
         //判断openid是否为空，如果为空表示登录失败，抛出业务异常
@@ -58,8 +60,13 @@ public class UserServiceImpl implements UserService {
             userMapper.insert(user);
         }
 
-        //返回这个用户对象
-        return user;
+        //签发jwt令牌并返回登录结果
+        String token = jwtTokenService.createUserToken(user.getId());
+        return UserLoginVO.builder()
+                .id(user.getId())
+                .openid(user.getOpenid())
+                .token(token)
+                .build();
     }
 
     /**

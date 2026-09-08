@@ -65,3 +65,10 @@ sky:
     address: 北京市海淀区上地十街10号
   baidu:
     ak: your-ak
+  pay:
+    # 支付网关: wechat(默认, 真实微信支付) / mock(本地开发联调, 支付即成功)
+    gateway: ${sky.pay.gateway:wechat}
+  oss:
+    # 文件存储: aliyun(默认, 阿里云 OSS) / local(本地磁盘, 无需云账号)
+    storage: ${sky.oss.storage:aliyun}
+    local-dir: ${sky.oss.local-dir:./data/upload}

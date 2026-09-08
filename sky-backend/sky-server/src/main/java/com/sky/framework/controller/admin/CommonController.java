@@ -2,7 +2,7 @@ package com.sky.framework.controller.admin;
 
 import com.sky.constant.MessageConstant;
 import com.sky.result.Result;
-import com.sky.utils.AliOssUtil;
+import com.sky.storage.StorageService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CommonController {
 
-    private final AliOssUtil aliOssUtil;
+    private final StorageService storageService;
 
     /**
      * 文件上传
@@ -46,7 +46,7 @@ public class CommonController {
             String objectName = UUID.randomUUID().toString() + extension;
 
             //文件的请求路径
-            String filePath = aliOssUtil.upload(file.getBytes(), objectName);
+            String filePath = storageService.upload(file.getBytes(), objectName);
             return Result.success(filePath);
         } catch (IOException e) {
             log.error("文件上传失败：{}", e);

@@ -34,8 +34,8 @@ import com.sky.order.mapper.OrderDetailMapper;
 import com.sky.order.mapper.OrderMapper;
 import com.sky.result.PageResult;
 import com.sky.order.service.OrderService;
+import com.sky.pay.PaymentGateway;
 import com.sky.utils.HttpClientUtil;
-import com.sky.utils.WeChatPayUtil;
 import com.sky.order.vo.OrderPaymentVO;
 import com.sky.order.vo.OrderStatisticsVO;
 import com.sky.order.vo.OrderSubmitVO;
@@ -67,7 +67,7 @@ public class OrderServiceImpl implements OrderService {
     private final AddressBookService addressBookService;
     private final ShoppingCartService shoppingCartService;
     private final UserService userService;
-    private final WeChatPayUtil weChatPayUtil;
+    private final PaymentGateway paymentGateway;
     private final OrderStateMachine orderStateMachine;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -216,13 +216,14 @@ public class OrderServiceImpl implements OrderService {
      * @param ordersPaymentDTO
      * @return
      */
+    @Transactional
     public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception {
         // 当前登录用户id
         Long userId = BaseContext.getCurrentId();
         User user = userService.getById(userId);
 
-        //调用微信支付接口，生成预支付交易单
-        JSONObject jsonObject = weChatPayUtil.pay(
+        //调用支付网关生成预支付交易单
+        JSONObject jsonObject = paymentGateway.pay(
                 ordersPaymentDTO.getOrderNumber(), //商户订单号
                 new BigDecimal(0.01), //支付金额，单位 元
                 "苍穹外卖订单", //商品描述
@@ -235,6 +236,11 @@ public class OrderServiceImpl implements OrderService {
 
         OrderPaymentVO vo = jsonObject.toJavaObject(OrderPaymentVO.class);
         vo.setPackageStr(jsonObject.getString("package"));
+
+        // Mock 支付网关：本地开发环境直接确认支付成功
+        if (paymentGateway.autoConfirmOnPay()) {
+            paySuccess(ordersPaymentDTO.getOrderNumber());
+        }
 
         return vo;
     }
@@ -348,7 +354,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 订单处于待接单状态下取消，需要进行退款
         if (from == OrderStatus.TO_BE_CONFIRMED) {
-            weChatPayUtil.refund(
+            paymentGateway.refund(
                     ordersDB.getNumber(),
                     ordersDB.getNumber(),
                     new BigDecimal(0.01),
@@ -496,7 +502,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 已支付则退款
         if (OrderPayStatus.PAID.getCode().equals(ordersDB.getPayStatus())) {
-            String refund = weChatPayUtil.refund(
+            String refund = paymentGateway.refund(
                     ordersDB.getNumber(),
                     ordersDB.getNumber(),
                     new BigDecimal(0.01),
@@ -525,7 +531,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 已支付则退款
         if (OrderPayStatus.PAID.getCode().equals(ordersDB.getPayStatus())) {
-            String refund = weChatPayUtil.refund(
+            String refund = paymentGateway.refund(
                     ordersDB.getNumber(),
                     ordersDB.getNumber(),
                     new BigDecimal(0.01),

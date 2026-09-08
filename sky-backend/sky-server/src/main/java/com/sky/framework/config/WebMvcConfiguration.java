@@ -3,8 +3,10 @@ package com.sky.framework.config;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import org.springdoc.core.models.GroupedOpenApi;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
@@ -12,6 +14,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 @Configuration
 public class WebMvcConfiguration implements WebMvcConfigurer {
+
+    @Value("${sky.oss.local-dir:./data/upload}")
+    private String localUploadDir;
 
     @Bean
     public OpenAPI skyOpenAPI() {
@@ -44,5 +49,14 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                 .group("支付回调接口")
                 .pathsToMatch("/notify/**")
                 .build();
+    }
+
+    /**
+     * 本地文件存储模式下的静态资源映射
+     */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/files/**")
+                .addResourceLocations("file:" + localUploadDir + "/");
     }
 }

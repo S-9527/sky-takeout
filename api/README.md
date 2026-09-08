@@ -27,9 +27,10 @@ curl -s "http://localhost:8080/v3/api-docs/%E6%94%AF%E4%BB%98%E5%9B%9E%E8%B0%83%
 
 ## 鉴权说明
 
-- 管理端接口除 `POST /admin/employee/login` 外，请求头需携带 **`token`**：`{员工登录返回的 token}`
-- 用户端接口除 `POST /user/user/login`、`GET /user/shop/status` 外，请求头需携带 **`authentication`**：`{用户登录返回的 token}`
+- 管理端接口除 `POST /admin/employee/login` 外，请求头需携带 **`Authorization`**：`Bearer {员工登录返回的 token}`
+- 用户端接口除 `POST /user/user/login`、`GET /user/shop/status` 外，请求头需携带 **`Authorization`**：`Bearer {用户登录返回的 token}`
 - 登录接口：管理端 `admin/123456`；用户端需通过微信登录（模拟用途）
 - 支付回调接口为微信服务端回调，无需登录态
+- 令牌登出后即加入服务端黑名单，同一令牌后续请求返回 401
 
-在 Apifox 中可为环境变量配置 `token` / `authentication`，并在认证中关联，便于批量调试。
+在 Apifox 中可为环境变量配置 `token` / `authentication`（值含 `Bearer ` 前缀），并在认证中关联，便于批量调试。

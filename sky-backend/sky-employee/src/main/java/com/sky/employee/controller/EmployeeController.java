@@ -48,7 +48,10 @@ public class EmployeeController {
      */
     @PostMapping("/logout")
     @Operation(summary = "员工退出")
-    public Result<String> logout() {
+    public Result<String> logout(@RequestHeader(name = "Authorization", required = false) String authorization) {
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            employeeService.logout(authorization.substring("Bearer ".length()));
+        }
         return Result.success();
     }
 

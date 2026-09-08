@@ -188,4 +188,13 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setPassword(passwordEncoder.encode(passwordEditDTO.getNewPassword()));
         employeeMapper.updateById(employee);
     }
+
+    /**
+     * 退出登录
+     *
+     * @param token
+     */
+    public void logout(String token) {
+        jwtTokenService.revokeToken(token, true);
+    }
 }

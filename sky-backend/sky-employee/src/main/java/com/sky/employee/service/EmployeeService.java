@@ -55,4 +55,10 @@ public interface EmployeeService {
      * @param passwordEditDTO
      */
     void editPassword(PasswordEditDTO passwordEditDTO);
+
+    /**
+     * 退出登录：撤销当前令牌，使其立即失效
+     * @param token 待撤销的 jwt 令牌
+     */
+    void logout(String token);
 }

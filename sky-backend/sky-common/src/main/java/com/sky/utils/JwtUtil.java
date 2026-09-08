@@ -1,54 +1,92 @@
 package com.sky.utils;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.Key;
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 public class JwtUtil {
     /**
-     * 生成jwt
-     * 使用Hs256算法, 私匙使用固定秘钥
-     *
-     * @param secretKey jwt秘钥
-     * @param ttlMillis jwt过期时间(毫秒)
-     * @param claims    设置的信息
-     * @return
+     * 校验时允许的时钟偏移阈值(秒)，用于容忍客户端/服务端时间偏差
      */
-    public static String createJWT(String secretKey, long ttlMillis, Map<String, Object> claims) {
-        // 指定签名的时候使用的签名算法，也就是header那部分
-        SecretKey key = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    public static final long CLOCK_SKEW_SECONDS = 60L;
 
-        long expMillis = System.currentTimeMillis() + ttlMillis;
-        Date exp = new Date(expMillis);
-
-        return Jwts.builder()
-                .claims(claims)
-                .expiration(exp)
-                .signWith(key, Jwts.SIG.HS256)
-                .compact();
+    private static SecretKey hmacKey(String secretKey) {
+        return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
-     * Token解密
+     * 签发 JWT（HS256）。补齐标准注册声明：
+     * jti(唯一标识)、iat(签发时间)、nbf(生效时间)、exp(过期时间)、iss(签发方)、aud(受众)，
+     * 并在 header 写入 kid(密钥标识)以支持多密钥轮换。
      *
-     * @param secretKey jwt秘钥 此秘钥一定要保留好在服务端, 不能暴露出去, 否则sign就可以被伪造, 如果对接多个客户端建议改造成多个
-     * @param token     加密后的token
-     * @return
+     * @param secretKey 哈希密钥(长度需 >=32 字节)
+     * @param ttlMillis 令牌有效时长(毫秒)
+     * @param issuer    签发方
+     * @param audience  受众
+     * @param keyId     密钥标识(header中)
+     * @param claims    业务声明(如 empId/userId)
+     * @return JWT 令牌
      */
-    public static Claims parseJWT(String secretKey, String token) {
-        SecretKey key = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+    public static String createJWT(String secretKey, long ttlMillis, String issuer, String audience,
+                                   String keyId, Map<String, Object> claims) {
+        Date now = new Date();
+        Date exp = new Date(System.currentTimeMillis() + ttlMillis);
 
-        Claims claims = Jwts.parser()
-                .verifyWith(key)
+        JwtBuilder builder = Jwts.builder()
+                .header().keyId(keyId).and()
+                .id(UUID.randomUUID().toString())
+                .issuer(issuer)
+                .audience().single(audience)
+                .issuedAt(now)
+                .notBefore(now)
+                .expiration(exp)
+                .claims(claims)
+                .signWith(hmacKey(secretKey), Jwts.SIG.HS256);
+        return builder.compact();
+    }
+
+    /**
+     * 校验并解析 JWT：验证签名(按 kid 选择密钥)、校验 jti/iat/nbf/exp，
+     * 并允许 60s 时钟偏移。
+     *
+     * @param keysByKeyId kid → 密钥映射（轮换时填入当前及历史密钥）
+     * @param token       JWT 令牌
+     * @return 解析后的声明
+     */
+    public static Claims parseJWT(Map<String, SecretKey> keysByKeyId, String token) {
+        return Jwts.parser()
+                .clockSkewSeconds(CLOCK_SKEW_SECONDS)
+                .keyLocator((io.jsonwebtoken.Locator<Key>) header -> {
+                    String keyId = (String) header.get("kid");
+                    return keysByKeyId.get(keyId);
+                })
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-        return claims;
+    }
+
+    /**
+     * 使用单个密钥校验并解析 JWT（兼容旧调用，便于测试）。
+     *
+     * @param secretKey 哈希密钥
+     * @param token     JWT 令牌
+     * @return 解析后的声明
+     */
+    public static Claims parseJWT(String secretKey, String token) {
+        return Jwts.parser()
+                .clockSkewSeconds(CLOCK_SKEW_SECONDS)
+                .verifyWith(hmacKey(secretKey))
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 
 }

@@ -20,7 +20,7 @@ service.interceptors.request.use(
   (config: any) => {
     const UserStore = useUserStore(pinia)
     if (UserStore.token) {
-      config.headers['token'] = UserStore.token
+      config.headers['Authorization'] = `Bearer ${UserStore.token}`
     }
 
     // get请求映射params参数

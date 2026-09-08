@@ -1,7 +1,9 @@
 package com.sky.order.task;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.sky.order.domain.OrderStateMachine;
 import com.sky.order.entity.Orders;
+import com.sky.order.enumeration.OrderStatus;
 import com.sky.order.mapper.OrderMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class OrderTask {
 
     private final OrderMapper orderMapper;
+    private final OrderStateMachine orderStateMachine;
 
     /**
      * 处理超时订单的方法
@@ -29,17 +32,16 @@ public class OrderTask {
 
         LocalDateTime time = LocalDateTime.now().plusMinutes(-15);
 
-        // select * from orders where status = ? and order_time < (当前时间 - 15分钟)
         List<Orders> ordersList = orderMapper.selectList(new LambdaQueryWrapper<Orders>()
-                .eq(Orders::getStatus, Orders.PENDING_PAYMENT)
+                .eq(Orders::getStatus, OrderStatus.PENDING_PAYMENT.getCode())
                 .lt(Orders::getOrderTime, time));
 
         if(ordersList != null && ordersList.size() > 0){
             for (Orders orders : ordersList) {
-                orders.setStatus(Orders.CANCELLED);
-                orders.setCancelReason("订单超时，自动取消");
-                orders.setCancelTime(LocalDateTime.now());
-                orderMapper.updateById(orders);
+                orderStateMachine.transition(orders, OrderStatus.CANCELLED, o -> {
+                    o.setCancelReason("订单超时，自动取消");
+                    o.setCancelTime(LocalDateTime.now());
+                });
             }
         }
     }
@@ -54,13 +56,12 @@ public class OrderTask {
         LocalDateTime time = LocalDateTime.now().plusMinutes(-60);
 
         List<Orders> ordersList = orderMapper.selectList(new LambdaQueryWrapper<Orders>()
-                .eq(Orders::getStatus, Orders.DELIVERY_IN_PROGRESS)
+                .eq(Orders::getStatus, OrderStatus.DELIVERY_IN_PROGRESS.getCode())
                 .lt(Orders::getOrderTime, time));
 
         if(ordersList != null && ordersList.size() > 0){
             for (Orders orders : ordersList) {
-                orders.setStatus(Orders.COMPLETED);
-                orderMapper.updateById(orders);
+                orderStateMachine.transition(orders, OrderStatus.COMPLETED, null);
             }
         }
     }

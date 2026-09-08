@@ -2,7 +2,7 @@ package com.sky.report.service.impl;
 
 import com.sky.report.service.ReportService;
 import com.sky.order.dto.GoodsSalesDTO;
-import com.sky.order.entity.Orders;
+import com.sky.order.enumeration.OrderStatus;
 import com.sky.order.service.OrderService;
 import com.sky.user.service.UserService;
 import com.sky.report.service.WorkspaceService;
@@ -71,7 +71,7 @@ public class ReportServiceImpl implements ReportService {
             Map map = new HashMap();
             map.put("begin", beginTime);
             map.put("end", endTime);
-            map.put("status", Orders.COMPLETED);
+            map.put("status", OrderStatus.COMPLETED.getCode());
             Double turnover = orderService.sumByMap(map);
             turnover = turnover == null ? 0.0 : turnover;
             turnoverList.add(turnover);
@@ -165,7 +165,7 @@ public class ReportServiceImpl implements ReportService {
             Integer orderCount = getOrderCount(beginTime, endTime, null);
 
             //查询每天的有效订单数 select count(id) from orders where order_time > ? and order_time < ? and status = 5
-            Integer validOrderCount = getOrderCount(beginTime, endTime, Orders.COMPLETED);
+            Integer validOrderCount = getOrderCount(beginTime, endTime, OrderStatus.COMPLETED.getCode());
 
             orderCountList.add(orderCount);
             validOrderCountList.add(validOrderCount);

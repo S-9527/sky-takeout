@@ -1,7 +1,7 @@
 package com.sky.report.service.impl;
 
 import com.sky.constant.StatusConstant;
-import com.sky.order.entity.Orders;
+import com.sky.order.enumeration.OrderStatus;
 import com.sky.order.service.OrderService;
 import com.sky.menu.service.DishService;
 import com.sky.menu.service.SetmealService;
@@ -51,7 +51,7 @@ public class WorkspaceServiceImpl implements WorkspaceService {
         //查询总订单数
         Integer totalOrderCount = orderService.countByMap(map);
 
-        map.put("status", Orders.COMPLETED);
+        map.put("status", OrderStatus.COMPLETED.getCode());
         //营业额
         Double turnover = orderService.sumByMap(map);
         turnover = turnover == null? 0.0 : turnover;
@@ -90,21 +90,21 @@ public class WorkspaceServiceImpl implements WorkspaceService {
     public OrderOverViewVO getOrderOverView() {
         Map map = new HashMap();
         map.put("begin", LocalDateTime.now().with(LocalTime.MIN));
-        map.put("status", Orders.TO_BE_CONFIRMED);
+        map.put("status", OrderStatus.TO_BE_CONFIRMED.getCode());
 
         //待接单
         Integer waitingOrders = orderService.countByMap(map);
 
         //待派送
-        map.put("status", Orders.CONFIRMED);
+        map.put("status", OrderStatus.CONFIRMED.getCode());
         Integer deliveredOrders = orderService.countByMap(map);
 
         //已完成
-        map.put("status", Orders.COMPLETED);
+        map.put("status", OrderStatus.COMPLETED.getCode());
         Integer completedOrders = orderService.countByMap(map);
 
         //已取消
-        map.put("status", Orders.CANCELLED);
+        map.put("status", OrderStatus.CANCELLED.getCode());
         Integer cancelledOrders = orderService.countByMap(map);
 
         //全部订单

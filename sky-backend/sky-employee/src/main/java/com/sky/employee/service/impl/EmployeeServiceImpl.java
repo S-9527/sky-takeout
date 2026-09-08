@@ -11,10 +11,7 @@ import com.sky.employee.dto.EmployeeLoginDTO;
 import com.sky.employee.dto.EmployeePageQueryDTO;
 import com.sky.employee.dto.PasswordEditDTO;
 import com.sky.employee.entity.Employee;
-import com.sky.exception.AccountLockedException;
-import com.sky.exception.AccountNotFoundException;
 import com.sky.exception.BaseException;
-import com.sky.exception.PasswordErrorException;
 import com.sky.result.ResultCode;
 import com.sky.employee.mapper.EmployeeMapper;
 import com.sky.result.PageResult;
@@ -24,6 +21,9 @@ import com.sky.token.JwtTokenService;
 import com.sky.token.TokenType;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -66,18 +66,18 @@ public class EmployeeServiceImpl implements EmployeeService {
         //2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
         if (employee == null) {
             //账号不存在
-            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+            throw new UsernameNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
 
         //密码比对（BCrypt 校验，兼容 $2a/$2b/$2y 前缀）
         if (!passwordEncoder.matches(password, employee.getPassword())) {
             //密码错误
-            throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+            throw new BadCredentialsException(MessageConstant.PASSWORD_ERROR);
         }
 
         if (AccountStatus.DISABLED.getCode().equals(employee.getStatus())) {
             //账号被锁定
-            throw new AccountLockedException(MessageConstant.ACCOUNT_LOCKED);
+            throw new LockedException(MessageConstant.ACCOUNT_LOCKED);
         }
 
         //3、登录成功，签发JWT令牌并组装登录结果
@@ -183,12 +183,12 @@ public class EmployeeServiceImpl implements EmployeeService {
         Long empId = BaseContext.getCurrentId();
         Employee employee = employeeMapper.selectById(empId);
         if (employee == null) {
-            throw new AccountNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+            throw new UsernameNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
         }
 
         //校验旧密码
         if (!passwordEncoder.matches(passwordEditDTO.getOldPassword(), employee.getPassword())) {
-            throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
+            throw new BadCredentialsException(MessageConstant.PASSWORD_ERROR);
         }
 
         //更新为新密码

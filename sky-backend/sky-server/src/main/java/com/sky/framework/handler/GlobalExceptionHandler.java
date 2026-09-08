@@ -3,7 +3,9 @@ package com.sky.framework.handler;
 import com.sky.constant.MessageConstant;
 import com.sky.exception.BaseException;
 import com.sky.result.Result;
+import com.sky.result.ResultCode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -25,6 +27,18 @@ public class GlobalExceptionHandler {
     public Result exceptionHandler(BaseException ex){
         log.error("异常信息：{}", ex.getMessage());
         return Result.error(ex.getCode(), ex.getMessage());
+    }
+
+    /**
+     * 捕获登录认证异常(密码错误/账号不存在/账号锁定等)，
+     * 返回 401 业务码并保留内建异常的文案
+     * @param ex
+     * @return
+     */
+    @ExceptionHandler
+    public Result exceptionHandler(AuthenticationException ex){
+        log.error("认证异常：{}", ex.getMessage());
+        return Result.error(ResultCode.UNAUTHORIZED.getCode(), ex.getMessage());
     }
 
     /**

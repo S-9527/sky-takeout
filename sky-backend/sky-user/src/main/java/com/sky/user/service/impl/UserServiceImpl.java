@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sky.constant.MessageConstant;
 import com.sky.user.dto.UserLoginDTO;
 import com.sky.user.entity.User;
-import com.sky.exception.LoginFailedException;
 import com.sky.user.mapper.UserMapper;
 import com.sky.properties.WeChatProperties;
 import com.sky.user.service.UserService;
@@ -19,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -45,7 +45,7 @@ public class UserServiceImpl implements UserService {
 
         //判断openid是否为空，如果为空表示登录失败，抛出业务异常
         if(openid == null){
-            throw new LoginFailedException(MessageConstant.LOGIN_FAILED);
+            throw new InternalAuthenticationServiceException(MessageConstant.LOGIN_FAILED);
         }
 
         //判断当前用户是否为新用户

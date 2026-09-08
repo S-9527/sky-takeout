@@ -35,8 +35,6 @@ public class CommonController {
     @PostMapping("/upload")
     @Operation(summary = "文件上传")
     public Result<String> upload(MultipartFile file){
-        log.info("文件上传：{}",file);
-
         try {
             //原始文件名
             String originalFilename = file.getOriginalFilename();

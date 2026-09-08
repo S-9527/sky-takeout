@@ -8,7 +8,6 @@ import com.sky.report.vo.TurnoverReportVO;
 import com.sky.report.vo.UserReportVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/admin/report")
 @Tag(name = "数据统计相关接口")
-@Slf4j
 @RequiredArgsConstructor
 public class ReportController {
 
@@ -41,7 +39,6 @@ public class ReportController {
     public Result<TurnoverReportVO> turnoverStatistics(
             @DateTimeFormat(pattern = "yyyy-MM-dd")  LocalDate begin,
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end){
-        log.info("营业额数据统计：{},{}",begin,end);
         return Result.success(reportService.getTurnoverStatistics(begin,end));
     }
 
@@ -56,7 +53,6 @@ public class ReportController {
     public Result<UserReportVO> userStatistics(
             @DateTimeFormat(pattern = "yyyy-MM-dd")  LocalDate begin,
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end){
-        log.info("用户数据统计：{},{}",begin,end);
         return Result.success(reportService.getUserStatistics(begin,end));
     }
 
@@ -71,7 +67,6 @@ public class ReportController {
     public Result<OrderReportVO> ordersStatistics(
             @DateTimeFormat(pattern = "yyyy-MM-dd")  LocalDate begin,
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end){
-        log.info("订单数据统计：{},{}",begin,end);
         return Result.success(reportService.getOrderStatistics(begin,end));
     }
 
@@ -86,7 +81,6 @@ public class ReportController {
     public Result<SalesTop10ReportVO> top10(
             @DateTimeFormat(pattern = "yyyy-MM-dd")  LocalDate begin,
             @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate end){
-        log.info("销量排名top10：{},{}",begin,end);
         return Result.success(reportService.getSalesTop10(begin,end));
     }
 

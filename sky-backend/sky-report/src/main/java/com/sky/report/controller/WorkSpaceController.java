@@ -8,7 +8,6 @@ import com.sky.report.vo.OrderOverViewVO;
 import com.sky.report.vo.SetmealOverViewVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,7 +20,6 @@ import lombok.RequiredArgsConstructor;
  */
 @RestController
 @RequestMapping("/admin/workspace")
-@Slf4j
 @Tag(name = "工作台相关接口")
 @RequiredArgsConstructor
 public class WorkSpaceController {

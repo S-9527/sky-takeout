@@ -8,7 +8,6 @@ import com.sky.result.Result;
 import com.sky.menu.service.CategoryService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/admin/category")
 @Tag(name = "分类相关接口")
-@Slf4j
 @RequiredArgsConstructor
 public class CategoryController {
 
@@ -33,7 +31,6 @@ public class CategoryController {
     @PostMapping
     @Operation(summary = "新增分类")
     public Result<String> save(@RequestBody CategoryDTO categoryDTO){
-        log.info("新增分类：{}", categoryDTO);
         categoryService.save(categoryDTO);
         return Result.success();
     }
@@ -46,7 +43,6 @@ public class CategoryController {
     @GetMapping("/page")
     @Operation(summary = "分类分页查询")
     public Result<PageResult> page(CategoryPageQueryDTO categoryPageQueryDTO){
-        log.info("分页查询：{}", categoryPageQueryDTO);
         PageResult pageResult = categoryService.pageQuery(categoryPageQueryDTO);
         return Result.success(pageResult);
     }
@@ -59,7 +55,6 @@ public class CategoryController {
     @DeleteMapping
     @Operation(summary = "删除分类")
     public Result<String> deleteById(Long id){
-        log.info("删除分类：{}", id);
         categoryService.deleteById(id);
         return Result.success();
     }

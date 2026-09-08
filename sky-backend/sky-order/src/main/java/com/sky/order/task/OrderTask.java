@@ -28,8 +28,6 @@ public class OrderTask {
      */
     @Scheduled(cron = "0 * * * * ? ") //每分钟触发一次
     public void processTimeoutOrder(){
-        log.info("定时处理超时订单：{}", LocalDateTime.now());
-
         LocalDateTime time = LocalDateTime.now().plusMinutes(-15);
 
         List<Orders> ordersList = orderMapper.selectList(new LambdaQueryWrapper<Orders>()
@@ -43,6 +41,7 @@ public class OrderTask {
                     o.setCancelTime(LocalDateTime.now());
                 });
             }
+            log.info("自动取消超时订单 {} 单", ordersList.size());
         }
     }
 
@@ -51,8 +50,6 @@ public class OrderTask {
      */
     @Scheduled(cron = "0 0 1 * * ?") //每天凌晨1点触发一次
     public void processDeliveryOrder(){
-        log.info("定时处理处于派送中的订单：{}",LocalDateTime.now());
-
         LocalDateTime time = LocalDateTime.now().plusMinutes(-60);
 
         List<Orders> ordersList = orderMapper.selectList(new LambdaQueryWrapper<Orders>()
@@ -63,6 +60,7 @@ public class OrderTask {
             for (Orders orders : ordersList) {
                 orderStateMachine.transition(orders, OrderStatus.COMPLETED, null);
             }
+            log.info("自动完成超时派送订单 {} 单", ordersList.size());
         }
     }
 }

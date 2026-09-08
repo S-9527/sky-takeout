@@ -11,7 +11,6 @@ import com.sky.order.vo.OrderStatisticsVO;
 import com.sky.order.vo.OrderVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +19,6 @@ import lombok.RequiredArgsConstructor;
  */
 @RestController("adminOrderController")
 @RequestMapping("/admin/order")
-@Slf4j
 @Tag(name = "订单管理接口")
 @RequiredArgsConstructor
 public class OrderController {

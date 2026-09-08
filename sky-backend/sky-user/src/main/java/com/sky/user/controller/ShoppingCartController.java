@@ -6,7 +6,6 @@ import com.sky.result.Result;
 import com.sky.user.service.ShoppingCartService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/user/shoppingCart")
-@Slf4j
 @Tag(name = "C端购物车相关接口")
 @RequiredArgsConstructor
 public class ShoppingCartController {
@@ -29,7 +27,6 @@ public class ShoppingCartController {
     @PostMapping("/add")
     @Operation(summary = "添加购物车")
     public Result add(@RequestBody ShoppingCartDTO shoppingCartDTO){
-        log.info("添加购物车，商品信息为：{}",shoppingCartDTO);
         shoppingCartService.addShoppingCart(shoppingCartDTO);
         return Result.success();
     }
@@ -64,7 +61,6 @@ public class ShoppingCartController {
     @PostMapping("/sub")
     @Operation(summary = "删除购物车中一个商品")
     public Result sub(@RequestBody ShoppingCartDTO shoppingCartDTO){
-        log.info("删除购物车中一个商品，商品：{}", shoppingCartDTO);
         shoppingCartService.subShoppingCart(shoppingCartDTO);
         return Result.success();
     }

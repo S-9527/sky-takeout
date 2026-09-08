@@ -8,7 +8,6 @@ import com.sky.menu.service.SetmealService;
 import com.sky.menu.vo.SetmealVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/admin/setmeal")
 @Tag(name = "套餐相关接口")
-@Slf4j
 @RequiredArgsConstructor
 public class SetmealController {
 

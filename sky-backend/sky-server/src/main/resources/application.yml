@@ -33,7 +33,6 @@ logging:
       sky:
         mapper: debug
         service: info
-        controller: info
 
 sky:
   jwt:

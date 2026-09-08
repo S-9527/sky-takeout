@@ -61,7 +61,7 @@ public class AliOssUtil {
                 .append("/")
                 .append(objectName);
 
-        log.info("文件上传到:{}", stringBuilder.toString());
+        log.debug("文件上传到:{}", stringBuilder.toString());
 
         return stringBuilder.toString();
     }

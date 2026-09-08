@@ -4,7 +4,6 @@ import com.sky.framework.annotation.AutoFill;
 import com.sky.constant.AutoFillConstant;
 import com.sky.context.BaseContext;
 import com.sky.enumeration.OperationType;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -19,7 +18,6 @@ import java.time.LocalDateTime;
  */
 @Aspect
 @Component
-@Slf4j
 public class AutoFillAspect {
 
     /**
@@ -33,8 +31,6 @@ public class AutoFillAspect {
      */
     @Before("autoFillPointCut()")
     public void autoFill(JoinPoint joinPoint){
-        log.info("开始进行公共字段自动填充...");
-
         //获取到当前被拦截的方法上的数据库操作类型
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();//方法签名对象
         AutoFill autoFill = signature.getMethod().getAnnotation(AutoFill.class);//获得方法上的注解对象

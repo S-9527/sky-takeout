@@ -7,7 +7,6 @@ import com.sky.menu.service.DishService;
 import com.sky.menu.vo.DishVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 
 @RestController("userDishController")
 @RequestMapping("/user/dish")
-@Slf4j
 @Tag(name = "C端-菜品浏览接口")
 @RequiredArgsConstructor
 public class DishController {

@@ -32,7 +32,7 @@ public class LocalStorage implements StorageService {
                 throw new IllegalArgumentException("非法文件名：" + objectName);
             }
             Files.write(target, bytes);
-            log.info("文件上传到本地:{}", target);
+            log.debug("文件上传到本地:{}", target);
             return "/files/" + objectName;
         } catch (IOException e) {
             log.error("文件上传失败：{}", e.getMessage(), e);

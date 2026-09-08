@@ -117,7 +117,7 @@ async function init(isSearchVal?: boolean) {
   }
   await getEmployeeList(params)
     .then((res: any) => {
-      if (String(res.data.code) === '1') {
+      if (String(res.data.code) === '200') {
         tableData.value = res.data && res.data.data && res.data.data.records
         counts.value = res.data.data.total
       }

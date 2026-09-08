@@ -121,7 +121,7 @@ const handleSave = async () => {
       oldPassword: form.oldPassword,
       newPassword: form.newPassword
     })
-    if (data.code === 1) {
+    if (data.code === 200) {
       ElMessage.success('密码修改成功，请重新登录')
       resetFields()
       onVisibleChange(false)

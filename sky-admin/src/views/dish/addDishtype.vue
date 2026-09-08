@@ -246,7 +246,7 @@ const selectHandle = (val: any, key: any, _ind: any) => {
 
 async function init() {
   queryDishById(String(route.query.id)).then(res => {
-    if (res && res.data && res.data.code === 1) {
+    if (res && res.data && res.data.code === 200) {
       ruleForm.value = { ...res.data.data }
       ruleForm.value.price = String(res.data.data.price)
       ruleForm.value.status = res.data.data.status == '1'
@@ -283,7 +283,7 @@ const delFlavorLabel = (index2: number, ind: number) => {
 // 获取菜品分类
 function getDishList() {
   getCategoryList({ type: 1 }).then(res => {
-    if (res.data.code === 1) {
+    if (res.data.code === 200) {
       dishList.value = res && res.data && res.data.data
     } else {
       ElMessage.error(res.data.msg)
@@ -328,7 +328,7 @@ const submitForm = (_formName: any, st?: any) => {
         delete params.id
         addDish(params)
           .then(res => {
-            if (res.data.code === 1) {
+            if (res.data.code === 200) {
               ElMessage.success('菜品添加成功！')
               if (!st) {
                 router.push({ path: '/dish' })
@@ -361,7 +361,7 @@ const submitForm = (_formName: any, st?: any) => {
         delete params.updateTime
         editDish(params)
           .then(res => {
-            if (res && res.data && res.data.code === 1) {
+            if (res && res.data && res.data.code === 200) {
               router.push({ path: '/dish' })
               ElMessage.success('菜品修改成功！')
             } else {

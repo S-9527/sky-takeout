@@ -84,7 +84,7 @@ async function getSetMealStatisticsData() {
 function getOrderListBy3Status() {
   getOrderListBy({})
     .then((res) => {
-      if (res.data.code === 1) {
+      if (res.data.code === 200) {
         orderStatics.value = res.data.data
       } else {
         ElMessage.error(res.data.msg)

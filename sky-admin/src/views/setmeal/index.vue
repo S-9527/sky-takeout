@@ -195,7 +195,7 @@ async function init(isSearchVal?: boolean) {
     status: dishStatus.value
   })
     .then(res => {
-      if (res && res.data && res.data.code === 1) {
+      if (res && res.data && res.data.code === 200) {
         tableData.value = res.data.data.records
         counts.value = Number(res.data.data.total)
       } else {
@@ -230,7 +230,7 @@ const deleteHandle = (type: string, id?: any) => {
   }).then(() => {
     deleteSetmeal(type === '批量' ? checkList.value.join(',') : id)
       .then(res => {
-        if (res.data.code === 1) {
+        if (res.data.code === 200) {
           ElMessage.success('删除成功！')
           init()
         } else {
@@ -265,7 +265,7 @@ const statusHandle = (row: any) => {
   }).then(() => {
     setmealStatusByStatus(params)
       .then(res => {
-        if (res.data.code === 1) {
+        if (res.data.code === 200) {
           ElMessage.success('套餐状态已经更改成功！')
           init()
         } else {
@@ -284,7 +284,7 @@ const getDishCategoryList = () => {
     type: 2
   })
     .then(res => {
-      if (res && res.data && res.data.code === 1) {
+      if (res && res.data && res.data.code === 200) {
         dishCategoryList.value = (
           res.data &&
           res.data.data &&

@@ -606,7 +606,7 @@ function change(activeIndex: any) {
 function getOrderListBy3Status() {
   getOrderListBy({})
     .then((res) => {
-      if (res.data.code === 1) {
+      if (res.data.code === 200) {
         orderStatics.value = res.data.data
       } else {
         ElMessage.error(res.data.msg)
@@ -636,7 +636,7 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
   }
   getOrderDetailPage({ ...params })
     .then((res) => {
-      if (res.data.code === 1) {
+      if (res.data.code === 200) {
         tableData.value = res.data.data.records
         orderStatus.value = activeIndex
         counts.value = Number(res.data.data.total)
@@ -710,7 +710,7 @@ function orderAccept(rowData: any) {
   dialogOrderStatus.value = rowData.status
   orderAcceptApi({ id: orderId.value })
     .then((res) => {
-      if (res.data.code === 1) {
+      if (res.data.code === 200) {
         ElMessage.success('操作成功')
         orderId.value = ''
         dialogVisible.value = false
@@ -748,7 +748,7 @@ function confirmCancel(_type: any) {
       cancelReason.value === '自定义原因' ? remark.value : cancelReason.value,
   })
     .then((res) => {
-      if (res.data.code === 1) {
+      if (res.data.code === 200) {
         ElMessage.success('操作成功')
         cancelDialogVisible.value = false
         orderId.value = ''
@@ -770,7 +770,7 @@ function cancelOrDeliveryOrComplete(status: number, id: string) {
   }
   ;(status === 3 ? deliveryOrder : completeOrder)(params)
     .then((res) => {
-      if (res.data.code === 1) {
+      if (res.data.code === 200) {
         ElMessage.success('操作成功')
         orderId.value = ''
         dialogVisible.value = false

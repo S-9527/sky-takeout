@@ -29,7 +29,7 @@ export const useUserStore = defineStore('user', () => {
     username.value = uname
     Cookies.set('username', uname)
     const { data } = await login({ username: uname, password })
-    if (String(data.code) === '1') {
+    if (String(data.code) === '200') {
       token.value = data.data.token
       setToken(data.data.token)
       userInfo.value = { ...data.data }

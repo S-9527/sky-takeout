@@ -226,7 +226,7 @@ const handleStatus = () => {
 // 营业状态设置
 const handleSave = async () => {
   const { data } = await setApiStatus(setStatus.value)
-  if (data.code === 1) {
+  if (data.code === 200) {
     dialogVisible.value = false
     getStatus()
   }

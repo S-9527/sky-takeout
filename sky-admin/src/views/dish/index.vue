@@ -191,7 +191,7 @@ async function init(searchValue?: any) {
     status: dishStatus.value
   })
     .then(res => {
-      if (res.data.code === 1) {
+      if (res.data.code === 200) {
         tableData.value = res.data && res.data.data && res.data.data.records
         counts.value = Number(res.data.data.total)
       }
@@ -224,7 +224,7 @@ const deleteHandle = (type: string, id: any) => {
   }).then(() => {
     deleteDish(type === '批量' ? checkList.value.join(',') : id)
       .then(res => {
-        if (res && res.data && res.data.code === 1) {
+        if (res && res.data && res.data.code === 200) {
           ElMessage.success('删除成功！')
           init()
         } else {
@@ -242,7 +242,7 @@ function getDishCategoryList() {
     type: 1
   })
     .then(res => {
-      if (res && res.data && res.data.code === 1) {
+      if (res && res.data && res.data.code === 200) {
         dishCategoryList.value = (
           res.data &&
           res.data.data &&
@@ -278,7 +278,7 @@ const statusHandle = (row: any) => {
     // 起售停售---批量起售停售接口
     dishStatusByStatus(dishState.value)
       .then(res => {
-        if (res && res.data && res.data.code === 1) {
+        if (res && res.data && res.data.code === 200) {
           ElMessage.success('菜品状态已经更改成功！')
           init()
         } else {

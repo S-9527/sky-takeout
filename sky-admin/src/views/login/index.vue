@@ -101,7 +101,7 @@ const handleLogin = () => {
       await userStore
         .Login(loginForm.value as any)
         .then((res: any) => {
-          if (String(res.code) === '1') {
+          if (String(res.code) === '200') {
             router.push('/')
           } else {
             loading.value = false

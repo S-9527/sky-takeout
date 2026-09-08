@@ -241,7 +241,7 @@ const getData = async () => {
     status: status.value,
   }
   const { data } = await getInformData(parent)
-  if (data.code === 1) {
+  if (data.code === 200) {
     baseData.value = data.data.records
     counts.value = data.data.total
     let objNew = {} as any
@@ -267,7 +267,7 @@ const handleBatch = async () => {
     ids.push(val.id)
   })
   const { data } = await batchMsg(ids)
-  if (data.code === 1) {
+  if (data.code === 200) {
     getCountUnread()
     getData()
   } else {
@@ -278,7 +278,7 @@ const handleBatch = async () => {
 // 设置单个订单已读
 const handleSetStatus = async (id: any) => {
   const { data } = await setStatus(id)
-  if (data.code === 1) {
+  if (data.code === 200) {
     if (!isActive.value) {
       getCountUnread()
       getData()
@@ -291,7 +291,7 @@ const handleSetStatus = async (id: any) => {
 // 获取未读消息
 const getCountUnread = async () => {
   const { data } = await getCountUnreadApi()
-  if (data.code === 1) {
+  if (data.code === 200) {
     appStore.StatusNumber(data.data)
   } else {
     ElMessage.error(data.msg)

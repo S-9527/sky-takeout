@@ -573,7 +573,7 @@ function orderAccept(row: any, event: any) {
   dialogOrderStatus.value = row.status
   apiOrderAccept({ id: orderId.value })
     .then((res) => {
-      if (res.data.code === 1) {
+      if (res.data.code === 200) {
         ElMessage.success('操作成功')
         orderId.value = ''
         dialogVisible.value = false
@@ -621,7 +621,7 @@ function confirmCancel(_type: any) {
       cancelReason.value === '自定义原因' ? remark.value : cancelReason.value,
   })
     .then((res) => {
-      if (res.data.code === 1) {
+      if (res.data.code === 200) {
         ElMessage.success('操作成功')
         cancelDialogVisible.value = false
         orderId.value = ''
@@ -644,7 +644,7 @@ function cancelOrDeliveryOrComplete(status: number, id: string, event: any) {
   }
   ;(status === 3 ? deliveryOrder : completeOrder)(params)
     .then((res) => {
-      if (res.data.code === 1) {
+      if (res.data.code === 200) {
         ElMessage.success('操作成功')
         orderId.value = ''
         dialogVisible.value = false

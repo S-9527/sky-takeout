@@ -252,7 +252,7 @@ async function init(searchValue?: any) {
     type: categoryType.value ? categoryType.value : undefined
   })
     .then(res => {
-      if (String(res.data.code) === '1') {
+      if (String(res.data.code) === '200') {
         tableData.value =
           res && res.data && res.data.data && res.data.data.records
         counts.value = Number(res.data.data.total)
@@ -333,7 +333,7 @@ const deleteHandle = (id: any) => {
   }).then(() => {
     deleCategory(id)
       .then(res => {
-        if (res.data.code === 1) {
+        if (res.data.code === 200) {
           ElMessage.success('删除成功！')
           init()
         } else {
@@ -357,7 +357,7 @@ const submitForm = (st?: any) => {
           sort: classData.sort
         })
           .then(res => {
-            if (res.data.code === 1) {
+            if (res.data.code === 200) {
               ElMessage.success('分类添加成功！')
               classDataRef.value?.resetFields()
               if (!st) {
@@ -382,7 +382,7 @@ const submitForm = (st?: any) => {
           sort: classData.sort
         })
           .then(res => {
-            if (res.data.code === 1) {
+            if (res.data.code === 200) {
               ElMessage.success('分类修改成功！')
               classData.dialogVisible = false
               classDataRef.value?.resetFields()

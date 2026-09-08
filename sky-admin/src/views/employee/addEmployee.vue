@@ -183,7 +183,7 @@ const rules = computed(() => {
 const init = async () => {
   const id = route.query.id
   queryEmployeeById(String(id)).then((res: any) => {
-    if (res.data.code === 1) {
+    if (res.data.code === 200) {
       ruleForm.value = res.data.data
       ruleForm.value.sex = res.data.data.sex === '0' ? '女' : '男'
     } else {
@@ -202,7 +202,7 @@ const submitForm = (_formName: any, st: any) => {
         }
         addEmployee(params)
           .then((res: any) => {
-            if (res.data.code === 1) {
+            if (res.data.code === 200) {
               ElMessage.success('员工添加成功！')
               if (!st) {
                 router.push({ path: '/employee' })
@@ -227,7 +227,7 @@ const submitForm = (_formName: any, st: any) => {
         }
         editEmployee(params)
           .then((res: any) => {
-            if (res.data.code === 1) {
+            if (res.data.code === 200) {
               ElMessage.success('员工信息修改成功！')
               router.push({ path: '/employee' })
             } else {

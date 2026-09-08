@@ -264,7 +264,7 @@ const rules = computed(() => {
 
 const init = async () => {
   querySetmealById(String(route.query.id)).then(res => {
-    if (res && res.data && res.data.code === 1) {
+    if (res && res.data && res.data.code === 200) {
       ruleForm.value = res.data.data
       ruleForm.value.status = res.data.data.status == '1'
       ;(ruleForm.value as any).price = res.data.data.price
@@ -285,7 +285,7 @@ const seachHandle = () => {
 // 获取套餐分类
 const getDishTypeList = () => {
   getCategoryList({ type: 2, page: 1, pageSize: 1000 }).then(res => {
-    if (res && res.data && res.data.code === 1) {
+    if (res && res.data && res.data.code === 200) {
       setMealList.value = res.data.data.map((obj: any) => ({
         ...obj,
         idType: obj.id
@@ -349,7 +349,7 @@ const submitForm = (_formName: any, st: any) => {
         delete prams.id
         addSetmeal(prams)
           .then(res => {
-            if (res && res.data && res.data.code === 1) {
+            if (res && res.data && res.data.code === 200) {
               ElMessage.success('套餐添加成功！')
               if (!st) {
                 router.push({ path: '/setmeal' })
@@ -382,7 +382,7 @@ const submitForm = (_formName: any, st: any) => {
         delete prams.updateTime
         editSetmeal(prams)
           .then(res => {
-            if (res.data.code === 1) {
+            if (res.data.code === 200) {
               ElMessage.success('套餐修改成功！')
               router.push({ path: '/setmeal' })
             } else {

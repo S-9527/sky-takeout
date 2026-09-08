@@ -74,7 +74,7 @@ service.interceptors.response.use(
     // 请求完成，删除请求中状态
     const key = getRequestKey(response.config);
     removePending(key);
-    if (response.data.code === 1) {
+    if (response.data.code === 200) {
       return response
     }
     return response

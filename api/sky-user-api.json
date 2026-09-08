@@ -1,1 +1,1501 @@
-{"swagger":"2.0","info":{"description":"苍穹外卖项目接口文档","version":"2.0","title":"苍穹外卖项目接口文档"},"host":"localhost:8080","basePath":"/","tags":[{"name":"C端-分类接口","description":"Category Controller"},{"name":"C端-套餐浏览接口","description":"Setmeal Controller"},{"name":"C端-菜品浏览接口","description":"Dish Controller"},{"name":"C端地址簿接口","description":"Address Book Controller"},{"name":"C端用户相关接口","description":"User Controller"},{"name":"C端购物车相关接口","description":"Shopping Cart Controller"},{"name":"店铺相关接口","description":"Shop Controller"},{"name":"用户端订单相关接口","description":"Order Controller"}],"paths":{"/user/addressBook":{"post":{"tags":["C端地址簿接口"],"summary":"新增地址","operationId":"saveUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"addressBook","description":"addressBook","required":true,"schema":{"$ref":"#/definitions/AddressBook","originalRef":"AddressBook"}}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result","originalRef":"Result"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}},"put":{"tags":["C端地址簿接口"],"summary":"根据id修改地址","operationId":"updateUsingPUT","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"addressBook","description":"addressBook","required":true,"schema":{"$ref":"#/definitions/AddressBook","originalRef":"AddressBook"}}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result","originalRef":"Result"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}},"delete":{"tags":["C端地址簿接口"],"summary":"根据id删除地址","operationId":"deleteByIdUsingDELETE","produces":["*/*"],"parameters":[{"name":"id","in":"query","description":"id","required":false,"type":"integer","format":"int64"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result","originalRef":"Result"}},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}}}},"/user/addressBook/default":{"get":{"tags":["C端地址簿接口"],"summary":"查询默认地址","operationId":"getDefaultUsingGET","produces":["*/*"],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«AddressBook»","originalRef":"Result«AddressBook»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}},"put":{"tags":["C端地址簿接口"],"summary":"设置默认地址","operationId":"setDefaultUsingPUT","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"addressBook","description":"addressBook","required":true,"schema":{"$ref":"#/definitions/AddressBook","originalRef":"AddressBook"}}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result","originalRef":"Result"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/addressBook/list":{"get":{"tags":["C端地址簿接口"],"summary":"查询当前登录用户的所有地址信息","operationId":"listUsingGET","produces":["*/*"],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«List«AddressBook»»","originalRef":"Result«List«AddressBook»»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/addressBook/{id}":{"get":{"tags":["C端地址簿接口"],"summary":"根据id查询地址","operationId":"getByIdUsingGET","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int64"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«AddressBook»","originalRef":"Result«AddressBook»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/category/list":{"get":{"tags":["C端-分类接口"],"summary":"查询分类","operationId":"listUsingGET_1","produces":["*/*"],"parameters":[{"name":"type","in":"query","description":"type","required":false,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«List«Category»»","originalRef":"Result«List«Category»»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/dish/list":{"get":{"tags":["C端-菜品浏览接口"],"summary":"根据分类id查询菜品","operationId":"listUsingGET_2","produces":["*/*"],"parameters":[{"name":"categoryId","in":"query","description":"categoryId","required":false,"type":"integer","format":"int64"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«List«DishVO»»","originalRef":"Result«List«DishVO»»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/order/cancel/{id}":{"put":{"tags":["用户端订单相关接口"],"summary":"取消订单","operationId":"cancelUsingPUT","consumes":["application/json"],"produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int64"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result","originalRef":"Result"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/order/historyOrders":{"get":{"tags":["用户端订单相关接口"],"summary":"历史订单查询","operationId":"pageUsingGET","produces":["*/*"],"parameters":[{"name":"page","in":"query","description":"page","required":false,"type":"integer","format":"int32"},{"name":"pageSize","in":"query","description":"pageSize","required":false,"type":"integer","format":"int32"},{"name":"status","in":"query","description":"status","required":false,"type":"integer","format":"int32"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«PageResult»","originalRef":"Result«PageResult»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/order/orderDetail/{id}":{"get":{"tags":["用户端订单相关接口"],"summary":"查询订单详情","operationId":"detailsUsingGET","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int64"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«OrderVO»","originalRef":"Result«OrderVO»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/order/payment":{"put":{"tags":["用户端订单相关接口"],"summary":"订单支付","operationId":"paymentUsingPUT","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"ordersPaymentDTO","description":"ordersPaymentDTO","required":true,"schema":{"$ref":"#/definitions/OrdersPaymentDTO","originalRef":"OrdersPaymentDTO"}}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«OrderPaymentVO»","originalRef":"Result«OrderPaymentVO»"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/order/reminder/{id}":{"get":{"tags":["用户端订单相关接口"],"summary":"客户催单","operationId":"reminderUsingGET","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int64"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result","originalRef":"Result"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/order/repetition/{id}":{"post":{"tags":["用户端订单相关接口"],"summary":"再来一单","operationId":"repetitionUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int64"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result","originalRef":"Result"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/order/submit":{"post":{"tags":["用户端订单相关接口"],"summary":"用户下单","operationId":"submitUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"ordersSubmitDTO","description":"ordersSubmitDTO","required":true,"schema":{"$ref":"#/definitions/OrdersSubmitDTO","originalRef":"OrdersSubmitDTO"}}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«OrderSubmitVO»","originalRef":"Result«OrderSubmitVO»"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/setmeal/dish/{id}":{"get":{"tags":["C端-套餐浏览接口"],"summary":"根据套餐id查询包含的菜品列表","operationId":"dishListUsingGET","produces":["*/*"],"parameters":[{"name":"id","in":"path","description":"id","required":true,"type":"integer","format":"int64"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«List«DishItemVO»»","originalRef":"Result«List«DishItemVO»»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/setmeal/list":{"get":{"tags":["C端-套餐浏览接口"],"summary":"根据分类id查询套餐","operationId":"listUsingGET_3","produces":["*/*"],"parameters":[{"name":"categoryId","in":"query","description":"categoryId","required":false,"type":"integer","format":"int64"}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«List«Setmeal»»","originalRef":"Result«List«Setmeal»»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/shop/status":{"get":{"tags":["店铺相关接口"],"summary":"获取店铺的营业状态","operationId":"getStatusUsingGET","produces":["*/*"],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«int»","originalRef":"Result«int»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/shoppingCart/add":{"post":{"tags":["C端购物车相关接口"],"summary":"添加购物车","operationId":"addUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"shoppingCartDTO","description":"shoppingCartDTO","required":true,"schema":{"$ref":"#/definitions/ShoppingCartDTO","originalRef":"ShoppingCartDTO"}}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result","originalRef":"Result"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/shoppingCart/clean":{"delete":{"tags":["C端购物车相关接口"],"summary":"清空购物车","operationId":"cleanUsingDELETE","produces":["*/*"],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result","originalRef":"Result"}},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}}}},"/user/shoppingCart/list":{"get":{"tags":["C端购物车相关接口"],"summary":"查看购物车","operationId":"listUsingGET_4","produces":["*/*"],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«List«ShoppingCart»»","originalRef":"Result«List«ShoppingCart»»"}},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/shoppingCart/sub":{"post":{"tags":["C端购物车相关接口"],"summary":"删除购物车中一个商品","operationId":"subUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"shoppingCartDTO","description":"shoppingCartDTO","required":true,"schema":{"$ref":"#/definitions/ShoppingCartDTO","originalRef":"ShoppingCartDTO"}}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result","originalRef":"Result"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}},"/user/user/login":{"post":{"tags":["C端用户相关接口"],"summary":"微信登录","operationId":"loginUsingPOST","consumes":["application/json"],"produces":["*/*"],"parameters":[{"in":"body","name":"userLoginDTO","description":"userLoginDTO","required":true,"schema":{"$ref":"#/definitions/UserLoginDTO","originalRef":"UserLoginDTO"}}],"responses":{"200":{"description":"OK","schema":{"$ref":"#/definitions/Result«UserLoginVO»","originalRef":"Result«UserLoginVO»"}},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}}}},"definitions":{"AddressBook":{"type":"object","properties":{"cityCode":{"type":"string"},"cityName":{"type":"string"},"consignee":{"type":"string"},"detail":{"type":"string"},"districtCode":{"type":"string"},"districtName":{"type":"string"},"id":{"type":"integer","format":"int64"},"isDefault":{"type":"integer","format":"int32"},"label":{"type":"string"},"phone":{"type":"string"},"provinceCode":{"type":"string"},"provinceName":{"type":"string"},"sex":{"type":"string"},"userId":{"type":"integer","format":"int64"}},"title":"AddressBook"},"Category":{"type":"object","properties":{"createTime":{"type":"string","format":"date-time"},"createUser":{"type":"integer","format":"int64"},"id":{"type":"integer","format":"int64"},"name":{"type":"string"},"sort":{"type":"integer","format":"int32"},"status":{"type":"integer","format":"int32"},"type":{"type":"integer","format":"int32"},"updateTime":{"type":"string","format":"date-time"},"updateUser":{"type":"integer","format":"int64"}},"title":"Category"},"DishFlavor":{"type":"object","properties":{"dishId":{"type":"integer","format":"int64"},"id":{"type":"integer","format":"int64"},"name":{"type":"string"},"value":{"type":"string"}},"title":"DishFlavor"},"DishItemVO":{"type":"object","properties":{"copies":{"type":"integer","format":"int32"},"description":{"type":"string"},"image":{"type":"string"},"name":{"type":"string"}},"title":"DishItemVO"},"DishVO":{"type":"object","properties":{"categoryId":{"type":"integer","format":"int64"},"categoryName":{"type":"string"},"description":{"type":"string"},"flavors":{"type":"array","items":{"$ref":"#/definitions/DishFlavor","originalRef":"DishFlavor"}},"id":{"type":"integer","format":"int64"},"image":{"type":"string"},"name":{"type":"string"},"price":{"type":"number"},"status":{"type":"integer","format":"int32"},"updateTime":{"type":"string","format":"date-time"}},"title":"DishVO"},"OrderDetail":{"type":"object","properties":{"amount":{"type":"number"},"dishFlavor":{"type":"string"},"dishId":{"type":"integer","format":"int64"},"id":{"type":"integer","format":"int64"},"image":{"type":"string"},"name":{"type":"string"},"number":{"type":"integer","format":"int32"},"orderId":{"type":"integer","format":"int64"},"setmealId":{"type":"integer","format":"int64"}},"title":"OrderDetail"},"OrderPaymentVO":{"type":"object","properties":{"nonceStr":{"type":"string"},"packageStr":{"type":"string"},"paySign":{"type":"string"},"signType":{"type":"string"},"timeStamp":{"type":"string"}},"title":"OrderPaymentVO"},"OrderSubmitVO":{"type":"object","properties":{"id":{"type":"integer","format":"int64"},"orderAmount":{"type":"number"},"orderNumber":{"type":"string"},"orderTime":{"type":"string","format":"date-time"}},"title":"OrderSubmitVO"},"OrderVO":{"type":"object","properties":{"address":{"type":"string"},"addressBookId":{"type":"integer","format":"int64"},"amount":{"type":"number"},"cancelReason":{"type":"string"},"cancelTime":{"type":"string","format":"date-time"},"checkoutTime":{"type":"string","format":"date-time"},"consignee":{"type":"string"},"deliveryStatus":{"type":"integer","format":"int32"},"deliveryTime":{"type":"string","format":"date-time"},"estimatedDeliveryTime":{"type":"string","format":"date-time"},"id":{"type":"integer","format":"int64"},"number":{"type":"string"},"orderDetailList":{"type":"array","items":{"$ref":"#/definitions/OrderDetail","originalRef":"OrderDetail"}},"orderDishes":{"type":"string"},"orderTime":{"type":"string","format":"date-time"},"packAmount":{"type":"integer","format":"int32"},"payMethod":{"type":"integer","format":"int32"},"payStatus":{"type":"integer","format":"int32"},"phone":{"type":"string"},"rejectionReason":{"type":"string"},"remark":{"type":"string"},"status":{"type":"integer","format":"int32"},"tablewareNumber":{"type":"integer","format":"int32"},"tablewareStatus":{"type":"integer","format":"int32"},"userId":{"type":"integer","format":"int64"},"userName":{"type":"string"}},"title":"OrderVO"},"OrdersPaymentDTO":{"type":"object","properties":{"orderNumber":{"type":"string"},"payMethod":{"type":"integer","format":"int32"}},"title":"OrdersPaymentDTO"},"OrdersSubmitDTO":{"type":"object","properties":{"addressBookId":{"type":"integer","format":"int64"},"amount":{"type":"number"},"deliveryStatus":{"type":"integer","format":"int32"},"estimatedDeliveryTime":{"type":"string","example":"yyyy-MM-dd HH:mm:ss"},"packAmount":{"type":"integer","format":"int32"},"payMethod":{"type":"integer","format":"int32"},"remark":{"type":"string"},"tablewareNumber":{"type":"integer","format":"int32"},"tablewareStatus":{"type":"integer","format":"int32"}},"title":"OrdersSubmitDTO"},"PageResult":{"type":"object","properties":{"records":{"type":"array","items":{"type":"object"}},"total":{"type":"integer","format":"int64"}},"title":"PageResult"},"Result":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"type":"object"},"msg":{"type":"string"}},"title":"Result"},"Result«AddressBook»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"$ref":"#/definitions/AddressBook","originalRef":"AddressBook"},"msg":{"type":"string"}},"title":"Result«AddressBook»"},"Result«List«AddressBook»»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"type":"array","items":{"$ref":"#/definitions/AddressBook","originalRef":"AddressBook"}},"msg":{"type":"string"}},"title":"Result«List«AddressBook»»"},"Result«List«Category»»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"type":"array","items":{"$ref":"#/definitions/Category","originalRef":"Category"}},"msg":{"type":"string"}},"title":"Result«List«Category»»"},"Result«List«DishItemVO»»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"type":"array","items":{"$ref":"#/definitions/DishItemVO","originalRef":"DishItemVO"}},"msg":{"type":"string"}},"title":"Result«List«DishItemVO»»"},"Result«List«DishVO»»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"type":"array","items":{"$ref":"#/definitions/DishVO","originalRef":"DishVO"}},"msg":{"type":"string"}},"title":"Result«List«DishVO»»"},"Result«List«Setmeal»»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"type":"array","items":{"$ref":"#/definitions/Setmeal","originalRef":"Setmeal"}},"msg":{"type":"string"}},"title":"Result«List«Setmeal»»"},"Result«List«ShoppingCart»»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"type":"array","items":{"$ref":"#/definitions/ShoppingCart","originalRef":"ShoppingCart"}},"msg":{"type":"string"}},"title":"Result«List«ShoppingCart»»"},"Result«OrderPaymentVO»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"$ref":"#/definitions/OrderPaymentVO","originalRef":"OrderPaymentVO"},"msg":{"type":"string"}},"title":"Result«OrderPaymentVO»"},"Result«OrderSubmitVO»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"$ref":"#/definitions/OrderSubmitVO","originalRef":"OrderSubmitVO"},"msg":{"type":"string"}},"title":"Result«OrderSubmitVO»"},"Result«OrderVO»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"$ref":"#/definitions/OrderVO","originalRef":"OrderVO"},"msg":{"type":"string"}},"title":"Result«OrderVO»"},"Result«PageResult»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"$ref":"#/definitions/PageResult","originalRef":"PageResult"},"msg":{"type":"string"}},"title":"Result«PageResult»"},"Result«UserLoginVO»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"$ref":"#/definitions/UserLoginVO","originalRef":"UserLoginVO"},"msg":{"type":"string"}},"title":"Result«UserLoginVO»"},"Result«int»":{"type":"object","properties":{"code":{"type":"integer","format":"int32"},"data":{"type":"integer","format":"int32"},"msg":{"type":"string"}},"title":"Result«int»"},"Setmeal":{"type":"object","properties":{"categoryId":{"type":"integer","format":"int64"},"createTime":{"type":"string","format":"date-time"},"createUser":{"type":"integer","format":"int64"},"description":{"type":"string"},"id":{"type":"integer","format":"int64"},"image":{"type":"string"},"name":{"type":"string"},"price":{"type":"number"},"status":{"type":"integer","format":"int32"},"updateTime":{"type":"string","format":"date-time"},"updateUser":{"type":"integer","format":"int64"}},"title":"Setmeal"},"ShoppingCart":{"type":"object","properties":{"amount":{"type":"number"},"createTime":{"type":"string","format":"date-time"},"dishFlavor":{"type":"string"},"dishId":{"type":"integer","format":"int64"},"id":{"type":"integer","format":"int64"},"image":{"type":"string"},"name":{"type":"string"},"number":{"type":"integer","format":"int32"},"setmealId":{"type":"integer","format":"int64"},"userId":{"type":"integer","format":"int64"}},"title":"ShoppingCart"},"ShoppingCartDTO":{"type":"object","properties":{"dishFlavor":{"type":"string"},"dishId":{"type":"integer","format":"int64"},"setmealId":{"type":"integer","format":"int64"}},"title":"ShoppingCartDTO"},"UserLoginDTO":{"type":"object","properties":{"code":{"type":"string"}},"title":"UserLoginDTO"},"UserLoginVO":{"type":"object","properties":{"id":{"type":"integer","format":"int64"},"openid":{"type":"string"},"token":{"type":"string"}},"title":"UserLoginVO"}}}
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "苍穹外卖项目接口文档",
+    "description": "苍穹外卖项目接口文档",
+    "version": "2.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/user/order/payment": {
+      "put": {
+        "tags": [
+          "用户端订单相关接口"
+        ],
+        "summary": "订单支付",
+        "operationId": "payment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrdersPaymentDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultOrderPaymentVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/order/cancel/{id}": {
+      "put": {
+        "tags": [
+          "用户端订单相关接口"
+        ],
+        "summary": "取消订单",
+        "operationId": "cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/addressBook": {
+      "put": {
+        "tags": [
+          "C端地址簿接口"
+        ],
+        "summary": "根据id修改地址",
+        "operationId": "update",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressBook"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "C端地址簿接口"
+        ],
+        "summary": "新增地址",
+        "operationId": "save",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressBook"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "C端地址簿接口"
+        ],
+        "summary": "根据id删除地址",
+        "operationId": "deleteById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/addressBook/default": {
+      "get": {
+        "tags": [
+          "C端地址簿接口"
+        ],
+        "summary": "查询默认地址",
+        "operationId": "getDefault",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAddressBook"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "C端地址簿接口"
+        ],
+        "summary": "设置默认地址",
+        "operationId": "setDefault",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddressBook"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/user/login": {
+      "post": {
+        "tags": [
+          "C端用户相关接口"
+        ],
+        "summary": "微信登录",
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLoginDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultUserLoginVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/shoppingCart/sub": {
+      "post": {
+        "tags": [
+          "C端购物车相关接口"
+        ],
+        "summary": "删除购物车中一个商品",
+        "operationId": "sub",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShoppingCartDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/shoppingCart/add": {
+      "post": {
+        "tags": [
+          "C端购物车相关接口"
+        ],
+        "summary": "添加购物车",
+        "operationId": "add",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShoppingCartDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/order/submit": {
+      "post": {
+        "tags": [
+          "用户端订单相关接口"
+        ],
+        "summary": "用户下单",
+        "operationId": "submit",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrdersSubmitDTO"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultOrderSubmitVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/order/repetition/{id}": {
+      "post": {
+        "tags": [
+          "用户端订单相关接口"
+        ],
+        "summary": "再来一单",
+        "operationId": "repetition",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/shoppingCart/list": {
+      "get": {
+        "tags": [
+          "C端购物车相关接口"
+        ],
+        "summary": "查看购物车",
+        "operationId": "list",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListShoppingCart"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/shop/status": {
+      "get": {
+        "tags": [
+          "店铺相关接口"
+        ],
+        "summary": "获取店铺的营业状态",
+        "operationId": "getStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultInteger"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/setmeal/list": {
+      "get": {
+        "tags": [
+          "C端-套餐浏览接口"
+        ],
+        "summary": "根据分类id查询套餐",
+        "operationId": "list_1",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListSetmeal"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/setmeal/dish/{id}": {
+      "get": {
+        "tags": [
+          "C端-套餐浏览接口"
+        ],
+        "summary": "根据套餐id查询包含的菜品列表",
+        "operationId": "dishList",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListDishItemVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/order/reminder/{id}": {
+      "get": {
+        "tags": [
+          "用户端订单相关接口"
+        ],
+        "summary": "客户催单",
+        "operationId": "reminder",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/order/orderDetail/{id}": {
+      "get": {
+        "tags": [
+          "用户端订单相关接口"
+        ],
+        "summary": "查询订单详情",
+        "operationId": "details",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultOrderVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/order/historyOrders": {
+      "get": {
+        "tags": [
+          "用户端订单相关接口"
+        ],
+        "summary": "历史订单查询",
+        "operationId": "page",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultPageResultOrderVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/dish/list": {
+      "get": {
+        "tags": [
+          "C端-菜品浏览接口"
+        ],
+        "summary": "根据分类id查询菜品",
+        "operationId": "list_2",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListDishVO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/category/list": {
+      "get": {
+        "tags": [
+          "C端-分类接口"
+        ],
+        "summary": "查询分类",
+        "operationId": "list_3",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListCategory"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/addressBook/{id}": {
+      "get": {
+        "tags": [
+          "C端地址簿接口"
+        ],
+        "summary": "根据id查询地址",
+        "operationId": "getById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultAddressBook"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/addressBook/list": {
+      "get": {
+        "tags": [
+          "C端地址簿接口"
+        ],
+        "summary": "查询当前登录用户的所有地址信息",
+        "operationId": "list_4",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultListAddressBook"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/shoppingCart/clean": {
+      "delete": {
+        "tags": [
+          "C端购物车相关接口"
+        ],
+        "summary": "清空购物车",
+        "operationId": "clean",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OrdersPaymentDTO": {
+        "type": "object",
+        "properties": {
+          "orderNumber": {
+            "type": "string"
+          },
+          "payMethod": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OrderPaymentVO": {
+        "type": "object",
+        "properties": {
+          "nonceStr": {
+            "type": "string"
+          },
+          "paySign": {
+            "type": "string"
+          },
+          "timeStamp": {
+            "type": "string"
+          },
+          "signType": {
+            "type": "string"
+          },
+          "packageStr": {
+            "type": "string"
+          }
+        }
+      },
+      "ResultOrderPaymentVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderPaymentVO"
+          }
+        }
+      },
+      "Result": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {}
+        }
+      },
+      "AddressBook": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "consignee": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "sex": {
+            "type": "string"
+          },
+          "provinceCode": {
+            "type": "string"
+          },
+          "provinceName": {
+            "type": "string"
+          },
+          "cityCode": {
+            "type": "string"
+          },
+          "cityName": {
+            "type": "string"
+          },
+          "districtCode": {
+            "type": "string"
+          },
+          "districtName": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "isDefault": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "UserLoginDTO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        }
+      },
+      "ResultUserLoginVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/UserLoginVO"
+          }
+        }
+      },
+      "UserLoginVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "openid": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "ShoppingCartDTO": {
+        "type": "object",
+        "properties": {
+          "dishId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "setmealId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dishFlavor": {
+            "type": "string"
+          }
+        }
+      },
+      "OrdersSubmitDTO": {
+        "type": "object",
+        "properties": {
+          "addressBookId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "payMethod": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "estimatedDeliveryTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deliveryStatus": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tablewareNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tablewareStatus": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "packAmount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amount": {
+            "type": "number"
+          }
+        }
+      },
+      "OrderSubmitVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orderNumber": {
+            "type": "string"
+          },
+          "orderAmount": {
+            "type": "number"
+          },
+          "orderTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultOrderSubmitVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderSubmitVO"
+          }
+        }
+      },
+      "ResultListShoppingCart": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ShoppingCart"
+            }
+          }
+        }
+      },
+      "ShoppingCart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dishId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "setmealId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dishFlavor": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "image": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ResultInteger": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "ResultListSetmeal": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Setmeal"
+            }
+          }
+        }
+      },
+      "Setmeal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "description": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createUser": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updateUser": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "DishItemVO": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "copies": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "image": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      },
+      "ResultListDishItemVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DishItemVO"
+            }
+          }
+        }
+      },
+      "OrderDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "orderId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dishId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "setmealId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dishFlavor": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "image": {
+            "type": "string"
+          }
+        }
+      },
+      "OrderVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "userId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "addressBookId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "orderTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "checkoutTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payMethod": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "payStatus": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "remark": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "consignee": {
+            "type": "string"
+          },
+          "cancelReason": {
+            "type": "string"
+          },
+          "rejectionReason": {
+            "type": "string"
+          },
+          "cancelTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "estimatedDeliveryTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deliveryStatus": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "deliveryTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "packAmount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tablewareNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "tablewareStatus": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "orderDishes": {
+            "type": "string"
+          },
+          "orderDetailList": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderDetail"
+            }
+          }
+        }
+      },
+      "ResultOrderVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/OrderVO"
+          }
+        }
+      },
+      "PageResultOrderVO": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderVO"
+            }
+          }
+        }
+      },
+      "ResultPageResultOrderVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/PageResultOrderVO"
+          }
+        }
+      },
+      "DishFlavor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dishId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string"
+          }
+        }
+      },
+      "DishVO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "price": {
+            "type": "number"
+          },
+          "image": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "updateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "flavors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DishFlavor"
+            }
+          }
+        }
+      },
+      "ResultListDishVO": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DishVO"
+            }
+          }
+        }
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "type": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sort": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "createTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createUser": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "updateUser": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ResultListCategory": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Category"
+            }
+          }
+        }
+      },
+      "ResultAddressBook": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AddressBook"
+          }
+        }
+      },
+      "ResultListAddressBook": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AddressBook"
+            }
+          }
+        }
+      }
+    }
+  }
+}

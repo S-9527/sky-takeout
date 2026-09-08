@@ -1,1 +1,103 @@
-{"swagger":"2.0","info":{"description":"苍穹外卖项目接口文档","version":"2.0","title":"苍穹外卖项目接口文档"},"host":"localhost:8080","basePath":"/","tags":[{"name":"支付回调接口","description":"Pay Notify Controller"}],"paths":{"/notify/paySuccess":{"get":{"tags":["支付回调接口"],"summary":"支付成功回调","operationId":"paySuccessNotifyUsingGET","produces":["*/*"],"responses":{"200":{"description":"OK"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}},"head":{"tags":["支付回调接口"],"summary":"支付成功回调","operationId":"paySuccessNotifyUsingHEAD","consumes":["application/json"],"produces":["*/*"],"responses":{"200":{"description":"OK"},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}}},"post":{"tags":["支付回调接口"],"summary":"支付成功回调","operationId":"paySuccessNotifyUsingPOST","consumes":["application/json"],"produces":["*/*"],"responses":{"200":{"description":"OK"},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}},"put":{"tags":["支付回调接口"],"summary":"支付成功回调","operationId":"paySuccessNotifyUsingPUT","consumes":["application/json"],"produces":["*/*"],"responses":{"200":{"description":"OK"},"201":{"description":"Created"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"},"404":{"description":"Not Found"}}},"delete":{"tags":["支付回调接口"],"summary":"支付成功回调","operationId":"paySuccessNotifyUsingDELETE","produces":["*/*"],"responses":{"200":{"description":"OK"},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}}},"options":{"tags":["支付回调接口"],"summary":"支付成功回调","operationId":"paySuccessNotifyUsingOPTIONS","consumes":["application/json"],"produces":["*/*"],"responses":{"200":{"description":"OK"},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}}},"patch":{"tags":["支付回调接口"],"summary":"支付成功回调","operationId":"paySuccessNotifyUsingPATCH","consumes":["application/json"],"produces":["*/*"],"responses":{"200":{"description":"OK"},"204":{"description":"No Content"},"401":{"description":"Unauthorized"},"403":{"description":"Forbidden"}}}}}}
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "苍穹外卖项目接口文档",
+    "description": "苍穹外卖项目接口文档",
+    "version": "2.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Generated server url"
+    }
+  ],
+  "paths": {
+    "/notify/paySuccess": {
+      "get": {
+        "tags": [
+          "支付回调接口"
+        ],
+        "summary": "支付成功回调",
+        "operationId": "paySuccessNotify",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "支付回调接口"
+        ],
+        "summary": "支付成功回调",
+        "operationId": "paySuccessNotify_2",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "支付回调接口"
+        ],
+        "summary": "支付成功回调",
+        "operationId": "paySuccessNotify_1",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "支付回调接口"
+        ],
+        "summary": "支付成功回调",
+        "operationId": "paySuccessNotify_3",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "options": {
+        "tags": [
+          "支付回调接口"
+        ],
+        "summary": "支付成功回调",
+        "operationId": "paySuccessNotify_6",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "支付回调接口"
+        ],
+        "summary": "支付成功回调",
+        "operationId": "paySuccessNotify_5",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "支付回调接口"
+        ],
+        "summary": "支付成功回调",
+        "operationId": "paySuccessNotify_4",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    }
+  },
+  "components": {}
+}

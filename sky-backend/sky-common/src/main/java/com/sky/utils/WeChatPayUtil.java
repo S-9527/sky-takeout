@@ -14,7 +14,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -28,11 +27,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 微信支付工具类
  */
 @Component
+@RequiredArgsConstructor
 public class WeChatPayUtil {
 
     //微信支付下单接口地址
@@ -41,8 +42,7 @@ public class WeChatPayUtil {
     //申请退款接口地址
     public static final String REFUNDS = "https://api.mch.weixin.qq.com/v3/refund/domestic/refunds";
 
-    @Autowired
-    private WeChatProperties weChatProperties;
+    private final WeChatProperties weChatProperties;
 
     /**
      * 获取调用微信接口的客户端工具对象

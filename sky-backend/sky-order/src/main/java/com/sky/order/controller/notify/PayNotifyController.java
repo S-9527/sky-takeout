@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.entity.ContentType;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 支付回调相关接口
@@ -25,11 +25,10 @@ import java.util.HashMap;
 @RequestMapping("/notify")
 @Tag(name = "支付回调接口")
 @Slf4j
+@RequiredArgsConstructor
 public class PayNotifyController {
-    @Autowired
-    private OrderService orderService;
-    @Autowired
-    private WeChatProperties weChatProperties;
+    private final OrderService orderService;
+    private final WeChatProperties weChatProperties;
 
     /**
      * 支付成功回调

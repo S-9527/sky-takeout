@@ -12,24 +12,23 @@ import com.sky.properties.WeChatProperties;
 import com.sky.user.service.UserService;
 import com.sky.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     //微信服务接口地址
     public static final String WX_LOGIN = "https://api.weixin.qq.com/sns/jscode2session";
 
-    @Autowired
-    private WeChatProperties weChatProperties;
-    @Autowired
-    private UserMapper userMapper;
+    private final WeChatProperties weChatProperties;
+    private final UserMapper userMapper;
 
     /**
      * 微信登录

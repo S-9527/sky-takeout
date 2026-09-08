@@ -4,20 +4,20 @@ import com.sky.result.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
+import lombok.RequiredArgsConstructor;
 
 @RestController("adminShopController")
 @RequestMapping("/admin/shop")
 @Tag(name = "店铺相关接口")
 @Slf4j
+@RequiredArgsConstructor
 public class ShopController {
 
     public static final String KEY = "SHOP_STATUS";
 
-    @Autowired
-    private RedisTemplate redisTemplate;
+    private final RedisTemplate redisTemplate;
 
     /**
      * 设置店铺的营业状态

@@ -9,7 +9,6 @@ import com.sky.report.vo.UserReportVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.LocalDate;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 数据统计相关接口
@@ -25,10 +25,10 @@ import java.time.LocalDate;
 @RequestMapping("/admin/report")
 @Tag(name = "数据统计相关接口")
 @Slf4j
+@RequiredArgsConstructor
 public class ReportController {
 
-    @Autowired
-    private ReportService reportService;
+    private final ReportService reportService;
 
     /**
      * 营业额统计

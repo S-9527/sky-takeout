@@ -21,26 +21,24 @@ import com.sky.menu.vo.DishItemVO;
 import com.sky.menu.vo.SetmealVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 套餐业务实现
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class SetmealServiceImpl implements SetmealService {
 
-    @Autowired
-    private SetmealMapper setmealMapper;
-    @Autowired
-    private SetmealDishMapper setmealDishMapper;
-    @Autowired
-    private DishMapper dishMapper;
+    private final SetmealMapper setmealMapper;
+    private final SetmealDishMapper setmealDishMapper;
+    private final DishMapper dishMapper;
 
     /**
      * 新增套餐，同时需要保存套餐和菜品的关联关系

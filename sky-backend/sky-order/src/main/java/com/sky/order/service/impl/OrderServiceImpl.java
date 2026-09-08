@@ -39,7 +39,6 @@ import com.sky.order.vo.OrderVO;
 import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,25 +51,20 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
-    @Autowired
-    private OrderMapper orderMapper;
-    @Autowired
-    private OrderDetailMapper orderDetailMapper;
-    @Autowired
-    private AddressBookService addressBookService;
-    @Autowired
-    private ShoppingCartService shoppingCartService;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private WeChatPayUtil weChatPayUtil;
-    @Autowired
-    private WebSocketServer webSocketServer;
+    private final OrderMapper orderMapper;
+    private final OrderDetailMapper orderDetailMapper;
+    private final AddressBookService addressBookService;
+    private final ShoppingCartService shoppingCartService;
+    private final UserService userService;
+    private final WeChatPayUtil weChatPayUtil;
+    private final WebSocketServer webSocketServer;
 
     /**
      * 用户下单

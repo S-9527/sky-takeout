@@ -10,12 +10,12 @@ import com.sky.menu.vo.DishVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 菜品管理
@@ -24,12 +24,11 @@ import java.util.Set;
 @RequestMapping("/admin/dish")
 @Tag(name = "菜品相关接口")
 @Slf4j
+@RequiredArgsConstructor
 public class DishController {
 
-    @Autowired
-    private DishService dishService;
-    @Autowired
-    private RedisTemplate redisTemplate;
+    private final DishService dishService;
+    private final RedisTemplate redisTemplate;
 
     /**
      * 新增菜品

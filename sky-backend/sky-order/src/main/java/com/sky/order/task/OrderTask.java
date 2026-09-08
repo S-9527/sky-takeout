@@ -4,21 +4,21 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sky.order.entity.Orders;
 import com.sky.order.mapper.OrderMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 定时任务类，定时处理订单状态
  */
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class OrderTask {
 
-    @Autowired
-    private OrderMapper orderMapper;
+    private final OrderMapper orderMapper;
 
     /**
      * 处理超时订单的方法

@@ -7,20 +7,20 @@ import com.sky.menu.service.SetmealService;
 import com.sky.menu.vo.DishItemVO;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 @RestController("userSetmealController")
 @RequestMapping("/user/setmeal")
 @Tag(name = "C端-套餐浏览接口")
+@RequiredArgsConstructor
 public class SetmealController {
-    @Autowired
-    private SetmealService setmealService;
+    private final SetmealService setmealService;
 
     /**
      * 条件查询

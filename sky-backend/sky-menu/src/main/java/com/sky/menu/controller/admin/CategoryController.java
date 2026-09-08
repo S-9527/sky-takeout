@@ -9,9 +9,9 @@ import com.sky.menu.service.CategoryService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 
 /**
  * 分类管理
@@ -20,10 +20,10 @@ import java.util.List;
 @RequestMapping("/admin/category")
 @Tag(name = "分类相关接口")
 @Slf4j
+@RequiredArgsConstructor
 public class CategoryController {
 
-    @Autowired
-    private CategoryService categoryService;
+    private final CategoryService categoryService;
 
     /**
      * 新增分类

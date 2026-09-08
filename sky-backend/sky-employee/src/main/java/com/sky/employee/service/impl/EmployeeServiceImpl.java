@@ -63,16 +63,16 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee employee = employeeMapper.selectOne(new LambdaQueryWrapper<Employee>()
                 .eq(Employee::getUsername, username));
 
-        //2、处理各种异常情况（用户名不存在、密码不对、账号被锁定）
+        //2、处理各种异常情况（用户名不存在或密码不对统一提示，防止账号枚举；账号锁定单独提示）
         if (employee == null) {
             //账号不存在
-            throw new UsernameNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);
+            throw new BadCredentialsException(MessageConstant.LOGIN_CREDENTIAL_ERROR);
         }
 
         //密码比对（BCrypt 校验，兼容 $2a/$2b/$2y 前缀）
         if (!passwordEncoder.matches(password, employee.getPassword())) {
             //密码错误
-            throw new BadCredentialsException(MessageConstant.PASSWORD_ERROR);
+            throw new BadCredentialsException(MessageConstant.LOGIN_CREDENTIAL_ERROR);
         }
 
         if (AccountStatus.DISABLED.getCode().equals(employee.getStatus())) {

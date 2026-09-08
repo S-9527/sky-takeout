@@ -36,7 +36,6 @@ import com.sky.result.PageResult;
 import com.sky.result.ResultCode;
 import com.sky.order.service.OrderService;
 import com.sky.pay.PaymentGateway;
-import com.sky.utils.HttpClientUtil;
 import com.sky.order.vo.OrderPaymentVO;
 import com.sky.order.vo.OrderStatisticsVO;
 import com.sky.order.vo.OrderSubmitVO;
@@ -45,9 +44,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -71,6 +73,7 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentGateway paymentGateway;
     private final OrderStateMachine orderStateMachine;
     private final ApplicationEventPublisher eventPublisher;
+    private final RestClient.Builder restClientBuilder;
 
     /**
      * 用户下单
@@ -152,13 +155,13 @@ public class OrderServiceImpl implements OrderService {
      * @param address
      */
     private void checkOutOfRange(String address) {
-        Map map = new HashMap();
-        map.put("address",shopAddress);
-        map.put("output","json");
-        map.put("ak",ak);
+        Map<String, String> params = new HashMap<>();
+        params.put("output", "json");
+        params.put("ak", ak);
 
         //获取店铺的经纬度坐标
-        String shopCoordinate = HttpClientUtil.doGet("https://api.map.baidu.com/geocoding/v3", map);
+        params.put("address", shopAddress);
+        String shopCoordinate = getMapApi("https://api.map.baidu.com/geocoding/v3", params, "店铺地址解析失败");
 
         JSONObject jsonObject = JSON.parseObject(shopCoordinate);
         if(!jsonObject.getString("status").equals("0")){
@@ -172,9 +175,9 @@ public class OrderServiceImpl implements OrderService {
         //店铺经纬度坐标
         String shopLngLat = lat + "," + lng;
 
-        map.put("address",address);
+        params.put("address", address);
         //获取用户收货地址的经纬度坐标
-        String userCoordinate = HttpClientUtil.doGet("https://api.map.baidu.com/geocoding/v3", map);
+        String userCoordinate = getMapApi("https://api.map.baidu.com/geocoding/v3", params, "收货地址解析失败");
 
         jsonObject = JSON.parseObject(userCoordinate);
         if(!jsonObject.getString("status").equals("0")){
@@ -188,12 +191,12 @@ public class OrderServiceImpl implements OrderService {
         //用户收货地址经纬度坐标
         String userLngLat = lat + "," + lng;
 
-        map.put("origin",shopLngLat);
-        map.put("destination",userLngLat);
-        map.put("steps_info","0");
+        params.put("origin", shopLngLat);
+        params.put("destination", userLngLat);
+        params.put("steps_info", "0");
 
         //路线规划
-        String json = HttpClientUtil.doGet("https://api.map.baidu.com/directionlite/v1/driving", map);
+        String json = getMapApi("https://api.map.baidu.com/directionlite/v1/driving", params, "配送路线规划失败");
 
         jsonObject = JSON.parseObject(json);
         if(!jsonObject.getString("status").equals("0")){
@@ -209,6 +212,20 @@ public class OrderServiceImpl implements OrderService {
             //配送距离超过5000米
             throw new OrderBusinessException("超出配送范围");
         }
+    }
+
+    /**
+     * 调用百度地图接口，非 2xx 或解析失败时抛出对应业务异常
+     */
+    private String getMapApi(String url, Map<String, String> params, String errorMsg) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(url);
+        params.forEach((key, value) -> builder.queryParam(key, value));
+        return restClientBuilder.build().get()
+                .uri(builder.build().toUri())
+                .retrieve()
+                .onStatus(HttpStatusCode::isError,
+                        (request, response) -> { throw new OrderBusinessException(errorMsg); })
+                .body(String.class);
     }
 
     /**

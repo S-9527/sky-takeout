@@ -10,7 +10,6 @@ import com.sky.exception.LoginFailedException;
 import com.sky.user.mapper.UserMapper;
 import com.sky.properties.WeChatProperties;
 import com.sky.user.service.UserService;
-import com.sky.utils.HttpClientUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +17,9 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
 @Slf4j
@@ -29,6 +31,7 @@ public class UserServiceImpl implements UserService {
 
     private final WeChatProperties weChatProperties;
     private final UserMapper userMapper;
+    private final RestClient.Builder restClientBuilder;
 
     /**
      * 微信登录
@@ -89,12 +92,17 @@ public class UserServiceImpl implements UserService {
      */
     private String getOpenid(String code){
         //调用微信接口服务，获得当前微信用户的openid
-        Map<String, String> map = new HashMap<>();
-        map.put("appid",weChatProperties.getAppid());
-        map.put("secret",weChatProperties.getSecret());
-        map.put("js_code",code);
-        map.put("grant_type","authorization_code");
-        String json = HttpClientUtil.doGet(WX_LOGIN, map);
+        Map<String, String> params = new HashMap<>();
+        params.put("appid",weChatProperties.getAppid());
+        params.put("secret",weChatProperties.getSecret());
+        params.put("js_code",code);
+        params.put("grant_type","authorization_code");
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(WX_LOGIN);
+        params.forEach((key, value) -> builder.queryParam(key, value));
+        String json = restClientBuilder.build().get()
+                .uri(builder.build().toUri())
+                .retrieve()
+                .body(String.class);
 
         JSONObject jsonObject = JSON.parseObject(json);
         String openid = jsonObject.getString("openid");

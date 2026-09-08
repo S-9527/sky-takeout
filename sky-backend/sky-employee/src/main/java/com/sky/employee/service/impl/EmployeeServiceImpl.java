@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
-import com.sky.constant.PasswordConstant;
 import com.sky.context.BaseContext;
 import com.sky.employee.enumeration.AccountStatus;
 import com.sky.employee.dto.EmployeeDTO;
@@ -24,6 +23,7 @@ import com.sky.employee.vo.EmployeeLoginVO;
 import com.sky.token.JwtTokenService;
 import com.sky.token.TokenType;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -42,6 +42,12 @@ public class EmployeeServiceImpl implements EmployeeService {
     private final PasswordEncoder passwordEncoder;
 
     private final JwtTokenService jwtTokenService;
+
+    /**
+     * 新员工初始密码，可用配置项 sky.employee.default-password 覆盖
+     */
+    @Value("${sky.employee.default-password:123456}")
+    private String defaultPassword;
 
     /**
      * 员工登录
@@ -99,7 +105,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setStatus(AccountStatus.ENABLED.getCode());
 
         //设置密码，默认密码123456
-        employee.setPassword(passwordEncoder.encode(PasswordConstant.DEFAULT_PASSWORD));
+        employee.setPassword(passwordEncoder.encode(defaultPassword));
 
         employeeMapper.insert(employee);
     }

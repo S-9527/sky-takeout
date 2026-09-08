@@ -3,9 +3,11 @@ package com.sky.order.domain;
 import com.sky.constant.MessageConstant;
 import com.sky.order.entity.Orders;
 import com.sky.order.enumeration.OrderStatus;
+import com.sky.order.event.OrderStatusChangedEvent;
 import com.sky.order.exception.OrderBusinessException;
 import com.sky.order.mapper.OrderMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -23,6 +25,7 @@ import java.util.function.Consumer;
 public class OrderStateMachine {
 
     private final OrderMapper orderMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 允许的状态迁移表：from -> 可达的 to 集合
@@ -52,6 +55,19 @@ public class OrderStateMachine {
      * @return 迁移后的订单
      */
     public Orders transition(Orders order, OrderStatus target, Consumer<Orders> audit) {
+        return transition(order, target, audit, null);
+    }
+
+    /**
+     * 状态迁移：校验合法性、设置新状态、填充附加字段并落库，随后发布状态变更事件
+     *
+     * @param order  已加载的待变更订单
+     * @param target 目标状态
+     * @param audit  附加字段填充（取消原因、取消时间等）
+     * @param cause  迁移原因描述
+     * @return 迁移后的订单
+     */
+    public Orders transition(Orders order, OrderStatus target, Consumer<Orders> audit, String cause) {
         if (order == null) {
             throw new OrderBusinessException(MessageConstant.ORDER_NOT_FOUND);
         }
@@ -69,6 +85,9 @@ public class OrderStateMachine {
             audit.accept(order);
         }
         orderMapper.updateById(order);
+
+        eventPublisher.publishEvent(new OrderStatusChangedEvent(
+                order.getId(), order.getNumber(), from, target, cause));
         return order;
     }
 

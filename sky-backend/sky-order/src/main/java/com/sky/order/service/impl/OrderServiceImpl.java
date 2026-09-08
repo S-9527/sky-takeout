@@ -20,6 +20,7 @@ import com.sky.order.entity.OrderDetail;
 import com.sky.order.entity.Orders;
 import com.sky.order.enumeration.OrderStatus;
 import com.sky.order.enumeration.OrderPayStatus;
+import com.sky.order.event.OrderReminderEvent;
 import com.sky.user.entity.AddressBook;
 import com.sky.user.entity.ShoppingCart;
 import com.sky.user.entity.User;
@@ -39,10 +40,10 @@ import com.sky.order.vo.OrderPaymentVO;
 import com.sky.order.vo.OrderStatisticsVO;
 import com.sky.order.vo.OrderSubmitVO;
 import com.sky.order.vo.OrderVO;
-import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -67,8 +68,8 @@ public class OrderServiceImpl implements OrderService {
     private final ShoppingCartService shoppingCartService;
     private final UserService userService;
     private final WeChatPayUtil weChatPayUtil;
-    private final WebSocketServer webSocketServer;
     private final OrderStateMachine orderStateMachine;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 用户下单
@@ -243,6 +244,7 @@ public class OrderServiceImpl implements OrderService {
      *
      * @param outTradeNo
      */
+    @Transactional
     public void paySuccess(String outTradeNo) {
         // 当前登录用户id
         Long userId = BaseContext.getCurrentId();
@@ -257,19 +259,11 @@ public class OrderServiceImpl implements OrderService {
         }
 
         // 状态机流转：待付款 → 待接单，同时更新支付状态和结账时间
+        // 状态变更事件由 OrderEventListener 负责推送来单提醒
         orderStateMachine.transition(ordersDB, OrderStatus.TO_BE_CONFIRMED, o -> {
             o.setPayStatus(OrderPayStatus.PAID.getCode());
             o.setCheckoutTime(LocalDateTime.now());
-        });
-
-        // 通过websocket向客户端浏览器推送来单提醒（B2 阶段将下沉至事件监听器）
-        Map map = new HashMap();
-        map.put("type",1);
-        map.put("orderId", ordersDB.getId());
-        map.put("content","订单号：" + outTradeNo);
-
-        String json = JSON.toJSONString(map);
-        webSocketServer.sendToAllClient(json);
+        }, "PAYED");
     }
 
     /**
@@ -337,6 +331,7 @@ public class OrderServiceImpl implements OrderService {
      *
      * @param id
      */
+    @Transactional
     public void userCancelById(Long id) throws Exception {
         // 根据id查询订单
         Orders ordersDB = orderMapper.selectById(id);
@@ -480,6 +475,7 @@ public class OrderServiceImpl implements OrderService {
      *
      * @param ordersConfirmDTO
      */
+    @Transactional
     public void confirm(OrdersConfirmDTO ordersConfirmDTO) {
         Orders ordersDB = orderMapper.selectById(ordersConfirmDTO.getId());
         orderStateMachine.transition(ordersDB, OrderStatus.CONFIRMED, null);
@@ -490,6 +486,7 @@ public class OrderServiceImpl implements OrderService {
      *
      * @param ordersRejectionDTO
      */
+    @Transactional
     public void rejection(OrdersRejectionDTO ordersRejectionDTO) throws Exception {
         Orders ordersDB = orderMapper.selectById(ordersRejectionDTO.getId());
 
@@ -518,6 +515,7 @@ public class OrderServiceImpl implements OrderService {
      *
      * @param ordersCancelDTO
      */
+    @Transactional
     public void cancel(OrdersCancelDTO ordersCancelDTO) throws Exception {
         Orders ordersDB = orderMapper.selectById(ordersCancelDTO.getId());
 
@@ -546,6 +544,7 @@ public class OrderServiceImpl implements OrderService {
      *
      * @param id
      */
+    @Transactional
     public void delivery(Long id) {
         Orders ordersDB = orderMapper.selectById(id);
 
@@ -561,6 +560,7 @@ public class OrderServiceImpl implements OrderService {
      *
      * @param id
      */
+    @Transactional
     public void complete(Long id) {
         Orders ordersDB = orderMapper.selectById(id);
 
@@ -575,6 +575,7 @@ public class OrderServiceImpl implements OrderService {
      * 客户催单
      * @param id
      */
+    @Transactional
     public void reminder(Long id) {
         // 根据id查询订单
         Orders ordersDB = orderMapper.selectById(id);
@@ -584,13 +585,8 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
         }
 
-        Map map = new HashMap();
-        map.put("type",2); //1表示来单提醒 2表示客户催单
-        map.put("orderId",id);
-        map.put("content","订单号：" + ordersDB.getNumber());
-
-        //通过websocket向客户端浏览器推送消息
-        webSocketServer.sendToAllClient(JSON.toJSONString(map));
+        // 客户催单事件由 OrderEventListener 负责推送
+        eventPublisher.publishEvent(new OrderReminderEvent(id, ordersDB.getNumber()));
     }
 
     /**

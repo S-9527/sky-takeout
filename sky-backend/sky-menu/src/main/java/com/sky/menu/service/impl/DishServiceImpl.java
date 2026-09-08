@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
-import com.sky.constant.StatusConstant;
+import com.sky.menu.enumeration.MenuStatus;
 import com.sky.menu.dto.DishDTO;
 import com.sky.menu.dto.DishPageQueryDTO;
 import com.sky.menu.entity.Dish;
@@ -108,7 +108,7 @@ public class DishServiceImpl implements DishService {
         //判断当前菜品是否能够删除---是否存在起售中的菜品？？
         for (Long id : ids) {
             Dish dish = dishMapper.selectById(id);
-            if (dish.getStatus() == StatusConstant.ENABLE) {
+            if (dish.getStatus() == MenuStatus.ON_SALE.getCode()) {
                 //当前菜品处于起售中，不能删除
                 throw new DeletionNotAllowedException(MessageConstant.DISH_ON_SALE);
             }
@@ -191,7 +191,7 @@ public class DishServiceImpl implements DishService {
                 .build();
         dishMapper.updateById(dish);
 
-        if (status == StatusConstant.DISABLE) {
+        if (status == MenuStatus.OFF_SALE.getCode()) {
             // 如果是停售操作，还需要将包含当前菜品的套餐也停售
             List<Long> dishIds = new ArrayList<>();
             dishIds.add(id);
@@ -201,7 +201,7 @@ public class DishServiceImpl implements DishService {
                 for (Long setmealId : setmealIds) {
                     Setmeal setmeal = Setmeal.builder()
                             .id(setmealId)
-                            .status(StatusConstant.DISABLE)
+                            .status(MenuStatus.OFF_SALE.getCode())
                             .build();
                     setmealMapper.updateById(setmeal);
                 }
@@ -218,7 +218,7 @@ public class DishServiceImpl implements DishService {
     public List<Dish> list(Long categoryId) {
         return dishMapper.selectList(new LambdaQueryWrapper<Dish>()
                 .eq(Dish::getCategoryId, categoryId)
-                .eq(Dish::getStatus, StatusConstant.ENABLE)
+                .eq(Dish::getStatus, MenuStatus.ON_SALE.getCode())
                 .orderByDesc(Dish::getCreateTime));
     }
 

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
-import com.sky.constant.StatusConstant;
+import com.sky.menu.enumeration.MenuStatus;
 import com.sky.menu.dto.CategoryDTO;
 import com.sky.menu.dto.CategoryPageQueryDTO;
 import com.sky.menu.entity.Category;
@@ -44,7 +44,7 @@ public class CategoryServiceImpl implements CategoryService {
         BeanUtils.copyProperties(categoryDTO, category);
 
         //分类状态默认为禁用状态0
-        category.setStatus(StatusConstant.DISABLE);
+        category.setStatus(MenuStatus.OFF_SALE.getCode());
 
         categoryMapper.insert(category);
     }
@@ -115,7 +115,7 @@ public class CategoryServiceImpl implements CategoryService {
      */
     public List<Category> list(Integer type) {
         return categoryMapper.selectList(new LambdaQueryWrapper<Category>()
-                .eq(Category::getStatus, StatusConstant.ENABLE)
+                .eq(Category::getStatus, MenuStatus.ON_SALE.getCode())
                 .eq(type != null, Category::getType, type)
                 .orderByAsc(Category::getSort)
                 .orderByDesc(Category::getCreateTime));

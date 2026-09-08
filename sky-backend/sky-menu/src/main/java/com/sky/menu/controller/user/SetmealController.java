@@ -1,6 +1,6 @@
 package com.sky.menu.controller.user;
 
-import com.sky.constant.StatusConstant;
+import com.sky.menu.enumeration.MenuStatus;
 import com.sky.menu.entity.Setmeal;
 import com.sky.result.Result;
 import com.sky.menu.service.SetmealService;
@@ -34,7 +34,7 @@ public class SetmealController {
     public Result<List<Setmeal>> list(Long categoryId) {
         Setmeal setmeal = new Setmeal();
         setmeal.setCategoryId(categoryId);
-        setmeal.setStatus(StatusConstant.ENABLE);
+        setmeal.setStatus(MenuStatus.ON_SALE.getCode());
 
         List<Setmeal> list = setmealService.list(setmeal);
         return Result.success(list);

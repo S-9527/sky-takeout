@@ -1,6 +1,6 @@
 package com.sky.menu.controller.user;
 
-import com.sky.constant.StatusConstant;
+import com.sky.menu.enumeration.MenuStatus;
 import com.sky.menu.entity.Dish;
 import com.sky.result.Result;
 import com.sky.menu.service.DishService;
@@ -44,7 +44,7 @@ public class DishController {
 
         Dish dish = new Dish();
         dish.setCategoryId(categoryId);
-        dish.setStatus(StatusConstant.ENABLE);//查询起售中的菜品
+        dish.setStatus(MenuStatus.ON_SALE.getCode());//查询起售中的菜品
 
         //如果不存在，查询数据库，将查询到的数据放入redis中
         list = dishService.listWithFlavor(dish);

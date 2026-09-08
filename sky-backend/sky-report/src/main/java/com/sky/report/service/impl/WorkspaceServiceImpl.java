@@ -1,6 +1,6 @@
 package com.sky.report.service.impl;
 
-import com.sky.constant.StatusConstant;
+import com.sky.menu.enumeration.MenuStatus;
 import com.sky.order.enumeration.OrderStatus;
 import com.sky.order.service.OrderService;
 import com.sky.menu.service.DishService;
@@ -127,10 +127,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
      */
     public DishOverViewVO getDishOverView() {
         Map map = new HashMap();
-        map.put("status", StatusConstant.ENABLE);
+        map.put("status", MenuStatus.ON_SALE.getCode());
         Integer sold = dishService.countByMap(map);
 
-        map.put("status", StatusConstant.DISABLE);
+        map.put("status", MenuStatus.OFF_SALE.getCode());
         Integer discontinued = dishService.countByMap(map);
 
         return DishOverViewVO.builder()
@@ -146,10 +146,10 @@ public class WorkspaceServiceImpl implements WorkspaceService {
      */
     public SetmealOverViewVO getSetmealOverView() {
         Map map = new HashMap();
-        map.put("status", StatusConstant.ENABLE);
+        map.put("status", MenuStatus.ON_SALE.getCode());
         Integer sold = setmealService.countByMap(map);
 
-        map.put("status", StatusConstant.DISABLE);
+        map.put("status", MenuStatus.OFF_SALE.getCode());
         Integer discontinued = setmealService.countByMap(map);
 
         return SetmealOverViewVO.builder()

@@ -5,8 +5,8 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
 import com.sky.constant.PasswordConstant;
-import com.sky.constant.StatusConstant;
 import com.sky.context.BaseContext;
+import com.sky.employee.enumeration.AccountStatus;
 import com.sky.employee.dto.EmployeeDTO;
 import com.sky.employee.dto.EmployeeLoginDTO;
 import com.sky.employee.dto.EmployeePageQueryDTO;
@@ -14,6 +14,7 @@ import com.sky.employee.dto.PasswordEditDTO;
 import com.sky.employee.entity.Employee;
 import com.sky.exception.AccountLockedException;
 import com.sky.exception.AccountNotFoundException;
+import com.sky.exception.BaseException;
 import com.sky.exception.PasswordErrorException;
 import com.sky.employee.mapper.EmployeeMapper;
 import com.sky.result.PageResult;
@@ -25,8 +26,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class EmployeeServiceImpl implements EmployeeService {
 
@@ -60,7 +63,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             throw new PasswordErrorException(MessageConstant.PASSWORD_ERROR);
         }
 
-        if (employee.getStatus() == StatusConstant.DISABLE) {
+        if (AccountStatus.DISABLED.getCode().equals(employee.getStatus())) {
             //账号被锁定
             throw new AccountLockedException(MessageConstant.ACCOUNT_LOCKED);
         }
@@ -81,7 +84,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         BeanUtils.copyProperties(employeeDTO, employee);
 
         //设置账号的状态，默认正常状态 1表示正常 0表示锁定
-        employee.setStatus(StatusConstant.ENABLE);
+        employee.setStatus(AccountStatus.ENABLED.getCode());
 
         //设置密码，默认密码123456
         employee.setPassword(passwordEncoder.encode(PasswordConstant.DEFAULT_PASSWORD));
@@ -113,12 +116,19 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @param id
      */
     public void startOrStop(Integer status, Long id) {
+        AccountStatus accountStatus = AccountStatus.fromCode(status);
+        if (accountStatus == null) {
+            throw new BaseException("非法的账号状态值：" + status);
+        }
+
         Employee employee = Employee.builder()
-                .status(status)
+                .status(accountStatus.getCode())
                 .id(id)
                 .build();
 
         employeeMapper.updateById(employee);
+
+        log.info("设置{}账号状态为：{}", id, accountStatus.getDesc());
     }
 
     /**

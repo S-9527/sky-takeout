@@ -26,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class DishController {
 
     private final DishService dishService;
-    private final RedisTemplate redisTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 新增菜品
@@ -141,7 +141,7 @@ public class DishController {
      * @param pattern
      */
     private void cleanCache(String pattern){
-        Set keys = redisTemplate.keys(pattern);
+        Set<String> keys = redisTemplate.keys(pattern);
         redisTemplate.delete(keys);
     }
 }

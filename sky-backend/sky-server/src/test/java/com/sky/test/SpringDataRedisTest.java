@@ -14,16 +14,16 @@ import java.util.concurrent.TimeUnit;
 public class SpringDataRedisTest {
 
     @Autowired
-    private RedisTemplate redisTemplate;
+    private RedisTemplate<String, Object> redisTemplate;
 
     @Test
     public void testRedisTemplate(){
         System.out.println(redisTemplate);
-        ValueOperations valueOperations = redisTemplate.opsForValue();
-        HashOperations hashOperations = redisTemplate.opsForHash();
-        ListOperations listOperations = redisTemplate.opsForList();
-        SetOperations setOperations = redisTemplate.opsForSet();
-        ZSetOperations zSetOperations = redisTemplate.opsForZSet();
+        ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
+        HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
+        ListOperations<String, Object> listOperations = redisTemplate.opsForList();
+        SetOperations<String, Object> setOperations = redisTemplate.opsForSet();
+        ZSetOperations<String, Object> zSetOperations = redisTemplate.opsForZSet();
     }
 
     /**
@@ -33,7 +33,7 @@ public class SpringDataRedisTest {
     public void testString(){
         // set get setex setnx
         redisTemplate.opsForValue().set("name","小明");
-        String city = (String) redisTemplate.opsForValue().get("name");
+        Object city = redisTemplate.opsForValue().get("name");
         System.out.println(city);
         redisTemplate.opsForValue().set("code","1234",3, TimeUnit.MINUTES);
         redisTemplate.opsForValue().setIfAbsent("lock","1");
@@ -46,18 +46,18 @@ public class SpringDataRedisTest {
     @Test
     public void testHash(){
         //hset hget hdel hkeys hvals
-        HashOperations hashOperations = redisTemplate.opsForHash();
+        HashOperations<String, String, Object> hashOperations = redisTemplate.opsForHash();
 
         hashOperations.put("100","name","tom");
         hashOperations.put("100","age","20");
 
-        String name = (String) hashOperations.get("100", "name");
+        Object name = hashOperations.get("100", "name");
         System.out.println(name);
 
-        Set keys = hashOperations.keys("100");
+        Set<String> keys = hashOperations.keys("100");
         System.out.println(keys);
 
-        List values = hashOperations.values("100");
+        List<Object> values = hashOperations.values("100");
         System.out.println(values);
 
         hashOperations.delete("100","age");
@@ -69,12 +69,12 @@ public class SpringDataRedisTest {
     @Test
     public void testList(){
         //lpush lrange rpop llen
-        ListOperations listOperations = redisTemplate.opsForList();
+        ListOperations<String, Object> listOperations = redisTemplate.opsForList();
 
         listOperations.leftPushAll("mylist","a","b","c");
         listOperations.leftPush("mylist","d");
 
-        List mylist = listOperations.range("mylist", 0, -1);
+        List<Object> mylist = listOperations.range("mylist", 0, -1);
         System.out.println(mylist);
 
         listOperations.rightPop("mylist");
@@ -89,21 +89,21 @@ public class SpringDataRedisTest {
     @Test
     public void testSet(){
         //sadd smembers scard sinter sunion srem
-        SetOperations setOperations = redisTemplate.opsForSet();
+        SetOperations<String, Object> setOperations = redisTemplate.opsForSet();
 
         setOperations.add("set1","a","b","c","d");
         setOperations.add("set2","a","b","x","y");
 
-        Set members = setOperations.members("set1");
+        Set<Object> members = setOperations.members("set1");
         System.out.println(members);
 
         Long size = setOperations.size("set1");
         System.out.println(size);
 
-        Set intersect = setOperations.intersect("set1", "set2");
+        Set<Object> intersect = setOperations.intersect("set1", "set2");
         System.out.println(intersect);
 
-        Set union = setOperations.union("set1", "set2");
+        Set<Object> union = setOperations.union("set1", "set2");
         System.out.println(union);
 
         setOperations.remove("set1","a","b");
@@ -115,13 +115,13 @@ public class SpringDataRedisTest {
     @Test
     public void testZset(){
         //zadd zrange zincrby zrem
-        ZSetOperations zSetOperations = redisTemplate.opsForZSet();
+        ZSetOperations<String, Object> zSetOperations = redisTemplate.opsForZSet();
 
         zSetOperations.add("zset1","a",10);
         zSetOperations.add("zset1","b",12);
         zSetOperations.add("zset1","c",9);
 
-        Set zset1 = zSetOperations.range("zset1", 0, -1);
+        Set<Object> zset1 = zSetOperations.range("zset1", 0, -1);
         System.out.println(zset1);
 
         zSetOperations.incrementScore("zset1","c",10);
@@ -135,13 +135,13 @@ public class SpringDataRedisTest {
     @Test
     public void testCommon(){
         //keys exists type del
-        Set keys = redisTemplate.keys("*");
+        Set<String> keys = redisTemplate.keys("*");
         System.out.println(keys);
 
         Boolean name = redisTemplate.hasKey("name");
         Boolean set1 = redisTemplate.hasKey("set1");
 
-        for (Object key : keys) {
+        for (String key : keys) {
             DataType type = redisTemplate.type(key);
             System.out.println(type.name());
         }

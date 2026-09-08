@@ -1,9 +1,9 @@
 package com.sky.framework.security;
 
-import com.sky.constant.JwtClaimsConstant;
 import com.sky.context.BaseContext;
 import com.sky.token.JwtTokenBlacklistService;
 import com.sky.token.JwtTokenService;
+import com.sky.token.TokenType;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,13 +21,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
-import org.springframework.lang.NonNull;
 
 /**
  * JWT 认证过滤器：解析 {@code Authorization: Bearer <token>} 令牌，
- * 校验签名与黑名单后写入 SecurityContext 与 BaseContext。
+ * 校验签名、iss/aud 与黑名单后写入 SecurityContext 与 BaseContext。
  *
- * <p>通过令牌中的 iss(admin/user)与角色声明区分管理端/用户端权限。</p>
+ * <p>按 {@link TokenType} 依次尝试验签(管理端 → 用户端)，命中后以枚举回查
+ * 主键声明字段与角色，保证 claim/issuer/role 三处契约一致。</p>
  */
 @Component
 @Slf4j
@@ -57,45 +58,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        try {
-            // 先按管理端密钥验签，再按用户端密钥验签，兜底区分角色
-            Claims adminClaims = tryParseAdmin(token);
-            if (adminClaims != null) {
-                authenticate(adminClaims, token, request,
-                        JwtClaimsConstant.EMP_ID, "ROLE_ADMIN");
+        for (TokenType type : TokenType.values()) {
+            Claims claims = tryParse(token, type);
+            if (claims != null) {
+                authenticate(claims, token, type, request);
                 return;
             }
-            Claims userClaims = jwtTokenService.parseUserToken(token);
-            authenticate(userClaims, token, request,
-                    JwtClaimsConstant.USER_ID, "ROLE_USER");
-        } catch (Exception ex) {
-            // 解析失败：不设置认证信息，交由 Security 的入口点返回 401
-            log.warn("JWT 校验失败: {}", ex.getMessage());
         }
     }
 
-    private Claims tryParseAdmin(String token) {
+    private Claims tryParse(String token, TokenType type) {
         try {
-            return jwtTokenService.parseToken(token);
+            return jwtTokenService.parseToken(token, type);
         } catch (Exception ex) {
             return null;
         }
     }
 
-    private void authenticate(Claims claims, String token, HttpServletRequest request,
-                              String claimKey, String role) {
+    private void authenticate(Claims claims, String token, TokenType type, HttpServletRequest request) {
         // 黑名单校验：已撤销的令牌视为未认证
         if (blacklistService.isRevoked(claims.getId())) {
             log.warn("JWT 已被撤销: jti={}", claims.getId());
             return;
         }
 
-        Long id = Long.valueOf(claims.get(claimKey).toString());
+        Long id = Long.valueOf(claims.get(type.getClaimKey()).toString());
         BaseContext.setCurrentId(id);
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(id, null,
-                        List.of(new SimpleGrantedAuthority(role)));
+                        List.of(new SimpleGrantedAuthority(type.getSpringRole())));
         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }

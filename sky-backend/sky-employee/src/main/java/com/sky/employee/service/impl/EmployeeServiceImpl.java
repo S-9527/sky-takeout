@@ -22,6 +22,7 @@ import com.sky.result.PageResult;
 import com.sky.employee.service.EmployeeService;
 import com.sky.employee.vo.EmployeeLoginVO;
 import com.sky.token.JwtTokenService;
+import com.sky.token.TokenType;
 import org.springframework.beans.BeanUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -195,6 +196,6 @@ public class EmployeeServiceImpl implements EmployeeService {
      * @param token
      */
     public void logout(String token) {
-        jwtTokenService.revokeToken(token, true);
+        jwtTokenService.revokeToken(token, TokenType.ADMIN);
     }
 }

@@ -54,36 +54,25 @@ public class JwtUtil {
     }
 
     /**
-     * 校验并解析 JWT：验证签名(按 kid 选择密钥)、校验 jti/iat/nbf/exp，
+     * 按端侧密钥校验并解析 JWT：验证签名(按 kid 选择密钥)、校验 jti/iss/aud/iat/nbf/exp，
      * 并允许 60s 时钟偏移。
      *
      * @param keysByKeyId kid → 密钥映射（轮换时填入当前及历史密钥）
+     * @param issuer      期望的签发方(iss)
+     * @param audience    期望的受众(aud)
      * @param token       JWT 令牌
      * @return 解析后的声明
      */
-    public static Claims parseJWT(Map<String, SecretKey> keysByKeyId, String token) {
+    public static Claims parseJWT(Map<String, SecretKey> keysByKeyId, String issuer,
+                                  String audience, String token) {
         return Jwts.parser()
                 .clockSkewSeconds(CLOCK_SKEW_SECONDS)
+                .requireIssuer(issuer)
+                .requireAudience(audience)
                 .keyLocator((io.jsonwebtoken.Locator<Key>) header -> {
                     String keyId = (String) header.get("kid");
                     return keysByKeyId.get(keyId);
                 })
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-    }
-
-    /**
-     * 使用单个密钥校验并解析 JWT（兼容旧调用，便于测试）。
-     *
-     * @param secretKey 哈希密钥
-     * @param token     JWT 令牌
-     * @return 解析后的声明
-     */
-    public static Claims parseJWT(String secretKey, String token) {
-        return Jwts.parser()
-                .clockSkewSeconds(CLOCK_SKEW_SECONDS)
-                .verifyWith(hmacKey(secretKey))
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();

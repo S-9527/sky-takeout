@@ -181,7 +181,8 @@ import AddDish from './components/AddDish.vue'
 import ImageUpload from '@/components/ImgUpload/index.vue'
 import { querySetmealById, addSetmeal, editSetmeal } from '@/api/setMeal'
 import { getCategoryList } from '@/api/dish'
-import type { Category, SetmealDish, SetmealDTO } from '@/api/types'
+import type { Category } from '@/api/types/category'
+import type { SetmealDish, SetmealDTO } from '@/api/types/setmeal'
 import { amountRule, nameRule } from '@/utils/formRules'
 
 const route = useRoute()

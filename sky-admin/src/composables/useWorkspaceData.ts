@@ -10,7 +10,7 @@ import type {
   DishOverViewVO,
   OrderOverViewVO,
   SetmealOverViewVO
-} from '@/api/types'
+} from '@/api/types/report'
 
 export function useWorkspaceData() {
   const overviewData = ref<BusinessDataVO>()

@@ -138,7 +138,8 @@ import {
   setmealStatusByStatus,
   dishCategoryList as getDishCategoryListApi
 } from '@/api/setMeal'
-import type { Category, SetmealVO } from '@/api/types'
+import type { Category } from '@/api/types/category'
+import type { SetmealVO } from '@/api/types/setmeal'
 import Empty from '@/components/Empty/index.vue'
 import Pagination from '@/components/Pagination/index.vue'
 import { useTablePage } from '@/composables/useTablePage'

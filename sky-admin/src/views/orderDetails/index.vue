@@ -255,7 +255,7 @@ import { getOrderDetailPage, getOrderListBy } from '@/api/order'
 import { useOrderActions } from '@/composables/useOrderActions'
 import { useTablePage } from '@/composables/useTablePage'
 import { OrderStatus, isOrderStatus, statusText } from '@/constants/order'
-import type { OrderStatisticsVO, OrderVO } from '@/api/types'
+import type { OrderStatisticsVO, OrderVO } from '@/api/types/order'
 
 const route = useRoute()
 const router = useRouter()

@@ -61,7 +61,9 @@
 import { ref, watch } from 'vue'
 import type { PropType } from 'vue'
 import { getCategoryList, queryDishList } from '@/api/dish'
-import type { Category, Dish, SetmealDish } from '@/api/types'
+import type { Category } from '@/api/types/category'
+import type { Dish } from '@/api/types/dish'
+import type { SetmealDish } from '@/api/types/setmeal'
 import Empty from '@/components/Empty/index.vue'
 
 type PrintedDish = Dish & { dishId: number; dishName: string; copies: number }

@@ -200,7 +200,7 @@ import {
   ORDER_STATUS_TEXT,
   isOrderStatus
 } from '@/constants/order'
-import type { OrderStatisticsVO, OrderVO } from '@/api/types'
+import type { OrderStatisticsVO, OrderVO } from '@/api/types/order'
 
 const activeIndex = ref(0)
 const isSearch = ref(false)

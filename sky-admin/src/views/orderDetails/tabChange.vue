@@ -18,7 +18,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { OrderStatus, ORDER_STATUS_TEXT, isOrderStatus } from '@/constants/order'
-import type { OrderStatisticsVO } from '@/api/types'
+import type { OrderStatisticsVO } from '@/api/types/order'
 
 const props = withDefaults(
   defineProps<{

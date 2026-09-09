@@ -42,7 +42,7 @@ import type {
   SalesTop10Data,
   TurnoverStatisticsData,
   UserStatisticsData,
-} from '@/api/types'
+} from '@/api/types/report'
 // 组件
 // 标题
 import TitleIndex from './components/titleIndex.vue'

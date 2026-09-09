@@ -11,7 +11,7 @@
 import { computed } from 'vue'
 import Chart from '@/components/Chart/index.vue'
 import { echarts, type EChartsOption } from '@/utils/echarts'
-import type { SalesTop10Data } from '@/api/types'
+import type { SalesTop10Data } from '@/api/types/report'
 
 const props = withDefaults(
   defineProps<{

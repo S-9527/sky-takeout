@@ -138,7 +138,7 @@ import {
   dishStatusByStatus,
   dishCategoryList as dishCategoryListApi
 } from '@/api/dish'
-import type { DishVO } from '@/api/types'
+import type { DishVO } from '@/api/types/dish'
 import Empty from '@/components/Empty/index.vue'
 import Pagination from '@/components/Pagination/index.vue'
 import { useTablePage } from '@/composables/useTablePage'

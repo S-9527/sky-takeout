@@ -14,7 +14,7 @@ import {
   setUserInfo,
   removeUserInfo
 } from '@/utils/cookies'
-import type { EmployeeLoginVO } from '@/api/types'
+import type { EmployeeLoginVO } from '@/api/types/employee'
 
 interface StoreUserInfo extends EmployeeLoginVO {
   avatar?: string

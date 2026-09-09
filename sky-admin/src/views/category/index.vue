@@ -163,7 +163,7 @@ import {
 import Empty from '@/components/Empty/index.vue'
 import Pagination from '@/components/Pagination/index.vue'
 import { useTablePage } from '@/composables/useTablePage'
-import type { Category } from '@/api/types'
+import type { Category } from '@/api/types/category'
 import { nameRule, sortRule } from '@/utils/formRules'
 
 const options: { value: number; label: string }[] = [

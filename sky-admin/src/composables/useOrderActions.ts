@@ -9,7 +9,7 @@ import {
   orderAccept as orderAcceptApi
 } from '@/api/order'
 import { OrderStatus } from '@/constants/order'
-import type { OrderVO } from '@/api/types'
+import type { OrderVO } from '@/api/types/order'
 
 export type CancelTitle = '取消' | '拒绝'
 

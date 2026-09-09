@@ -134,7 +134,8 @@ import {
   editDish,
   getCategoryList
 } from '@/api/dish'
-import type { Category, DishDTO } from '@/api/types'
+import type { Category } from '@/api/types/category'
+import type { DishDTO } from '@/api/types/dish'
 import { amountRule, nameRule } from '@/utils/formRules'
 
 const route = useRoute()

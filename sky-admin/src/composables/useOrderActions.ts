@@ -153,7 +153,9 @@ export function useOrderActions(options: OrderActionsOptions = {}) {
       return
     }
 
-    const id = state.row.id as number
+    const id = state.row.id
+    // row 的初始值是空对象,正常流程一定经过 openDetail 填充;这里判一次,避免把 undefined 打进请求
+    if (id === undefined) return
     const reason =
       state.cancelReason === CUSTOM_REASON ? state.remark : state.cancelReason
 

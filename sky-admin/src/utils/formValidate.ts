@@ -22,9 +22,17 @@ function dateFormat(fmt: string, time: number) {
   return fmt;
 }
 
+// 今日 0 点(本地时区)。
+// 原来是 new Date(new Date().toLocaleDateString())——先转成本地化字符串再解析回来,
+// 属于隐式转换:日期字符串是 locale 相关的(可能带时间、可能带前导零),解析结果依赖运行环境
+const startOfToday = (): number => {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime()
+}
+
 // js获取昨日的日期
 export const get1stAndToday = (): string[] => {
-  const toData = new Date(new Date().toLocaleDateString()).getTime();
+  const toData = startOfToday()
   const yesterdayStart = toData - 3600 * 24 * 1000;
   const yesterdayEnd = yesterdayStart + 24 * 60 * 60 * 1000 - 1;
   const startDay1 = dateFormat("YYYY-mm-dd", yesterdayStart);
@@ -33,7 +41,7 @@ export const get1stAndToday = (): string[] => {
 };
 // 获取昨日、今日日期
 export const getday = (): string[] => {
-  const toData = new Date(new Date().toLocaleDateString()).getTime();
+  const toData = startOfToday()
   const yesterdays= toData - 3600 * 24 * 1000;
   const yesterday = dateFormat("YYYY.mm.dd", yesterdays);
   const today = dateFormat("YYYY.mm.dd", toData);
@@ -42,7 +50,7 @@ export const getday = (): string[] => {
 
 // 获取近7日
 export const past7Day = (): string[] => {
-  const toData = new Date(new Date().toLocaleDateString()).getTime();
+  const toData = startOfToday()
   const past7daysStart = toData - 7 * 3600 * 24 * 1000;
   const past7daysEnd = toData - 1;
   const days7Start = dateFormat("YYYY-mm-dd", past7daysStart);
@@ -52,7 +60,7 @@ export const past7Day = (): string[] => {
 
 // 获取近30日
 export const past30Day = (): string[] => {
-  const toData = new Date(new Date().toLocaleDateString()).getTime();
+  const toData = startOfToday()
   const past30daysStart = toData - 30 * 3600 * 24 * 1000;
   const past30daysEnd = toData - 1;
   const days30Start = dateFormat("YYYY-mm-dd", past30daysStart);
@@ -61,7 +69,7 @@ export const past30Day = (): string[] => {
 };
 // 获取本周
 export const pastWeek = (): string[] => {
-  const toData = new Date(new Date().toLocaleDateString()).getTime();
+  const toData = startOfToday()
   const nowDayOfWeek = new Date().getDay();
   const weekStartData = toData - (nowDayOfWeek - 1) * 24 * 60 * 60 * 1000;
   const weekEndData = toData + (7 - nowDayOfWeek) * 24 * 60 * 60 * 1000;

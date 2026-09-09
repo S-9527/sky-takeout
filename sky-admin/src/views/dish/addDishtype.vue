@@ -121,10 +121,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import type { FormInstance, FormItemRule } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import SelectInput from './components/SelectInput.vue'
 import ImageUpload from '@/components/ImgUpload/index.vue'
 // getFlavorList口味列表暂时不做 getDishTypeList
@@ -135,6 +135,7 @@ import {
   getCategoryList
 } from '@/api/dish'
 import type { Category, DishDTO } from '@/api/types'
+import { amountRule, nameRule } from '@/utils/formRules'
 
 const route = useRoute()
 const router = useRouter()
@@ -168,57 +169,13 @@ const ruleForm = ref<{
 })
 const ruleFormRef = ref<FormInstance>()
 
-type Validator = NonNullable<FormItemRule['validator']>
-
-const rules = computed(() => {
-  return {
-    name: [
-      {
-        required: true,
-        validator: ((_rule, value, callback) => {
-          if (!value) {
-            callback(new Error('请输入菜品名称'))
-          } else {
-            const reg = /^([A-Za-z0-9\u4e00-\u9fa5]){2,20}$/
-            if (!reg.test(value)) {
-              callback(new Error('菜品名称输入不符，请输入2-20个字符'))
-            } else {
-              callback()
-            }
-          }
-        }) as Validator,
-        trigger: 'blur'
-      }
-    ],
-    categoryId: [
-      { required: true, message: '请选择菜品分类', trigger: 'change' }
-    ],
-    image: {
-      required: true,
-      message: '菜品图片不能为空'
-    },
-    price: [
-      {
-        required: true,
-        // 'message': '请填写菜品价格',
-        validator: ((_rules, value, callback) => {
-          const reg = /^([1-9]\d{0,5}|0)(\.\d{1,2})?$/
-          if (!reg.test(value) || Number(value) <= 0) {
-            callback(
-              new Error(
-                '菜品价格格式有误，请输入大于零且最多保留两位小数的金额'
-              )
-            )
-          } else {
-            callback()
-          }
-        }) as Validator,
-        trigger: 'blur'
-      }
-    ],
-    code: [{ required: true, message: '请填写商品码', trigger: 'blur' }]
-  }
-})
+const rules: FormRules = {
+  name: [nameRule('菜品名称', '请输入菜品名称')],
+  categoryId: [{ required: true, message: '请选择菜品分类', trigger: 'change' }],
+  image: { required: true, message: '菜品图片不能为空' },
+  price: [amountRule('菜品价格')],
+  code: [{ required: true, message: '请填写商品码', trigger: 'blur' }]
+}
 
 getDishList()
 // 口味临时数据

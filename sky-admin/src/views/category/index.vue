@@ -150,9 +150,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { FormInstance, FormItemRule } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import {
   getCategoryPage,
   deleCategory,
@@ -164,6 +164,7 @@ import Empty from '@/components/Empty/index.vue'
 import Pagination from '@/components/Pagination/index.vue'
 import { useTablePage } from '@/composables/useTablePage'
 import type { Category } from '@/api/types'
+import { nameRule, sortRule } from '@/utils/formRules'
 
 const options: { value: number; label: string }[] = [
   {
@@ -175,8 +176,6 @@ const options: { value: number; label: string }[] = [
     label: '套餐分类'
   }
 ]
-type FormValidator = NonNullable<FormItemRule['validator']>
-
 interface CategoryForm {
   title: string
   dialogVisible: boolean
@@ -205,53 +204,10 @@ const classData = reactive<CategoryForm>({
 })
 const classDataRef = ref<FormInstance>()
 
-const rules = computed(() => {
-  const validateName: FormValidator = (_rule, value, callback) => {
-    const str = String(value ?? '')
-    // const reg = /[\u4e00-\u9fa5]/
-    var reg = new RegExp('^[A-Za-z\u4e00-\u9fa5]+$')
-    if (!str) {
-      callback(new Error(classData.title + '不能为空'))
-    } else if (str.length < 2) {
-      callback(new Error('分类名称输入不符，请输入2-20个字符'))
-    } else if (!reg.test(str)) {
-      callback(new Error('分类名称包含特殊字符'))
-    } else {
-      callback()
-    }
-  }
-  const validateSort: FormValidator = (_rule, value, callback) => {
-    const str = String(value ?? '')
-    if (str || str === '0') {
-      const reg = /^\d+$/
-      if (!reg.test(str)) {
-        callback(new Error('排序只能输入数字类型'))
-      } else if (Number(str) > 99) {
-        callback(new Error('排序只能输入0-99数字'))
-      } else {
-        callback()
-      }
-    } else {
-      callback(new Error('排序不能为空'))
-    }
-  }
-  return {
-    name: [
-      {
-        required: true,
-        trigger: 'blur',
-        validator: validateName
-      }
-    ],
-    sort: [
-      {
-        required: true,
-        trigger: 'blur',
-        validator: validateSort
-      }
-    ]
-  }
-})
+const rules: FormRules = {
+  name: [nameRule('分类名称')],
+  sort: [sortRule('排序')]
+}
 
 init()
 

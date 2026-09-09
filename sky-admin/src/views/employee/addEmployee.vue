@@ -62,11 +62,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormItemRule } from 'element-plus'
+import {
+  ElMessage,
+  type FormInstance,
+  type FormItemRule,
+  type FormRules
+} from 'element-plus'
 import HeadLable from '@/components/HeadLable/index.vue'
 import { queryEmployeeById, addEmployee, editEmployee } from '@/api/employee'
+import { accountRule } from '@/utils/formRules'
 
 const route = useRoute()
 const router = useRouter()
@@ -113,43 +119,12 @@ const validID: Validator = (_rule, value, callback) => {
   }
 }
 
-const rules = computed(() => {
-  return {
-    name: [
-      {
-        required: true,
-        validator: ((_rule, value, callback) => {
-          if (!value) {
-            callback(new Error('请输入员工姓名'))
-          } else {
-            callback()
-          }
-        }) as Validator,
-        trigger: 'blur'
-      }
-    ],
-    username: [
-      {
-        required: true,
-        validator: ((_rule, value, callback) => {
-          if (!value) {
-            callback(new Error('请输入账号'))
-          } else {
-            const reg = /^([a-z]|[0-9]){3,20}$/
-            if (!reg.test(value)) {
-              callback(new Error('账号输入不符，请输入3-20个字符'))
-            } else {
-              callback()
-            }
-          }
-        }) as Validator,
-        trigger: 'blur'
-      }
-    ],
-    phone: [{ required: true, validator: checkphone, trigger: 'blur' }],
-    idNumber: [{ required: true, validator: validID, trigger: 'blur' }]
-  }
-})
+const rules: FormRules = {
+  name: [{ required: true, message: '请输入员工姓名', trigger: 'blur' }],
+  username: [accountRule('账号', '请输入账号')],
+  phone: [{ required: true, validator: checkphone, trigger: 'blur' }],
+  idNumber: [{ required: true, validator: validID, trigger: 'blur' }]
+}
 
 const init = async () => {
   const id = route.query.id

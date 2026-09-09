@@ -172,16 +172,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import type { FormInstance, FormItemRule } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import AddDish from './components/AddDish.vue'
 import ImageUpload from '@/components/ImgUpload/index.vue'
 import { querySetmealById, addSetmeal, editSetmeal } from '@/api/setMeal'
 import { getCategoryList } from '@/api/dish'
 import type { Category, SetmealDish, SetmealDTO } from '@/api/types'
+import { amountRule, nameRule } from '@/utils/formRules'
 
 const route = useRoute()
 const router = useRouter()
@@ -216,54 +217,13 @@ const ruleForm = ref<{
 })
 const ruleFormRef = ref<FormInstance>()
 
-type Validator = NonNullable<FormItemRule['validator']>
-
-const rules = computed(() => {
-  return {
-    name: {
-      required: true,
-      validator: ((_rule, value, callback) => {
-        if (!value) {
-          callback(new Error('请输入套餐名称'))
-        } else {
-          const reg = /^([A-Za-z0-9\u4e00-\u9fa5]){2,20}$/
-          if (!reg.test(value)) {
-            callback(new Error('套餐名称输入不符，请输入2-20个字符'))
-          } else {
-            callback()
-          }
-        }
-      }) as Validator,
-      trigger: 'blur'
-    },
-    idType: {
-      required: true,
-      message: '请选择套餐分类',
-      trigger: 'change'
-    },
-    image: {
-      required: true,
-      message: '菜品图片不能为空'
-    },
-    price: {
-      required: true,
-      validator: ((_rules, value, callback) => {
-        const reg = /^([1-9]\d{0,5}|0)(\.\d{1,2})?$/
-        if (!reg.test(value) || Number(value) <= 0) {
-          callback(
-            new Error(
-              '套餐价格格式有误，请输入大于零且最多保留两位小数的金额'
-            )
-          )
-        } else {
-          callback()
-        }
-      }) as Validator,
-      trigger: 'blur'
-    },
-    code: { required: true, message: '请输入商品码', trigger: 'blur' }
-  }
-})
+const rules: FormRules = {
+  name: [nameRule('套餐名称', '请输入套餐名称')],
+  idType: { required: true, message: '请选择套餐分类', trigger: 'change' },
+  image: { required: true, message: '菜品图片不能为空' },
+  price: [amountRule('套餐价格')],
+  code: { required: true, message: '请输入商品码', trigger: 'blur' }
+}
 
 const init = async () => {
   querySetmealById(Number(route.query.id)).then(res => {

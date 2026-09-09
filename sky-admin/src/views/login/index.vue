@@ -57,29 +57,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { FormInstance, FormItemRule, FormRules } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 const loginFormRef = ref<FormInstance>()
 
-type Validator = NonNullable<FormItemRule['validator']>
-
-const validateUsername: Validator = (_rule, value, callback) => {
-  if (!value) {
-    callback(new Error('请输入用户名'))
-  } else {
-    callback()
-  }
-}
-const validatePassword: Validator = (_rule, value, callback) => {
-  if (value.length < 6) {
-    callback(new Error('密码必须在6位以上'))
-  } else {
-    callback()
-  }
-}
 const loginForm = ref({
   username: 'admin',
   password: '123456',
@@ -89,9 +73,12 @@ const loginForm = ref({
 })
 
 const loginRules: FormRules = {
-  username: [{ validator: validateUsername, trigger: 'blur' }],
-  password: [{ validator: validatePassword, trigger: 'blur' }],
+  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  password: [
+    { required: true, min: 6, message: '密码必须在6位以上', trigger: 'blur' }
+  ]
 }
+
 const loading = ref(false)
 
 // 登录

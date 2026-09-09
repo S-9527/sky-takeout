@@ -5,6 +5,9 @@
 
 .el-dialog {
   border-radius: 8px;
+  // EP 默认 padding: var(--el-dialog-padding-primary)=16px,会让灰色 header 背景四周留白一圈;
+  // Element UI 时代无此 padding,header 是顶满弹窗的。body 已有显式 padding,此处归零安全。
+  padding: 0;
 }
 
 // 需要保证最小宽度的弹层显式声明,不再全局强制

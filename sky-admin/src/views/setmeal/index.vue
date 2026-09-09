@@ -185,9 +185,6 @@ async function init(isSearchVal?: boolean) {
       tableData.value = res.records
       counts.value = Number(res.total)
     })
-    .catch(err => {
-      ElMessage.error('请求出错了：' + err.message)
-    })
 }
 
 // 添加更改
@@ -215,9 +212,6 @@ const deleteHandle = (type: string, id?: number) => {
       .then(() => {
         ElMessage.success('删除成功！')
         init()
-      })
-      .catch(err => {
-        ElMessage.error('请求出错了：' + err.message)
       })
   })
 }
@@ -247,9 +241,6 @@ const statusHandle = (row: SetmealVO | string) => {
       .then(() => {
         ElMessage.success('套餐状态已经更改成功！')
         init()
-      })
-      .catch(err => {
-        ElMessage.error('请求出错了：' + err.message)
       })
   })
 }

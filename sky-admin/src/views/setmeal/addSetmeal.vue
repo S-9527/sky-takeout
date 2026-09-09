@@ -377,17 +377,11 @@ const submitForm = (_formName: string, st: boolean) => {
               imageUrl.value = ''
             }
           })
-          .catch(err => {
-            ElMessage.error('请求出错了：' + err.message)
-          })
       } else {
         editSetmeal({ ...prams, id: Number(route.query.id) })
           .then(() => {
             ElMessage.success('套餐修改成功！')
             router.push({ path: '/setmeal' })
-          })
-          .catch(err => {
-            ElMessage.error('请求出错了：' + err.message)
           })
       }
     }

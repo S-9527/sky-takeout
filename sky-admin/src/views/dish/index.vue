@@ -188,9 +188,6 @@ async function init(searchValue?: boolean) {
       tableData.value = res.records
       counts.value = Number(res.total)
     })
-    .catch(err => {
-      ElMessage.error('请求出错了：' + err.message)
-    })
 }
 
 // 添加
@@ -218,9 +215,6 @@ const deleteHandle = (type: string, id?: number | string) => {
       .then(() => {
         ElMessage.success('删除成功！')
         init()
-      })
-      .catch(err => {
-        ElMessage.error('请求出错了：' + err.message)
       })
   })
 }
@@ -259,9 +253,6 @@ const statusHandle = (row: DishVO | string) => {
       .then(() => {
         ElMessage.success('菜品状态已经更改成功！')
         init()
-      })
-      .catch(err => {
-        ElMessage.error('请求出错了：' + err.message)
       })
   })
 }

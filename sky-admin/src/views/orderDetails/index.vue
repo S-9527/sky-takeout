@@ -604,9 +604,6 @@ function getOrderListBy3Status() {
     .then((res) => {
       orderStatics.value = res
     })
-    .catch((err) => {
-      ElMessage.error('请求出错了：' + err.message)
-    })
 }
 
 function init(activeIndex: number = 0, isSearchVal?: boolean) {
@@ -644,9 +641,6 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
       } else {
         return null
       }
-    })
-    .catch((err) => {
-      ElMessage.error('请求出错了：' + err.message)
     })
 }
 
@@ -705,9 +699,6 @@ function orderAccept(rowData: OrderVO) {
       dialogVisible.value = false
       init(orderStatus.value)
     })
-    .catch((err) => {
-      ElMessage.error('请求出错了：' + err.message)
-    })
 }
 
 //打开取消订单弹窗
@@ -739,9 +730,6 @@ function confirmCancel() {
         orderId.value = undefined
         init(orderStatus.value)
       })
-      .catch((err) => {
-        ElMessage.error('请求出错了：' + err.message)
-      })
   } else {
     orderRejectApi({ id: orderId.value as number, rejectionReason: reason })
       .then(() => {
@@ -749,9 +737,6 @@ function confirmCancel() {
         cancelDialogVisible.value = false
         orderId.value = undefined
         init(orderStatus.value)
-      })
-      .catch((err) => {
-        ElMessage.error('请求出错了：' + err.message)
       })
   }
 }
@@ -764,9 +749,6 @@ function cancelOrDeliveryOrComplete(status: number, id: number) {
       orderId.value = undefined
       dialogVisible.value = false
       init(orderStatus.value)
-    })
-    .catch((err) => {
-      ElMessage.error('请求出错了：' + err.message)
     })
 }
 

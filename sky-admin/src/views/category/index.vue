@@ -270,9 +270,6 @@ async function init(searchValue?: boolean) {
       tableData.value = res.records
       counts.value = Number(res.total)
     })
-    .catch(err => {
-      ElMessage.error('请求出错了：' + err.message)
-    })
 }
 
 // 添加
@@ -324,9 +321,6 @@ const statusHandle = (row: Category) => {
         ElMessage.success('分类状态更改成功！')
         init()
       })
-      .catch(err => {
-        ElMessage.error('请求出错了：' + err.message)
-      })
   })
 }
 
@@ -341,9 +335,6 @@ const deleteHandle = (id: number) => {
       .then(() => {
         ElMessage.success('删除成功！')
         init()
-      })
-      .catch(err => {
-        ElMessage.error('请求出错了：' + err.message)
       })
   })
 }
@@ -366,9 +357,6 @@ const submitForm = (st?: string) => {
             }
             init()
           })
-          .catch(err => {
-            ElMessage.error('请求出错了：' + err.message)
-          })
       }
     })
   } else {
@@ -385,9 +373,6 @@ const submitForm = (st?: string) => {
             classData.dialogVisible = false
             classDataRef.value?.resetFields()
             init()
-          })
-          .catch(err => {
-            ElMessage.error('请求出错了：' + err.message)
           })
       }
     })

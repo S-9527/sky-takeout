@@ -25,7 +25,6 @@
 
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
-import { ElMessage } from 'element-plus'
 import {
   getBusinessData as getBusinessDataApi,
   getOrderData, //订单管理今日订单
@@ -92,9 +91,6 @@ function getOrderListBy3Status() {
   getOrderListBy()
     .then((res) => {
       orderStatics.value = res
-    })
-    .catch((err) => {
-      ElMessage.error('请求出错了：' + err.message)
     })
 }
 </script>

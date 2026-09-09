@@ -352,17 +352,11 @@ const submitForm = (_formName: string, st?: string) => {
               restKey.value++
             }
           })
-          .catch(err => {
-            ElMessage.error('请求出错了：' + err.message)
-          })
       } else {
         editDish({ ...params, id: Number(ruleForm.value.id) })
           .then(() => {
             router.push({ path: '/dish' })
             ElMessage.success('菜品修改成功！')
-          })
-          .catch(err => {
-            ElMessage.error('请求出错了：' + err.message)
           })
       }
     }

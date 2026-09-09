@@ -121,9 +121,6 @@ async function init(isSearchVal?: boolean) {
       tableData.value = res.records
       counts.value = res.total
     })
-    .catch((err) => {
-      ElMessage.error('请求出错了：' + err.message)
-    })
 }
 
 // 添加
@@ -154,9 +151,6 @@ const statusHandle = (row: Employee) => {
       .then(() => {
         ElMessage.success('账号状态更改成功！')
         init()
-      })
-      .catch((err) => {
-        ElMessage.error('请求出错了：' + err.message)
       })
   })
 }

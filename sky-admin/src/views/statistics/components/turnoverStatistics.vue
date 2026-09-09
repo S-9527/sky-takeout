@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
-import * as echarts from 'echarts'
+import { echarts, type EChartsOption } from '@/utils/echarts'
 import type { TurnoverStatisticsData } from '@/api/types'
 
 const props = withDefaults(
@@ -40,7 +40,7 @@ function initChart() {
   }
   const myChart = echarts.init(chartDom)
 
-  var option: echarts.EChartsOption
+  var option: EChartsOption
   option = {
     // title: {
     //   text: '营业额(元)',

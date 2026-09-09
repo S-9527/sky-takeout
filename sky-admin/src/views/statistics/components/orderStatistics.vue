@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
-import * as echarts from 'echarts'
+import { echarts, type EChartsOption } from '@/utils/echarts'
 import type { OrderReportChartData } from '@/api/types'
 
 const props = withDefaults(
@@ -63,7 +63,7 @@ function initChart() {
     return
   }
   const myChart = echarts.init(chartDom)
-    var option: echarts.EChartsOption
+    var option: EChartsOption
     option = {
       // legend: {
       //   itemHeight: 3, //图例高

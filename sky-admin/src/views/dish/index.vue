@@ -149,7 +149,6 @@ const counts = ref(0)
 const { page, pageSize, handleSizeChange, handleCurrentChange } = useTablePage(() => init())
 const checkList = ref<Array<string | number>>([])
 const tableData = ref<DishVO[]>([])
-const dishState = ref<{ id: number | string; status: string }>({ id: 0, status: '0' })
 const dishCategoryList = ref<{ value: number; label: string }[]>([])
 const categoryId = ref<number | ''>('')
 const dishStatus = ref<number | ''>('')
@@ -230,25 +229,14 @@ function getDishCategoryList() {
 }
 
 //状态更改
-const statusHandle = (row: DishVO | string) => {
-  let params: { id: number | string; status: string }
-  if (typeof row === 'string') {
-    if (checkList.value.length === 0) {
-      ElMessage.error('批量操作，请先勾选操作菜品！')
-      return false
-    }
-    params = { id: checkList.value.join(','), status: row }
-  } else {
-    params = { id: row.id ?? 0, status: row.status ? '0' : '1' }
-  }
-  dishState.value = params
+const statusHandle = (row: DishVO) => {
   ElMessageBox.confirm('确认更改该菜品状态?', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
     // 起售停售---批量起售停售接口
-    dishStatusByStatus({ status: Number(dishState.value.status), id: dishState.value.id })
+    dishStatusByStatus({ status: row.status === 1 ? 0 : 1, id: row.id ?? 0 })
       .then(() => {
         ElMessage.success('菜品状态已经更改成功！')
         init()

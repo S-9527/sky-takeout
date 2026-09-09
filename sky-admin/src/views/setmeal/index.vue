@@ -217,27 +217,13 @@ const deleteHandle = (type: string, id?: number) => {
 }
 
 //状态更改
-const statusHandle = (row: SetmealVO | string) => {
-  let ids: string
-  let status: '0' | '1'
-  if (typeof row === 'string') {
-    if (checkList.value.length === 0) {
-      ElMessage.error('批量操作，请先勾选操作菜品！')
-      return false
-    }
-    ids = checkList.value.join(',')
-    status = row as '0' | '1'
-  } else {
-    ids = String(row.id)
-    status = row.status ? '0' : '1'
-  }
-
+const statusHandle = (row: SetmealVO) => {
   ElMessageBox.confirm('确认更改该套餐状态?', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    setmealStatusByStatus({ status: Number(status), ids })
+    setmealStatusByStatus({ status: row.status === 1 ? 0 : 1, ids: row.id ?? 0 })
       .then(() => {
         ElMessage.success('套餐状态已经更改成功！')
         init()

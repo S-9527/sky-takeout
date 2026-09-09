@@ -15,7 +15,7 @@ import { echarts, type EChartsOption } from '@/utils/echarts'
 
 const props = withDefaults(
   defineProps<{
-    option: EChartsOption
+    option?: EChartsOption
     height?: string | number
   }>(),
   {

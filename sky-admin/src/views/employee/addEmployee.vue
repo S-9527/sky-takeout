@@ -109,7 +109,7 @@ const checkphone: Validator = (_rule, value, callback) => {
 }
 
 const validID: Validator = (_rule, value, callback) => {
-  let reg = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/
+  const reg = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/
   if (value == '') {
     callback(new Error('请输入身份证号码'))
   } else if (reg.test(value)) {

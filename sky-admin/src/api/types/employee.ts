@@ -26,7 +26,7 @@ export interface EmployeeDTO {
 }
 
 // 员工分页查询
-export interface EmployeePageQueryDTO extends PageQuery {}
+export type EmployeePageQueryDTO = PageQuery
 
 // 修改密码
 export interface PasswordEditDTO {

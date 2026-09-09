@@ -257,7 +257,7 @@ const statusHandle = (row: DishVO | string) => {
 
 // 全部操作
 const handleSelectionChange = (val: DishVO[]) => {
-  let checkArr: Array<string | number> = []
+  const checkArr: Array<string | number> = []
   val.forEach((n) => {
     checkArr.push(n.id ?? 0)
   })

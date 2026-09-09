@@ -3,11 +3,11 @@
     <div class="month">
       <ul class="tabs">
         <li
-          class="li-tab"
           v-for="(item, index) in tabsParam"
-          @click="toggleTabs(index)"
-          :class="{ active: index === nowIndex }"
           :key="index"
+          class="li-tab"
+          :class="{ active: index === nowIndex }"
+          @click="toggleTabs(index)"
         >
           {{ item }}
           <span></span>
@@ -74,8 +74,8 @@ function handleExport() {
   })
     .then(async function () {
       const data = await exportReport()
-      let url = window.URL.createObjectURL(data)
-      var a = document.createElement('a')
+      const url = window.URL.createObjectURL(data)
+      const a = document.createElement('a')
       document.body.appendChild(a)
       a.href = url
       a.download = '运营数据统计报表.xlsx'

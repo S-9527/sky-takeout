@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-container home" v-loading="loading">
+  <div v-loading="loading" class="dashboard-container home">
     <div v-if="error" class="workspace-error">
       <span>{{ error }}</span>
       <el-button type="primary" link @click="refresh">重试</el-button>

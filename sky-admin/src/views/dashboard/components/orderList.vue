@@ -89,11 +89,11 @@
               </template>
             </el-table-column>
             <el-table-column
+              v-if="status === OrderStatus.Confirmed"
               prop="tablewareNumber"
               label="餐具数量"
               min-width="80"
               align="center"
-              v-if="status === OrderStatus.Confirmed"
             >
             </el-table-column>
             <el-table-column

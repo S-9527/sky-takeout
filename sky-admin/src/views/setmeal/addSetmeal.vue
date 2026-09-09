@@ -101,7 +101,7 @@
                         required
                         prop="image">
             <image-upload :prop-image-url="imageUrl"
-                          @imageChange="imageChange">
+                          @image-change="imageChange">
               图片大小不超过2M<br>仅能上传 PNG JPEG JPG类型图片<br>建议上传200*200或300*300尺寸的图片
             </image-upload>
           </el-form-item>
@@ -135,9 +135,9 @@
       </el-form>
     </div>
     <el-dialog v-if="dialogVisible"
+               v-model="dialogVisible"
                title="添加菜品"
                class="addDishList"
-               v-model="dialogVisible"
                width="60%"
                :before-close="handleClose">
       <el-input v-model="value"
@@ -159,7 +159,7 @@
                :check-list="checkList"
                :seach-key="seachKey"
                :dish-list="dishList"
-               @checkList="getCheckList" />
+               @check-list="getCheckList" />
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="handleClose">取 消</el-button>

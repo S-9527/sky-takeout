@@ -21,10 +21,10 @@
                :unique-opened="false"
                :collapse-transition="false"
                mode="vertical">
-        <sidebar-item v-for="route in routes"
-                      :key="route.path"
-                      :item="route"
-                      :base-path="route.path"
+        <sidebar-item v-for="menu in routes"
+                      :key="menu.path"
+                      :item="menu"
+                      :base-path="menu.path"
                       :is-collapse="isCollapse" />
       </el-menu>
     </el-scrollbar>

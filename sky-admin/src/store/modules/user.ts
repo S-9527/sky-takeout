@@ -35,8 +35,8 @@ export const useUserStore = defineStore('user', () => {
   const username = ref<string>(getUsername() || '')
 
   async function Login(params: { username: string; password: string }) {
-    let { username: uname, password } = params
-    uname = uname.trim()
+    const { password } = params
+    const uname = params.username.trim()
     username.value = uname
     setUsername(uname)
     // 拦截器已剥离 Result 外壳并统一处理失败，成功时 data 即业务数据

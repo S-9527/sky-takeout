@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-container home">
     <!-- 标题 -->
-    <TitleIndex @sendTitleInd="getTitleNum" :flag="flag" :tateData="tateData" />
+    <TitleIndex :flag="flag" :tate-data="tateData" @send-title-ind="getTitleNum" />
     <!-- end -->
     <div class="homeMain">
       <!-- 营业额统计 -->
@@ -13,7 +13,7 @@
     </div>
     <div class="homeMain homecon">
       <!-- 订单统计 -->
-      <OrderStatistics :orderdata="orderData" :overviewData="overviewData" />
+      <OrderStatistics :orderdata="orderData" :overview-data="overviewData" />
       <!-- end -->
       <!-- 销量排名TOP10 -->
       <Top :top10data="top10Data" />

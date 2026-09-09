@@ -85,7 +85,7 @@
           <el-form-item label="菜品图片:"
                         prop="image">
             <image-upload :prop-image-url="imageUrl"
-                          @imageChange="imageChange">
+                          @image-change="imageChange">
               图片大小不超过2M<br>仅能上传 PNG JPEG JPG类型图片<br>建议上传200*200或300*300尺寸的图片
             </image-upload>
           </el-form-item>
@@ -192,7 +192,7 @@ watch(dishFlavors, () => {
 
 //过滤已选择的口味下拉框无法再次选择
 const getLeftDishFlavors = () => {
-  let arr: { name: string; value: string[] }[] = []
+  const arr: { name: string; value: string[] }[] = []
   dishFlavorsData.value.map(item => {
     if (
       dishFlavors.value.findIndex(item1 => item.name === item1.name) === -1
@@ -240,7 +240,7 @@ const addFlavore = () => {
 
 // 按钮 - 删除口味
 const delFlavor = (name: string) => {
-  let ind = dishFlavors.value.findIndex(item => item.name === name)
+  const ind = dishFlavors.value.findIndex(item => item.name === name)
   dishFlavors.value.splice(ind, 1)
 }
 

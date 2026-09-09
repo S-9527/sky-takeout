@@ -4,7 +4,7 @@
       <hamburger id="hamburger-container"
                  :is-active="sidebar.opened"
                  class="hamburger-container"
-                 @toggleClick="toggleSideBar" />
+                 @toggle-click="toggleSideBar" />
       <span v-if="status===1"
             class="businessBtn">营业中</span>
       <span v-else
@@ -46,8 +46,8 @@
       </div>
     </div>
     <!-- 营业状态弹层 -->
-    <el-dialog title="营业状态设置"
-               v-model="dialogVisible"
+    <el-dialog v-model="dialogVisible"
+               title="营业状态设置"
                width="25%"
                :show-close="false">
       <el-radio-group v-model="setStatus">

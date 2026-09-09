@@ -61,7 +61,7 @@
 import { computed } from 'vue'
 import { OrderStatus } from '@/constants/order'
 import { getday } from '@/utils/formValidate'
-const props = defineProps({
+defineProps({
   orderviewData: {
     type: Object,
     default: () => ({}),

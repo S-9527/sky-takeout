@@ -258,7 +258,7 @@ const getDishCategoryList = () => {
 
 // 全部操作
 const handleSelectionChange = (val: SetmealVO[]) => {
-  let checkArr: number[] = []
+  const checkArr: number[] = []
   val.forEach((n) => {
     checkArr.push(n.id ?? 0)
   })

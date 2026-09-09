@@ -3,7 +3,7 @@
     <TabChange
       :order-statics="orderStatics"
       :default-activity="defaultActivity"
-      @tabChange="change"
+      @tab-change="change"
     />
     <div class="container" :class="{ hContainer: tableData.length }">
       <!-- 搜索项 -->

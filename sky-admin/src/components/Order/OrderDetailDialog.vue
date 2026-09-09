@@ -1,7 +1,7 @@
 <template>
   <el-dialog
-    title="订单信息"
     v-model="state.detailVisible"
+    title="订单信息"
     width="53%"
     :before-close="closeDetail"
     class="order-dialog"

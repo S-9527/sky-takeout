@@ -1,7 +1,7 @@
 <template>
   <el-dialog
-    :title="state.cancelTitle + '原因'"
     v-model="state.cancelVisible"
+    :title="state.cancelTitle + '原因'"
     width="42%"
     :before-close="closeCancelDialog"
     class="cancelDialog"

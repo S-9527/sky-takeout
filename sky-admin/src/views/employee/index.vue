@@ -23,9 +23,9 @@
         </el-button>
       </div>
       <el-table
+        v-if="tableData.length"
         :data="tableData"
         stripe
-        v-if="tableData.length"
         class="tableBox"
       >
         <el-table-column prop="name" label="员工姓名" />

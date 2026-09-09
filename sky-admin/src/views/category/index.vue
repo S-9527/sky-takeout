@@ -105,8 +105,8 @@
                   @size-change="handleSizeChange"
                   @current-change="handleCurrentChange" />
     </div>
-    <el-dialog :title="classData.title"
-               v-model="classData.dialogVisible"
+    <el-dialog v-model="classData.dialogVisible"
+               :title="classData.title"
                class="el-dialog--wide"
                width="30%"
                :before-close="handleClose">

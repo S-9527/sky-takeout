@@ -1,5 +1,5 @@
 function dateFormat(fmt: string, time: number) {
-  let date = new Date(time);
+  const date = new Date(time);
   let ret: RegExpExecArray | null;
   const opt: Record<string, string> = {
     // 年
@@ -24,58 +24,58 @@ function dateFormat(fmt: string, time: number) {
 
 // js获取昨日的日期
 export const get1stAndToday = (): string[] => {
-  let toData = new Date(new Date().toLocaleDateString()).getTime();
-  let yesterdayStart = toData - 3600 * 24 * 1000;
-  let yesterdayEnd = yesterdayStart + 24 * 60 * 60 * 1000 - 1;
-  let startDay1 = dateFormat("YYYY-mm-dd", yesterdayStart);
-  let endDay1 = dateFormat("YYYY-mm-dd", yesterdayEnd);
+  const toData = new Date(new Date().toLocaleDateString()).getTime();
+  const yesterdayStart = toData - 3600 * 24 * 1000;
+  const yesterdayEnd = yesterdayStart + 24 * 60 * 60 * 1000 - 1;
+  const startDay1 = dateFormat("YYYY-mm-dd", yesterdayStart);
+  const endDay1 = dateFormat("YYYY-mm-dd", yesterdayEnd);
   return [startDay1, endDay1];
 };
 // 获取昨日、今日日期
 export const getday = (): string[] => {
-  let toData = new Date(new Date().toLocaleDateString()).getTime();
-  let yesterdays= toData - 3600 * 24 * 1000;
-  let yesterday = dateFormat("YYYY.mm.dd", yesterdays);
-  let today = dateFormat("YYYY.mm.dd", toData);
+  const toData = new Date(new Date().toLocaleDateString()).getTime();
+  const yesterdays= toData - 3600 * 24 * 1000;
+  const yesterday = dateFormat("YYYY.mm.dd", yesterdays);
+  const today = dateFormat("YYYY.mm.dd", toData);
   return [yesterday,today];
 };
 
 // 获取近7日
 export const past7Day = (): string[] => {
-  let toData = new Date(new Date().toLocaleDateString()).getTime();
-  let past7daysStart = toData - 7 * 3600 * 24 * 1000;
-  let past7daysEnd = toData - 1;
-  let days7Start = dateFormat("YYYY-mm-dd", past7daysStart);
-  let days7End = dateFormat("YYYY-mm-dd", past7daysEnd);
+  const toData = new Date(new Date().toLocaleDateString()).getTime();
+  const past7daysStart = toData - 7 * 3600 * 24 * 1000;
+  const past7daysEnd = toData - 1;
+  const days7Start = dateFormat("YYYY-mm-dd", past7daysStart);
+  const days7End = dateFormat("YYYY-mm-dd", past7daysEnd);
   return [days7Start, days7End];
 };
 
 // 获取近30日
 export const past30Day = (): string[] => {
-  let toData = new Date(new Date().toLocaleDateString()).getTime();
-  let past30daysStart = toData - 30 * 3600 * 24 * 1000;
-  let past30daysEnd = toData - 1;
-  let days30Start = dateFormat("YYYY-mm-dd", past30daysStart);
-  let days30End = dateFormat("YYYY-mm-dd", past30daysEnd);
+  const toData = new Date(new Date().toLocaleDateString()).getTime();
+  const past30daysStart = toData - 30 * 3600 * 24 * 1000;
+  const past30daysEnd = toData - 1;
+  const days30Start = dateFormat("YYYY-mm-dd", past30daysStart);
+  const days30End = dateFormat("YYYY-mm-dd", past30daysEnd);
   return [days30Start, days30End];
 };
 // 获取本周
 export const pastWeek = (): string[] => {
-  let toData = new Date(new Date().toLocaleDateString()).getTime();
-  var nowDayOfWeek = new Date().getDay();
+  const toData = new Date(new Date().toLocaleDateString()).getTime();
+  const nowDayOfWeek = new Date().getDay();
   const weekStartData = toData - (nowDayOfWeek - 1) * 24 * 60 * 60 * 1000;
   const weekEndData = toData + (7 - nowDayOfWeek) * 24 * 60 * 60 * 1000;
-  let weekStart = dateFormat("YYYY-mm-dd", weekStartData);
-  let weekEnd = dateFormat("YYYY-mm-dd", weekEndData);
+  const weekStart = dateFormat("YYYY-mm-dd", weekStartData);
+  const weekEnd = dateFormat("YYYY-mm-dd", weekEndData);
   return [weekStart, weekEnd];
 };
 // 获取本月
 export const pastMonth = (): string[] => {
-  let year = new Date().getFullYear()
-  let month =new Date().getMonth()
+  const year = new Date().getFullYear()
+  const month =new Date().getMonth()
   const monthStartData = new Date(year, month, 1).getTime()
   const monthEndData = new Date(year, month + 1, 0).getTime() + 24 * 60 * 60 * 1000 - 1
-  let monthStart = dateFormat("YYYY-mm-dd", monthStartData);
-  let monthEnd = dateFormat("YYYY-mm-dd", monthEndData);
+  const monthStart = dateFormat("YYYY-mm-dd", monthStartData);
+  const monthEnd = dateFormat("YYYY-mm-dd", monthEndData);
   return [monthStart, monthEnd];
 };

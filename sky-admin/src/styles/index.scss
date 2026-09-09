@@ -66,26 +66,19 @@ div:focus {
   position: relative;
 }
 
-.blueBug::after {
-  content: '';
-  position: absolute;
-  right: -6px;
-  height: 14px;
-  width: 0px;
-  border-right: solid 1px #EBEEF5 !important;
-}
-
 .delBut {
   color: #F56C6C !important;
   position: relative;
 }
 
+/* 操作列图标之间的分隔线 */
+.blueBug::after,
 .delBut::after {
   content: '';
   position: absolute;
   right: -6px;
   height: 14px;
-  width: 0px;
+  width: 0;
   border-right: solid 1px #EBEEF5 !important;
 }
 
@@ -118,18 +111,16 @@ div:focus {
   border-color: #333333 !important;
   background: #333333 !important;
   color: #ffffff !important;
-}
 
-.continue:hover {
-  background-color: #999999 !important;
-  border-color: #999999 !important;
-  color: #ffffff !important;
-}
+  &:hover {
+    background-color: #999999 !important;
+    border-color: #999999 !important;
+  }
 
-.continue:active {
-  background-color: #2a2a2a !important;
-  border-color: #2a2a2a !important;
-  color: #ffffff !important;
+  &:active {
+    background-color: #2a2a2a !important;
+    border-color: #2a2a2a !important;
+  }
 }
 
 input[type="number"] {

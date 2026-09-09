@@ -42,14 +42,8 @@
 .icon-dish:before {
   content: "\e60a";
 }
-.icon-inform:before {
-  content: "\e60d";
-}
 .icon-statistics:before {
   content: "\e608";
-}
-.icon-clear:before {
-  content: "\e611";
 }
 .icon-download:before {
   content: "\e613";

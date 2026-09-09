@@ -470,8 +470,4 @@ const handlePwdClose = () => {
     }
   }
 }
-.msgTip {
-  color: #419eff;
-  padding: 0 5px;
-}
 </style>

@@ -295,9 +295,7 @@ function handleTable(row: OrderVO, _column: unknown, event: Event) {
 <style lang="scss">
 // 图标操作列的通用样式见 styles/component/order-table.scss
 .dashboard-container {
-  .cancelTime {
-    padding-left: 30px;
-  }
+  .cancelTime,
   .orderTime {
     padding-left: 30px;
   }

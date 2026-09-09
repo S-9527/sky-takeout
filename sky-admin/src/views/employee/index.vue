@@ -98,7 +98,7 @@ const counts = ref<number>(0)
 const { page, pageSize, handleSizeChange, handleCurrentChange } = useTablePage(() => init())
 const tableData = ref<Employee[]>([])
 const id = ref('')
-const status = ref('')
+const status = ref(0)
 const isSearch = ref<boolean>(false)
 
 const initFun = () => {
@@ -138,7 +138,8 @@ const statusHandle = (row: Employee) => {
     return
   }
   id.value = String(row.id)
-  status.value = String(row.status)
+  // status 必须保持 number:下面靠 !status.value 取反,转成 '0' 后永远为 truthy,禁用就再也启不回来
+  status.value = row.status
   ElMessageBox.confirm('确认调整该账号的状态?', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',

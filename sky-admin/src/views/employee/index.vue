@@ -90,15 +90,16 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getEmployeeList, enableOrDisableEmployee } from '@/api/employee'
+import type { Employee } from '@/api/types'
 import Empty from '@/components/Empty/index.vue'
 
 const router = useRouter()
 
-const input = ref<any>('')
+const input = ref('')
 const counts = ref<number>(0)
 const page = ref<number>(1)
 const pageSize = ref<number>(10)
-const tableData = ref<any[]>([])
+const tableData = ref<Employee[]>([])
 const id = ref('')
 const status = ref('')
 const isSearch = ref<boolean>(false)
@@ -116,7 +117,7 @@ async function init(isSearchVal?: boolean) {
     name: input.value ? input.value : undefined,
   }
   await getEmployeeList(params)
-    .then((res: any) => {
+    .then((res) => {
       tableData.value = res.records
       counts.value = res.total
     })
@@ -126,30 +127,30 @@ async function init(isSearchVal?: boolean) {
 }
 
 // 添加
-const addEmployeeHandle = (st: string, username?: string) => {
+const addEmployeeHandle = (st: string | number, username?: string) => {
   if (st === 'add') {
     router.push({ path: '/employee/add' })
   } else {
     if (username === 'admin') {
       return
     }
-    router.push({ path: '/employee/add', query: { id: st } })
+    router.push({ path: '/employee/add', query: { id: String(st) } })
   }
 }
 
 //状态修改
-const statusHandle = (row: any) => {
+const statusHandle = (row: Employee) => {
   if (row.username === 'admin') {
     return
   }
-  id.value = row.id
-  status.value = row.status
+  id.value = String(row.id)
+  status.value = String(row.status)
   ElMessageBox.confirm('确认调整该账号的状态?', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning',
   }).then(() => {
-    enableOrDisableEmployee({ id: id.value, status: !status.value ? 1 : 0 })
+    enableOrDisableEmployee({ id: Number(id.value), status: !status.value ? 1 : 0 })
       .then(() => {
         ElMessage.success('账号状态更改成功！')
         init()
@@ -160,12 +161,12 @@ const statusHandle = (row: any) => {
   })
 }
 
-const handleSizeChange = (val: any) => {
+const handleSizeChange = (val: number) => {
   pageSize.value = val
   init()
 }
 
-const handleCurrentChange = (val: any) => {
+const handleCurrentChange = (val: number) => {
   page.value = val
   init()
 }

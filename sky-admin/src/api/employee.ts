@@ -1,63 +1,44 @@
 import request from '@/utils/request'
+import type {
+  Employee,
+  EmployeeDTO,
+  EmployeeLoginDTO,
+  EmployeeLoginVO,
+  EmployeePageQueryDTO,
+  PageResult,
+} from './types'
 /**
  *
  * 员工管理
  *
  **/
-// 登录、
-export const login = (data: any) =>
-  request({
-    'url': '/employee/login',
-    'method': 'post',
-    data
-  })
-  // 退出
- export const userLogout = (params: any) =>
- request({
-   'url': `/employee/logout`, // 授课老师接口
-   'method': 'post',
-   params
- })
+// 登录
+export const login = (data: EmployeeLoginDTO) =>
+  request.post<EmployeeLoginVO>('/employee/login', data)
+// 退出
+export const userLogout = () => request.post<string>('/employee/logout')
 
-export const getEmployeeList = (params: any) => {
-  return request({
-    url: '/employee/page',
-    method: 'get',
-    params
-  })
-}
+// 员工分页查询
+export const getEmployeeList = (params: EmployeePageQueryDTO) =>
+  request.get<PageResult<Employee>>('/employee/page', { params })
 
-// 修改---启用禁用接口
-export const enableOrDisableEmployee = (params: any) => {
-  return request({
-    url: `/employee/status/${params.status}`,
-    method: 'post',
-    params: { id:params.id }
+// 启用禁用员工账号
+export const enableOrDisableEmployee = (params: {
+  status: number
+  id: number
+}) =>
+  request.post(`/employee/status/${params.status}`, undefined, {
+    params: { id: params.id }
   })
-}
 
-// 新增---添加员工
-export const addEmployee = (params: any) => {
-  return request({
-    url: '/employee',
-    method: 'post',
-    data: { ...params }
-  })
-}
+// 新增员工
+export const addEmployee = (params: EmployeeDTO) =>
+  request.post('/employee', params)
 
-// 修改---添加员工
-export const editEmployee = (params: any) => {
-  return request({
-    url: '/employee',
-    method: 'put',
-    data: { ...params }
-  })
-}
+// 编辑员工
+export const editEmployee = (params: EmployeeDTO) =>
+  request.put('/employee', params)
 
-// 修改页面反查详情接口
-export const queryEmployeeById = (id: string | (string | null)[]) => {
-  return request({
-    url: `/employee/${id}`,
-    method: 'get'
-  })
-}
+// 根据id查询员工信息
+export const queryEmployeeById = (id: number) =>
+  request.get<Employee>(`/employee/${id}`)

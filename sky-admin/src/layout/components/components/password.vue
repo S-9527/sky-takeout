@@ -42,7 +42,7 @@
 </template>
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, type FormInstance, type FormItemRule, type FormRules } from 'element-plus'
 // 接口
 import { editPassword } from '@/api/users'
 import { useUserStore } from '@/store/modules/user'
@@ -72,20 +72,24 @@ const form = reactive({
   affirmPassword: ''
 })
 
-const validatePwd = (_rule: any, value: any, callback: Function) => {
+type PwdValidator = NonNullable<FormItemRule['validator']>
+
+const validatePwd: PwdValidator = (_rule, value, callback) => {
   const reg = /^[0-9A-Za-z]{6,20}$/
-  if (!value) {
+  const str = String(value ?? '')
+  if (!str) {
     callback(new Error('请输入'))
-  } else if (!reg.test(value)) {
+  } else if (!reg.test(str)) {
     callback(new Error('6 - 20位密码，数字或字母，区分大小写'))
   } else {
     callback()
   }
 }
-const validatePass2 = (_rule: any, value: any, callback: Function) => {
-  if (!value) {
+const validatePass2: PwdValidator = (_rule, value, callback) => {
+  const str = String(value ?? '')
+  if (!str) {
     callback(new Error('请再次输入密码'))
-  } else if (value !== form.newPassword) {
+  } else if (str !== form.newPassword) {
     callback(new Error('密码不一致，请重新输入密码'))
   } else {
     callback()
@@ -118,6 +122,7 @@ const handleSave = async () => {
   saving.value = true
   try {
     await editPassword({
+      empId: userStore.userInfo.id ?? 0,
       oldPassword: form.oldPassword,
       newPassword: form.newPassword
     })

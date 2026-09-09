@@ -61,26 +61,29 @@
 import { ref, watch } from 'vue'
 import type { PropType } from 'vue'
 import { getCategoryList, queryDishList } from '@/api/dish'
+import type { Category, Dish, SetmealDish } from '@/api/types'
 import Empty from '@/components/Empty/index.vue'
 
+type PrintedDish = Dish & { dishId: number; dishName: string; copies: number }
+
 const props = defineProps({
-  checkList: { type: Array as PropType<any[]>, default: () => [] },
+  checkList: { type: Array as PropType<SetmealDish[]>, default: () => [] },
   seachKey: { type: String, default: '' }
 })
 
 const emit = defineEmits(['checkList'])
 
-const dishType = ref<any[]>([])
-const dishList = ref<any[]>([])
-const allDishList = ref<any[]>([])
+const dishType = ref<Category[]>([])
+const dishList = ref<PrintedDish[]>([])
+const allDishList = ref<PrintedDish[]>([])
 const keyInd = ref(0)
-const checkedList = ref<any[]>([])
-const checkedListAll = ref<any[]>([])
-const ids = ref<any>(new Set())
+const checkedList = ref<string[]>([])
+const checkedListAll = ref<PrintedDish[]>([])
+const ids = ref<Set<number>>(new Set())
 
 watch(
   () => props.seachKey,
-  (value: any) => {
+  (value: string) => {
     if (value.trim()) {
       getDishForName(props.seachKey)
     }
@@ -94,19 +97,19 @@ const getDishType = () => {
   })
 }
 
-// 通过套餐ID获取菜品列表分类
+// 通过分类ID获取菜品列表
 const getDishList = (id: number) => {
   queryDishList({ categoryId: id }).then(res => {
     if (res.length == 0) {
       dishList.value = []
       return
     }
-    let newArr = res
-    newArr.forEach((n: any) => {
-      n.dishId = n.id
-      n.copies = 1
-      n.dishName = n.name
-    })
+    const newArr: PrintedDish[] = res.map(n => ({
+      ...n,
+      dishId: n.id,
+      copies: 1,
+      dishName: n.name
+    }))
     dishList.value = newArr
     if (!ids.value.has(id)) {
       allDishList.value = [...allDishList.value, ...newArr]
@@ -115,75 +118,55 @@ const getDishList = (id: number) => {
   })
 }
 
-// 关键词收搜菜品列表分类
-const getDishForName = (name: any) => {
+// 关键词搜索菜品列表
+const getDishForName = (name: string) => {
   queryDishList({ name }).then(res => {
-    let newArr = res
-    newArr.forEach((n: any) => {
-      n.dishId = n.id
-      n.dishName = n.name
-    })
+    const newArr: PrintedDish[] = res.map(n => ({
+      ...n,
+      dishId: n.id,
+      copies: 1,
+      dishName: n.name
+    }))
     dishList.value = newArr
   })
 }
 
 // 点击分类
-const checkTypeHandle = (ind: number, id: any) => {
+const checkTypeHandle = (ind: number, id: number) => {
   keyInd.value = ind
   getDishList(id)
 }
 
 // 添加菜品
-const checkedListHandle = (value: [string]) => {
-  checkedListAll.value.reverse()
-  const list = allDishList.value.filter((item: any) => {
-    let data
-    value.forEach((it: any) => {
-      if (item.name == it) {
-        data = item
-      }
-    })
-    return data
-  })
-  const dishListCat = [...checkedListAll.value, ...list]
-  let arrData: any[] = []
-  checkedListAll.value = dishListCat.filter((item: any) => {
-    let allArrDate
-    if (arrData.length == 0) {
-      arrData.push(item.name)
-      allArrDate = item
-    } else {
-      const st = arrData.some(it => item.name == it)
-      if (!st) {
-        arrData.push(item.name)
-        allArrDate = item
-      }
-    }
-    return allArrDate
-  })
-  if (value.length < arrData.length) {
-    checkedListAll.value = checkedListAll.value.filter((item: any) => {
-      if (value.some(it => it == item.name)) {
-        return item
-      }
-    })
-  }
+const checkedListHandle = (value: Array<string | number | boolean>) => {
+  const list = allDishList.value.filter(item => value.includes(item.name))
+  checkedListAll.value = [...list].reverse()
   emit('checkList', checkedListAll.value)
-  checkedListAll.value.reverse()
 }
 
 const init = () => {
   getDishType()
-  checkedList.value = props.checkList.map((it: any) => it.name)
-  checkedListAll.value = props.checkList.slice().reverse()
+  checkedList.value = props.checkList.map(it => it.name ?? '')
+  checkedListAll.value = props.checkList
+    .slice()
+    .reverse()
+    .map(it => ({
+      id: it.dishId,
+      name: it.name ?? '',
+      price: it.price ?? 0,
+      status: 1,
+      categoryId: 0,
+      image: '',
+      dishId: it.dishId,
+      copies: it.copies,
+      dishName: it.name ?? ''
+    }))
 }
 
 // 删除
-const delCheck = (name: any) => {
+const delCheck = (name: string) => {
   const index = checkedList.value.findIndex(it => it === name)
-  const indexAll = checkedListAll.value.findIndex(
-    (it: any) => it.name === name
-  )
+  const indexAll = checkedListAll.value.findIndex(it => it.name === name)
 
   checkedList.value.splice(index, 1)
   checkedListAll.value.splice(indexAll, 1)

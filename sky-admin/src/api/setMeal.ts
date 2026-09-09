@@ -1,68 +1,53 @@
 import request from '@/utils/request'
+import type {
+  Category,
+  PageResult,
+  SetmealDTO,
+  SetmealPageQueryDTO,
+  SetmealVO,
+} from './types'
 /**
  *
  * 套餐管理
  *
  **/
 
-// 查询列表数据
-export const getSetmealPage = (params: any) => {
-  return request({
-    url: '/setmeal/page',
-    method: 'get',
-    params,
-  },)
+// 套餐分页查询
+export const getSetmealPage = (params: SetmealPageQueryDTO) => {
+  return request.get<PageResult<SetmealVO>>('/setmeal/page', { params })
 }
 
-// 删除数据接口
-export const deleteSetmeal = (ids: string) => {
-  return request({
-    url: '/setmeal',
-    method: 'delete',
-    params: { ids }
-  })
+// 批量删除套餐
+export const deleteSetmeal = (ids: string | number) => {
+  return request.delete('/setmeal', { params: { ids } })
 }
 
-// 修改数据接口
-export const editSetmeal = (params: any) => {
-  return request({
-    url: '/setmeal',
-    method: 'put',
-    data: { ...params }
-  })
+// 编辑套餐
+export const editSetmeal = (params: SetmealDTO) => {
+  return request.put('/setmeal', params)
 }
 
-// 新增数据接口
-export const addSetmeal = (params: any) => {
-  return request({
-    url: '/setmeal',
-    method: 'post',
-    data: { ...params }
-  })
+// 新增套餐
+export const addSetmeal = (params: SetmealDTO) => {
+  return request.post('/setmeal', params)
 }
 
-// 查询详情接口
-export const querySetmealById = (id: string | (string | null)[]) => {
-  return request({
-    url: `/setmeal/${id}`,
-    method: 'get'
-  })
+// 根据id查询套餐
+export const querySetmealById = (id: number) => {
+  return request.get<SetmealVO>(`/setmeal/${id}`)
 }
 
 // 批量起售禁售
-export const setmealStatusByStatus = (params: any) => {
-  return request({
-    url: `/setmeal/status/${params.status}`,
-    method: 'post',
+export const setmealStatusByStatus = (params: {
+  status: number
+  ids: number | string
+}) => {
+  return request.post(`/setmeal/status/${params.status}`, undefined, {
     params: { id: params.ids }
   })
 }
 
-//菜品分类数据查询
-export const dishCategoryList = (params: any) => {
-  return request({
-    url: `/category/list`,
-    method: 'get',
-    params: { ...params }
-  })
+// 套餐分类数据查询
+export const dishCategoryList = (params: { type: number }) => {
+  return request.get<Category[]>('/category/list', { params: { ...params } })
 }

@@ -37,6 +37,12 @@ import {
   getOrderStatistics,
   getTop,
 } from '@/api/index'
+import type {
+  OrderReportChartData,
+  SalesTop10Data,
+  TurnoverStatisticsData,
+  UserStatisticsData,
+} from '@/api/types'
 // 组件
 // 标题
 import TitleIndex from './components/titleIndex.vue'
@@ -49,18 +55,35 @@ import OrderStatistics from './components/orderStatistics.vue'
 // 排名
 import Top from './components/top10.vue'
 
-const overviewData = ref<any>({})
+const overviewData = ref<Record<string, unknown>>({})
 const flag = ref(2)
-const tateData = ref<any[]>([])
-const turnoverData = ref<any>({})
-const userData = ref<any>({})
-const orderData = ref<any>({
-  data: {},
+const tateData = ref<string[]>([])
+const turnoverData = ref<TurnoverStatisticsData>({
+  dateList: [],
+  turnoverList: [],
 })
-const top10Data = ref<any>({})
+const userData = ref<UserStatisticsData>({
+  dateList: [],
+  totalUserList: [],
+  newUserList: [],
+})
+const orderData = ref<OrderReportChartData>({
+  data: {
+    dateList: [],
+    orderCountList: [],
+    validOrderCountList: [],
+  },
+  totalOrderCount: 0,
+  validOrderCount: 0,
+  orderCompletionRate: 0,
+})
+const top10Data = ref<SalesTop10Data>({
+  nameList: [],
+  numberList: [],
+})
 
 // 获取基本数据
-function init(begin: any, end: any) {
+function init(begin: string, end: string) {
   nextTick(() => {
     getTurnoverStatisticsData(begin, end)
     getUserStatisticsData(begin, end)
@@ -70,7 +93,7 @@ function init(begin: any, end: any) {
 }
 
 // 获取营业额统计数据
-async function getTurnoverStatisticsData(begin: any, end: any) {
+async function getTurnoverStatisticsData(begin: string, end: string) {
   const data = await getTurnoverStatistics({ begin: begin, end: end })
   const turnoverDataRes = data
   turnoverData.value = {
@@ -79,7 +102,7 @@ async function getTurnoverStatisticsData(begin: any, end: any) {
   }
 }
 // 获取用户统计数据
-async function getUserStatisticsData(begin: any, end: any) {
+async function getUserStatisticsData(begin: string, end: string) {
   const data = await getUserStatistics({ begin: begin, end: end })
   const userDataRes = data
   userData.value = {
@@ -89,7 +112,7 @@ async function getUserStatisticsData(begin: any, end: any) {
   }
 }
 // 获取订单统计数据
-async function getOrderStatisticsData(begin: any, end: any) {
+async function getOrderStatisticsData(begin: string, end: string) {
   const data = await getOrderStatistics({ begin: begin, end: end })
   const orderDataRes = data
   orderData.value = {
@@ -104,7 +127,7 @@ async function getOrderStatisticsData(begin: any, end: any) {
   }
 }
 // 获取排行数据
-async function getTopData(begin: any, end: any) {
+async function getTopData(begin: string, end: string) {
   const data = await getTop({ begin: begin, end: end })
   const top10DataRes = data
   top10Data.value = {

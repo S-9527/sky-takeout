@@ -155,7 +155,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import type { FormInstance } from 'element-plus'
+import type { FormInstance, FormItemRule } from 'element-plus'
 import {
   getCategoryPage,
   deleCategory,
@@ -164,8 +164,9 @@ import {
   enableOrDisableEmployee
 } from '@/api/category'
 import Empty from '@/components/Empty/index.vue'
+import type { Category } from '@/api/types'
 
-const options: any = [
+const options: { value: number; label: string }[] = [
   {
     value: 1,
     label: '菜品分类'
@@ -175,66 +176,80 @@ const options: any = [
     label: '套餐分类'
   }
 ]
+type FormValidator = NonNullable<FormItemRule['validator']>
+
+interface CategoryForm {
+  title: string
+  dialogVisible: boolean
+  id: string
+  name: string
+  sort: string
+}
+
 const actionType = ref('')
 const id = ref('')
-const status = ref('')
-const categoryType = ref<any>(null)
+const status = ref(0)
+const categoryType = ref<number | null>(null)
 const name = ref('')
 const action = ref('')
 const counts = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
-const tableData = ref<any[]>([])
-const type = ref('')
+const tableData = ref<Category[]>([])
+const type = ref(1)
 const isSearch = ref(false)
-const classData = reactive<any>({
+const classData = reactive<CategoryForm>({
   title: '添加菜品分类',
   dialogVisible: false,
-  categoryId: '',
+  id: '',
   name: '',
   sort: ''
 })
 const classDataRef = ref<FormInstance>()
 
 const rules = computed(() => {
+  const validateName: FormValidator = (_rule, value, callback) => {
+    const str = String(value ?? '')
+    // const reg = /[\u4e00-\u9fa5]/
+    var reg = new RegExp('^[A-Za-z\u4e00-\u9fa5]+$')
+    if (!str) {
+      callback(new Error(classData.title + '不能为空'))
+    } else if (str.length < 2) {
+      callback(new Error('分类名称输入不符，请输入2-20个字符'))
+    } else if (!reg.test(str)) {
+      callback(new Error('分类名称包含特殊字符'))
+    } else {
+      callback()
+    }
+  }
+  const validateSort: FormValidator = (_rule, value, callback) => {
+    const str = String(value ?? '')
+    if (str || str === '0') {
+      const reg = /^\d+$/
+      if (!reg.test(str)) {
+        callback(new Error('排序只能输入数字类型'))
+      } else if (Number(str) > 99) {
+        callback(new Error('排序只能输入0-99数字'))
+      } else {
+        callback()
+      }
+    } else {
+      callback(new Error('排序不能为空'))
+    }
+  }
   return {
     name: [
       {
         required: true,
         trigger: 'blur',
-        validator: (_rule: any, value: string, callback: Function) => {
-          // const reg = /[\u4e00-\u9fa5]/
-          var reg = new RegExp('^[A-Za-z\u4e00-\u9fa5]+$')
-          if (!value) {
-            callback(new Error(classData.title + '不能为空'))
-          } else if (value.length < 2) {
-            callback(new Error('分类名称输入不符，请输入2-20个字符'))
-          } else if (!reg.test(value)) {
-            callback(new Error('分类名称包含特殊字符'))
-          } else {
-            callback()
-          }
-        }
+        validator: validateName
       }
     ],
     sort: [
       {
         required: true,
         trigger: 'blur',
-        validator: (_rule: any, value: string, callback: Function) => {
-          if (value || String(value) === '0') {
-            const reg = /^\d+$/
-            if (!reg.test(value)) {
-              callback(new Error('排序只能输入数字类型'))
-            } else if (Number(value) > 99) {
-              callback(new Error('排序只能输入0-99数字'))
-            } else {
-              callback()
-            }
-          } else {
-            callback(new Error('排序不能为空'))
-          }
-        }
+        validator: validateSort
       }
     ]
   }
@@ -243,8 +258,8 @@ const rules = computed(() => {
 init()
 
 // 初始化信息
-async function init(searchValue?: any) {
-  isSearch.value = searchValue
+async function init(searchValue?: boolean) {
+  isSearch.value = searchValue ?? false
   await getCategoryPage({
     page: page.value,
     pageSize: pageSize.value,
@@ -262,13 +277,13 @@ async function init(searchValue?: any) {
 }
 
 // 添加
-const addClass = (st: any) => {
+const addClass = (st: string) => {
   if (st == 'class') {
     classData.title = '新增菜品分类'
-    type.value = '1'
+    type.value = 1
   } else {
     classData.title = '新增套餐分类'
-    type.value = '2'
+    type.value = 2
   }
   action.value = 'add'
   classData.name = ''
@@ -278,12 +293,12 @@ const addClass = (st: any) => {
 }
 
 // 修改
-const editHandle = (dat: any) => {
+const editHandle = (dat: Category) => {
   classData.title = '修改分类'
   action.value = 'edit'
   classData.name = dat.name
-  classData.sort = dat.sort
-  classData.id = dat.id
+  classData.sort = String(dat.sort)
+  classData.id = String(dat.id)
   classData.dialogVisible = true
   actionType.value = 'edit'
 }
@@ -297,8 +312,8 @@ const handleClose = (_st: string) => {
 }
 
 //状态修改
-const statusHandle = (row: any) => {
-  id.value = row.id
+const statusHandle = (row: Category) => {
+  id.value = String(row.id)
   status.value = row.status
   ElMessageBox.confirm('确认调整该分类的状态?', '提示', {
     confirmButtonText: '确定',
@@ -306,7 +321,7 @@ const statusHandle = (row: any) => {
     type: 'warning',
     customClass: 'customClass'
   }).then(() => {
-    enableOrDisableEmployee({ id: id.value, status: !status.value ? 1 : 0 })
+    enableOrDisableEmployee({ id: Number(id.value), status: !status.value ? 1 : 0 })
       .then(() => {
         ElMessage.success('分类状态更改成功！')
         init()
@@ -318,7 +333,7 @@ const statusHandle = (row: any) => {
 }
 
 //删除
-const deleteHandle = (id: any) => {
+const deleteHandle = (id: number) => {
   ElMessageBox.confirm('此操作将永久删除该分类，是否继续？', '确定删除', {
     confirmButtonText: '删除',
     cancelButtonText: '取消',
@@ -336,14 +351,14 @@ const deleteHandle = (id: any) => {
 }
 
 //数据提交
-const submitForm = (st?: any) => {
+const submitForm = (st?: string) => {
   if (action.value === 'add') {
     classDataRef.value?.validate((value: boolean) => {
       if (value) {
         addCategory({
           name: classData.name,
           type: type.value,
-          sort: classData.sort
+          sort: Number(classData.sort)
         })
           .then(() => {
             ElMessage.success('分类添加成功！')
@@ -362,9 +377,10 @@ const submitForm = (st?: any) => {
     classDataRef.value?.validate((value: boolean) => {
       if (value) {
         editCategory({
-          id: classData.id,
+          id: Number(classData.id),
           name: classData.name,
-          sort: classData.sort
+          type: type.value,
+          sort: Number(classData.sort)
         })
           .then(() => {
             ElMessage.success('分类修改成功！')
@@ -381,12 +397,12 @@ const submitForm = (st?: any) => {
 }
 
 //分页
-const handleSizeChange = (val: any) => {
+const handleSizeChange = (val: number) => {
   pageSize.value = val
   init()
 }
 
-const handleCurrentChange = (val: any) => {
+const handleCurrentChange = (val: number) => {
   page.value = val
   init()
 }

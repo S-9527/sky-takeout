@@ -126,7 +126,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import type { FormInstance } from 'element-plus'
+import type { FormInstance, FormItemRule } from 'element-plus'
 import SelectInput from './components/SelectInput.vue'
 import ImageUpload from '@/components/ImgUpload/index.vue'
 // getFlavorList口味列表暂时不做 getDishTypeList
@@ -136,6 +136,7 @@ import {
   editDish,
   getCategoryList
 } from '@/api/dish'
+import type { Category, DishDTO } from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -143,31 +144,41 @@ const router = useRouter()
 const restKey = ref(0)
 const imageUrl = ref('')
 const actionType = ref('')
-const dishList = ref<any[]>([])
-const dishFlavorsData = ref<any[]>([]) //原始口味数据
-const dishFlavors = ref<any[]>([]) //待上传口味的数据
-const leftDishFlavors = ref<any[]>([]) //下拉框剩余可选择的口味数据
+const dishList = ref<Category[]>([])
+const dishFlavorsData = ref<{ name: string; value: string[] }[]>([]) //原始口味数据
+const dishFlavors = ref<{ name: string; value: string[] }[]>([]) //待上传口味的数据
+const leftDishFlavors = ref<{ name: string; value: string[] }[]>([]) //下拉框剩余可选择的口味数据
 const vueRest = ref('1')
 const inputStyle = ref({ flex: 1 })
-const ruleForm = ref<any>({
+const ruleForm = ref<{
+  name: string
+  id: string
+  price: string
+  code: string
+  image: string
+  description: string
+  status: boolean
+  categoryId: string
+}>({
   name: '',
   id: '',
   price: '',
   code: '',
   image: '',
   description: '',
-  dishFlavors: [],
   status: true,
   categoryId: ''
 })
 const ruleFormRef = ref<FormInstance>()
+
+type Validator = NonNullable<FormItemRule['validator']>
 
 const rules = computed(() => {
   return {
     name: [
       {
         required: true,
-        validator: (_rule: any, value: string, callback: Function) => {
+        validator: ((_rule, value, callback) => {
           if (!value) {
             callback(new Error('请输入菜品名称'))
           } else {
@@ -178,7 +189,7 @@ const rules = computed(() => {
               callback()
             }
           }
-        },
+        }) as Validator,
         trigger: 'blur'
       }
     ],
@@ -193,7 +204,7 @@ const rules = computed(() => {
       {
         required: true,
         // 'message': '请填写菜品价格',
-        validator: (_rules: any, value: string, callback: Function) => {
+        validator: ((_rules, value, callback) => {
           const reg = /^([1-9]\d{0,5}|0)(\.\d{1,2})?$/
           if (!reg.test(value) || Number(value) <= 0) {
             callback(
@@ -204,7 +215,7 @@ const rules = computed(() => {
           } else {
             callback()
           }
-        },
+        }) as Validator,
         trigger: 'blur'
       }
     ],
@@ -226,7 +237,7 @@ watch(dishFlavors, () => {
 
 //过滤已选择的口味下拉框无法再次选择
 const getLeftDishFlavors = () => {
-  let arr: any[] = []
+  let arr: { name: string; value: string[] }[] = []
   dishFlavorsData.value.map(item => {
     if (
       dishFlavors.value.findIndex(item1 => item.name === item1.name) === -1
@@ -237,7 +248,7 @@ const getLeftDishFlavors = () => {
   leftDishFlavors.value = arr
 }
 
-const selectHandle = (val: any, key: any, _ind: any) => {
+const selectHandle = (val: string, key: number, _ind: number) => {
   const arrDate = [...dishFlavors.value]
   const idx = dishFlavorsData.value.findIndex(item => item.name === val)
   arrDate[key] = JSON.parse(JSON.stringify(dishFlavorsData.value[idx]))
@@ -245,15 +256,22 @@ const selectHandle = (val: any, key: any, _ind: any) => {
 }
 
 async function init() {
-  queryDishById(String(route.query.id)).then(res => {
-    ruleForm.value = { ...res }
-    ruleForm.value.price = String(res.price)
-    ruleForm.value.status = res.status == '1'
+  queryDishById(Number(route.query.id)).then(res => {
+    ruleForm.value = {
+      name: res.name,
+      id: String(res.id ?? ''),
+      price: String(res.price),
+      code: res.code ?? '',
+      image: res.image,
+      description: res.description ?? '',
+      status: res.status === 1,
+      categoryId: String(res.categoryId)
+    }
     dishFlavors.value =
       res.flavors &&
-      res.flavors.map((obj: any) => ({
+      res.flavors.map(obj => ({
         ...obj,
-        value: JSON.parse(obj.value)
+        value: JSON.parse(obj.value) as string[]
       }))
     getLeftDishFlavors()
     imageUrl.value = res.image
@@ -294,24 +312,28 @@ function getFlavorListHand() {
   ]
 }
 
-const submitForm = (_formName: any, st?: any) => {
-  ;(ruleFormRef.value as any).validate((valid: any) => {
+const submitForm = (_formName: string, st?: string) => {
+  ruleFormRef.value?.validate((valid) => {
     console.log(valid, 'valid')
     if (valid) {
-      if (!ruleForm.value.image) return ElMessage.error('菜品图片不能为空')
-      let params: any = { ...ruleForm.value }
-      // params.flavors = this.dishFlavors
-      params.status =
-        actionType.value === 'add' ? 0 : ruleForm.value.status ? 1 : 0
-      // params.price *= 100
-      params.categoryId = ruleForm.value.categoryId
-      params.flavors = dishFlavors.value.map(obj => ({
-        ...obj,
-        value: JSON.stringify(obj.value)
-      }))
-      delete params.dishFlavors
+      if (!ruleForm.value.image) {
+        ElMessage.error('菜品图片不能为空')
+        return
+      }
+      const params: DishDTO = {
+        name: ruleForm.value.name,
+        price: Number(ruleForm.value.price),
+        code: ruleForm.value.code,
+        image: ruleForm.value.image,
+        description: ruleForm.value.description,
+        status: actionType.value === 'add' ? 0 : ruleForm.value.status ? 1 : 0,
+        categoryId: Number(ruleForm.value.categoryId),
+        flavors: dishFlavors.value.map(obj => ({
+          name: obj.name,
+          value: JSON.stringify(obj.value)
+        }))
+      }
       if (actionType.value == 'add') {
-        delete params.id
         addDish(params)
           .then(() => {
             ElMessage.success('菜品添加成功！')
@@ -328,7 +350,6 @@ const submitForm = (_formName: any, st?: any) => {
                 code: '',
                 image: '',
                 description: '',
-                dishFlavors: [],
                 status: true,
                 categoryId: ''
               }
@@ -339,9 +360,7 @@ const submitForm = (_formName: any, st?: any) => {
             ElMessage.error('请求出错了：' + err.message)
           })
       } else {
-        delete params.createTime
-        delete params.updateTime
-        editDish(params)
+        editDish({ ...params, id: Number(ruleForm.value.id) })
           .then(() => {
             router.push({ path: '/dish' })
             ElMessage.success('菜品修改成功！')
@@ -350,13 +369,11 @@ const submitForm = (_formName: any, st?: any) => {
             ElMessage.error('请求出错了：' + err.message)
           })
       }
-    } else {
-      return false
     }
   })
 }
 
-const imageChange = (value: any) => {
+const imageChange = (value: string) => {
   ruleForm.value.image = value
 }
 </script>

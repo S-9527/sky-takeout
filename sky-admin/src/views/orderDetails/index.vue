@@ -131,7 +131,7 @@
           align="center"
         >
           <template #default="{ row }">
-            <span>￥{{ (row.amount.toFixed(2) * 100) / 100 }}</span>
+            <span>￥{{ ((row.amount ?? 0).toFixed(2) * 100) / 100 }}</span>
           </template>
         </el-table-column>
         <el-table-column
@@ -256,8 +256,7 @@
               :class="{ status3: [3, 4].includes(dialogOrderStatus) }"
             >
               {{
-                orderList.filter((item) => item.value === dialogOrderStatus)[0]
-                  .label
+                orderList.find((item) => item.value === dialogOrderStatus)?.label
               }}
             </div>
           </div>
@@ -327,7 +326,7 @@
               <label>菜品小计</label>
               <span
                 >￥{{
-                  (diaForm.amount - 6 - diaForm.packAmount).toFixed(2)
+                  ((diaForm.amount ?? 0) - 6 - (diaForm.packAmount ?? 0)).toFixed(2)
                 }}</span
               >
             </div>
@@ -340,13 +339,15 @@
             <div class="amount-list">
               <div class="dish-amount">
                 <span class="amount-name">菜品小计：</span>
-                <span class="amount-price"
+<span class="amount-price"
                   >￥{{
-                    (Number((diaForm.amount - 6 - diaForm.packAmount).toFixed(2)) *
-                      100) /
+                    Number(
+                      ((diaForm.amount ?? 0) - 6 - (diaForm.packAmount ?? 0)).toFixed(2)
+                    ) *
+                    100 /
                     100
                   }}</span
-                >
+                  >
               </div>
               <div class="send-amount">
                 <span class="amount-name">派送费：</span>
@@ -356,9 +357,7 @@
                 <span class="amount-name">打包费：</span>
                 <span class="amount-price"
                   >￥{{
-                    diaForm.packAmount
-                      ? (diaForm.packAmount.toFixed(2) * 100) / 100
-                      : ''
+                    (diaForm.packAmount ?? 0) ? (Number((diaForm.packAmount ?? 0).toFixed(2)) * 100) / 100 : ''
                   }}</span
                 >
               </div>
@@ -366,9 +365,7 @@
                 <span class="amount-name">合计：</span>
                 <span class="amount-price"
                   >￥{{
-                    diaForm.amount
-                      ? (diaForm.amount.toFixed(2) * 100) / 100
-                      : ''
+                    (diaForm.amount ?? 0) ? (Number((diaForm.amount ?? 0).toFixed(2)) * 100) / 100 : ''
                   }}</span
                 >
               </div>
@@ -487,19 +484,20 @@ import {
   orderAccept as orderAcceptApi,
   getOrderListBy,
 } from '@/api/order'
+import type { OrderStatisticsVO, OrderVO } from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
 
-const defaultActivity = ref<any>(0)
-const orderStatics = ref<any>({})
-const row = ref<any>({})
+const defaultActivity = ref<string | number>(0)
+const orderStatics = ref<OrderStatisticsVO>()
+const row = ref<OrderVO>({} as OrderVO)
 const isAutoNext = ref(true)
 const isTableOperateBtn = ref(true)
-const orderId = ref('') //订单号
+const orderId = ref<number>() //订单号
 const input = ref('') //搜索条件的订单号
 const phone = ref('') //搜索条件的手机号
-const valueTime = ref<any[]>([])
+const valueTime = ref<string[]>([])
 const defaultTime = [new Date(2000, 0, 1, 0, 0, 0), new Date(2000, 0, 1, 23, 59, 59)]
 const dialogVisible = ref(false) //详情弹窗
 const cancelDialogVisible = ref(false) //取消，拒单弹窗
@@ -509,8 +507,8 @@ const remark = ref('') //自定义原因
 const counts = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
-const tableData = ref<any[]>([])
-const diaForm = ref<any>([])
+const tableData = ref<OrderVO[]>([])
+const diaForm = ref<Partial<OrderVO>>({})
 const isSearch = ref(false)
 const orderStatus = ref(0) //列表字段展示所需订单状态,用于分页请求数据
 const dialogOrderStatus = ref(0) //弹窗所需订单状态，用于详情展示字段
@@ -586,12 +584,12 @@ const orderList = ref([
   },
 ])
 
-function initFun(orderStatus: any) {
+function initFun(orderStatus: number) {
   page.value = 1
   init(orderStatus)
 }
 
-function change(activeIndex: any) {
+function change(activeIndex: number) {
   if (activeIndex === orderStatus.value) return
   init(activeIndex)
   input.value = ''
@@ -604,7 +602,7 @@ function change(activeIndex: any) {
 
 //获取待处理，待派送，派送中数量
 function getOrderListBy3Status() {
-  getOrderListBy({})
+  getOrderListBy()
     .then((res) => {
       orderStatics.value = res
     })
@@ -654,7 +652,7 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
     })
 }
 
-function getOrderType(row: any) {
+function getOrderType(row: OrderVO) {
   if (row.status === 1) {
     return '待付款'
   } else if (row.status === 2) {
@@ -673,21 +671,23 @@ function getOrderType(row: any) {
 }
 
 // 查看详情
-async function goDetail(id: any, status: number, rowData?: any) {
-  diaForm.value = []
+async function goDetail(id: number, status: number, rowData?: OrderVO) {
+  diaForm.value = {}
   dialogVisible.value = true
   dialogOrderStatus.value = status
   orderId.value = id
   const data = await queryOrderDetailById({ orderId: id })
   diaForm.value = data
-  row.value = rowData || { id: route.query.orderId, status: status }
+  row.value =
+    rowData ||
+    ({ id: Number(route.query.orderId), status: status } as OrderVO)
   if (route.query.orderId) {
     router.push('/order')
   }
 }
 
 //打开拒单弹窗
-function orderReject(rowData: any) {
+function orderReject(rowData: OrderVO) {
   cancelDialogVisible.value = true
   orderId.value = rowData.id
   dialogOrderStatus.value = rowData.status
@@ -697,13 +697,13 @@ function orderReject(rowData: any) {
 }
 
 //接单
-function orderAccept(rowData: any) {
+function orderAccept(rowData: OrderVO) {
   orderId.value = rowData.id
   dialogOrderStatus.value = rowData.status
   orderAcceptApi({ id: orderId.value })
     .then(() => {
       ElMessage.success('操作成功')
-      orderId.value = ''
+      orderId.value = undefined
       dialogVisible.value = false
       init(orderStatus.value)
     })
@@ -713,7 +713,7 @@ function orderAccept(rowData: any) {
 }
 
 //打开取消订单弹窗
-function cancelOrder(rowData: any) {
+function cancelOrder(rowData: OrderVO) {
   cancelDialogVisible.value = true
   orderId.value = rowData.id
   dialogOrderStatus.value = rowData.status
@@ -723,39 +723,47 @@ function cancelOrder(rowData: any) {
 }
 
 //确认取消或拒绝订单并填写原因
-function confirmCancel(_type: any) {
+function confirmCancel() {
   if (!cancelReason.value) {
     return ElMessage.error(`请选择${cancelDialogTitle.value}原因`)
   } else if (cancelReason.value === '自定义原因' && !remark.value) {
     return ElMessage.error(`请输入${cancelDialogTitle.value}原因`)
   }
 
-  ;(cancelDialogTitle.value === '取消' ? orderCancel : orderRejectApi)({
-    id: orderId.value,
-    [cancelDialogTitle.value === '取消' ? 'cancelReason' : 'rejectionReason']:
-      cancelReason.value === '自定义原因' ? remark.value : cancelReason.value,
-  })
-    .then(() => {
-      ElMessage.success('操作成功')
-      cancelDialogVisible.value = false
-      orderId.value = ''
-      init(orderStatus.value)
-    })
-    .catch((err) => {
-      ElMessage.error('请求出错了：' + err.message)
-    })
+  const reason =
+    cancelReason.value === '自定义原因' ? remark.value : cancelReason.value
+
+  if (cancelDialogTitle.value === '取消') {
+    orderCancel({ id: orderId.value as number, cancelReason: reason })
+      .then(() => {
+        ElMessage.success('操作成功')
+        cancelDialogVisible.value = false
+        orderId.value = undefined
+        init(orderStatus.value)
+      })
+      .catch((err) => {
+        ElMessage.error('请求出错了：' + err.message)
+      })
+  } else {
+    orderRejectApi({ id: orderId.value as number, rejectionReason: reason })
+      .then(() => {
+        ElMessage.success('操作成功')
+        cancelDialogVisible.value = false
+        orderId.value = undefined
+        init(orderStatus.value)
+      })
+      .catch((err) => {
+        ElMessage.error('请求出错了：' + err.message)
+      })
+  }
 }
 
 // 派送，完成
-function cancelOrDeliveryOrComplete(status: number, id: string) {
-  const params = {
-    status,
-    id,
-  }
-  ;(status === 3 ? deliveryOrder : completeOrder)(params)
+function cancelOrDeliveryOrComplete(status: number, id: number) {
+  ;(status === 3 ? deliveryOrder : completeOrder)(id)
     .then(() => {
       ElMessage.success('操作成功')
-      orderId.value = ''
+      orderId.value = undefined
       dialogVisible.value = false
       init(orderStatus.value)
     })
@@ -768,12 +776,12 @@ function handleClose() {
   dialogVisible.value = false
 }
 
-function handleSizeChange(val: any) {
+function handleSizeChange(val: number) {
   pageSize.value = val
   init(orderStatus.value)
 }
 
-function handleCurrentChange(val: any) {
+function handleCurrentChange(val: number) {
   page.value = val
   init(orderStatus.value)
 }
@@ -786,10 +794,10 @@ onMounted(() => {
     route.query.orderId &&
     route.query.orderId !== 'undefined'
   ) {
-    goDetail(route.query.orderId, 2)
+    goDetail(Number(route.query.orderId), 2)
   }
   if (route.query.status) {
-    defaultActivity.value = route.query.status
+    defaultActivity.value = Number(route.query.status)
   }
 })
 </script>

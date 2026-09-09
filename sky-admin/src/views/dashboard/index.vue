@@ -33,6 +33,13 @@ import {
   getSetMealStatistics, //套餐总览
 } from '@/api/index'
 import { getOrderListBy } from '@/api/order'
+import type {
+  BusinessDataVO,
+  DishOverViewVO,
+  OrderOverViewVO,
+  OrderStatisticsVO,
+  SetmealOverViewVO,
+} from '@/api/types'
 // 组件
 // 营业数据
 import Overview from './components/overview.vue'
@@ -45,11 +52,11 @@ import SetMealStatistics from './components/setMealStatistics.vue'
 // 订单列表
 import OrderList from './components/orderList.vue'
 
-const overviewData = ref({})
-const orderviewData = ref({} as any)
-const dishesData = ref({} as any)
-const setMealData = ref({})
-const orderStatics = ref({} as any)
+const overviewData = ref<BusinessDataVO>()
+const orderviewData = ref<OrderOverViewVO>()
+const dishesData = ref<DishOverViewVO>()
+const setMealData = ref<SetmealOverViewVO>()
+const orderStatics = ref<OrderStatisticsVO>()
 
 init()
 function init() {
@@ -82,7 +89,7 @@ async function getSetMealStatisticsData() {
 }
 //获取待处理，待派送，派送中数量
 function getOrderListBy3Status() {
-  getOrderListBy({})
+  getOrderListBy()
     .then((res) => {
       orderStatics.value = res
     })

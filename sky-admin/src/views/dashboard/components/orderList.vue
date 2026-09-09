@@ -268,7 +268,7 @@
               <label>菜品小计</label>
               <span
                 >￥{{
-                  (diaForm.amount - 6 - diaForm.packAmount).toFixed(2)
+                  ((diaForm.amount ?? 0) - 6 - (diaForm.packAmount ?? 0)).toFixed(2)
                 }}</span
               >
             </div>
@@ -283,7 +283,9 @@
                 <span class="amount-name">菜品小计：</span>
                 <span class="amount-price"
                   >￥{{
-                    (Number((Number(diaForm.amount) - 6 - Number(diaForm.packAmount)).toFixed(2)) *
+                    (Number(
+                      ((diaForm.amount ?? 0) - 6 - (diaForm.packAmount ?? 0)).toFixed(2)
+                    ) *
                       100) /
                     100
                   }}</span
@@ -297,8 +299,8 @@
                 <span class="amount-name">打包费：</span>
                 <span class="amount-price"
                   >￥{{
-                    diaForm.packAmount
-                      ? (diaForm.packAmount.toFixed(2) * 100) / 100
+                    (diaForm.packAmount ?? 0)
+                      ? (Number((diaForm.packAmount ?? 0).toFixed(2)) * 100) / 100
                       : ''
                   }}</span
                 >
@@ -307,8 +309,8 @@
                 <span class="amount-name">合计：</span>
                 <span class="amount-price"
                   >￥{{
-                    diaForm.amount
-                      ? (diaForm.amount.toFixed(2) * 100) / 100
+                    (diaForm.amount ?? 0)
+                      ? (Number((diaForm.amount ?? 0).toFixed(2)) * 100) / 100
                       : ''
                   }}</span
                 >
@@ -428,6 +430,7 @@ import {
   orderReject as apiOrderReject,
   orderAccept as apiOrderAccept,
 } from '@/api/order'
+import type { OrderVO } from '@/api/types'
 
 const props = defineProps({
   orderStatics: {
@@ -437,7 +440,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['getOrderListBy3Status'])
 
-const orderId = ref('') //订单号
+const orderId = ref<number>() //订单号
 const dialogOrderStatus = ref(0) //弹窗所需订单状态，用于详情展示字段
 const activeIndex = ref(0)
 
@@ -446,15 +449,15 @@ const cancelDialogVisible = ref(false) //取消，拒单弹窗
 const cancelDialogTitle = ref('') //取消，拒绝弹窗标题
 const cancelReason = ref('')
 const remark = ref('') //自定义原因
-const diaForm = ref<any>([])
-const row = ref<any>({})
+const diaForm = ref<Partial<OrderVO>>({})
+const row = ref<OrderVO>({} as OrderVO)
 const isAutoNext = ref(true)
 const isSearch = ref(false)
 const counts = ref(0)
 const page = ref<number>(1)
 const pageSize = ref<number>(10)
 const status = ref(2)
-const orderData = ref<any>([])
+const orderData = ref<OrderVO[]>([])
 const isTableOperateBtn = ref(true)
 const cancelOrderReasonList = [
   {
@@ -560,21 +563,21 @@ async function getOrderListData(val: number) {
     data.records.length > 1
   ) {
     const row = data.records[0]
-    goDetail(row.id, row.status, row, row)
+    goDetail(row.id, row.status, row)
   } else {
     return null
   }
 }
 
 //接单
-function orderAccept(row: any, event: any) {
+function orderAccept(row: OrderVO, event: Event) {
   event.stopPropagation()
   orderId.value = row.id
   dialogOrderStatus.value = row.status
-  apiOrderAccept({ id: orderId.value })
+  apiOrderAccept({ id: row.id })
     .then(() => {
       ElMessage.success('操作成功')
-      orderId.value = ''
+      orderId.value = undefined
       dialogVisible.value = false
       getOrderListData(status.value)
     })
@@ -583,7 +586,7 @@ function orderAccept(row: any, event: any) {
     })
 }
 //打开取消订单弹窗
-function cancelOrder(row: any, event: any) {
+function cancelOrder(row: OrderVO, event: Event) {
   event.stopPropagation()
   cancelDialogVisible.value = true
   orderId.value = row.id
@@ -593,7 +596,7 @@ function cancelOrder(row: any, event: any) {
   cancelReason.value = ''
 }
 //打开拒单弹窗
-function orderReject(row: any, event: any) {
+function orderReject(row: OrderVO, event: Event) {
   event.stopPropagation()
   cancelDialogVisible.value = true
   orderId.value = row.id
@@ -603,41 +606,48 @@ function orderReject(row: any, event: any) {
   cancelReason.value = ''
 }
 //确认取消或拒绝订单并填写原因
-function confirmCancel(_type: any) {
+function confirmCancel() {
   if (!cancelReason.value) {
     return ElMessage.error(`请选择${cancelDialogTitle.value}原因`)
   } else if (cancelReason.value === '自定义原因' && !remark.value) {
     return ElMessage.error(`请输入${cancelDialogTitle.value}原因`)
   }
 
-  ;(cancelDialogTitle.value === '取消' ? orderCancel : apiOrderReject)({
-    id: orderId.value,
-    // eslint-disable-next-line standard/computed-property-even-spacing
-    [cancelDialogTitle.value === '取消' ? 'cancelReason' : 'rejectionReason']:
-      cancelReason.value === '自定义原因' ? remark.value : cancelReason.value,
-  })
-    .then(() => {
-      ElMessage.success('操作成功')
-      cancelDialogVisible.value = false
-      orderId.value = ''
-      getOrderListData(status.value)
-    })
-    .catch((err) => {
-      ElMessage.error('请求出错了：' + err.message)
-    })
+  const reason =
+    cancelReason.value === '自定义原因' ? remark.value : cancelReason.value
+
+  if (cancelDialogTitle.value === '取消') {
+    orderCancel({ id: orderId.value as number, cancelReason: reason })
+      .then(() => {
+        ElMessage.success('操作成功')
+        cancelDialogVisible.value = false
+        orderId.value = undefined
+        getOrderListData(status.value)
+      })
+      .catch((err) => {
+        ElMessage.error('请求出错了：' + err.message)
+      })
+  } else {
+    apiOrderReject({ id: orderId.value as number, rejectionReason: reason })
+      .then(() => {
+        ElMessage.success('操作成功')
+        cancelDialogVisible.value = false
+        orderId.value = undefined
+        getOrderListData(status.value)
+      })
+      .catch((err) => {
+        ElMessage.error('请求出错了：' + err.message)
+      })
+  }
 }
 
 // 派送，完成
-function cancelOrDeliveryOrComplete(status: number, id: string, event: any) {
+function cancelOrDeliveryOrComplete(status: number, id: number, event: Event) {
   event.stopPropagation()
-  const params = {
-    status,
-    id,
-  }
-  ;(status === 3 ? deliveryOrder : completeOrder)(params)
+  ;(status === 3 ? deliveryOrder : completeOrder)(id)
     .then(() => {
       ElMessage.success('操作成功')
-      orderId.value = ''
+      orderId.value = undefined
       dialogVisible.value = false
       getOrderListData(status)
     })
@@ -646,10 +656,10 @@ function cancelOrDeliveryOrComplete(status: number, id: string, event: any) {
     })
 }
 // 查看详情
-async function goDetail(id: any, status: number, rowData: any, event: any) {
-  event.stopPropagation()
+async function goDetail(id: number, status: number, rowData: OrderVO, event?: Event) {
+  event?.stopPropagation()
   // console.log(111, index, row)
-  diaForm.value = []
+  diaForm.value = {}
   dialogVisible.value = true
   dialogOrderStatus.value = status
   const data = await queryOrderDetailById({ orderId: id })
@@ -661,7 +671,7 @@ function handleClose() {
   dialogVisible.value = false
 }
 // tab切换
-function handleClass(index: any) {
+function handleClass(index: number) {
   activeIndex.value = index
   if (index === 0) {
     status.value = 2
@@ -672,17 +682,17 @@ function handleClass(index: any) {
   }
 }
 // 触发table某一行
-function handleTable(row: any, _column: any, event: any) {
+function handleTable(row: OrderVO, _column: unknown, event: Event) {
   event.stopPropagation()
   goDetail(row.id, row.status, row, event)
 }
 // 分页
-function handleSizeChange(val: any) {
+function handleSizeChange(val: number) {
   pageSize.value = val
   getOrderListData(status.value)
 }
 
-function handleCurrentChange(val: any) {
+function handleCurrentChange(val: number) {
   page.value = val
   getOrderListData(status.value)
 }

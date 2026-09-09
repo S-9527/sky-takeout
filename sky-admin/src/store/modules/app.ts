@@ -37,7 +37,7 @@ export const useAppStore = defineStore('app', () => {
     device.value = type
   }
 
-  function StatusNumber(val: any) {
+  function StatusNumber(val: number) {
     statusNumber.value = val
   }
 

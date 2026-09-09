@@ -1,51 +1,34 @@
-import request from '@/utils/request';
+import request from '@/utils/request'
+import type { Category, CategoryDTO, CategoryPageQueryDTO, PageResult } from './types'
 /**
  *
  * 分类管理
  *
  **/
 
-// 查询分类列表接口
-export const getCategoryPage = (params: any) => {
-  return request({
-    url: '/category/page',
-    method: 'get',
-    params
-  });
-};
+// 分类分页查询
+export const getCategoryPage = (params: CategoryPageQueryDTO) => {
+  return request.get<PageResult<Category>>('/category/page', { params })
+}
 
-// 删除当前列的接口
-export const deleCategory = (ids: string) => {
-  return request({
-    url: '/category',
-    method: 'delete',
-    params: { id:ids }
-  });
-};
+// 删除分类
+export const deleCategory = (id: number) => {
+  return request.delete('/category', { params: { id } })
+}
 
-// 修改接口
-export const editCategory = (params: any) => {
-  return request({
-    url: '/category',
-    method: 'put',
-    data: { ...params }
-  });
-};
+// 修改分类
+export const editCategory = (params: CategoryDTO) => {
+  return request.put('/category', params)
+}
 
-// 新增接口
-export const addCategory = (params: any) => {
-  return request({
-    url: '/category',
-    method: 'post',
-    data: { ...params }
-  });
-};
+// 新增分类
+export const addCategory = (params: CategoryDTO) => {
+  return request.post('/category', params)
+}
 
-// 修改---启用禁用接口
-export const enableOrDisableEmployee = (params: any) => {
-  return request({
-    url: `/category/status/${params.status}`,
-    method: 'post',
-    params: { id:params.id }
+// 启用禁用分类
+export const enableOrDisableEmployee = (params: { status: number; id: number }) => {
+  return request.post(`/category/status/${params.status}`, undefined, {
+    params: { id: params.id }
   })
 }

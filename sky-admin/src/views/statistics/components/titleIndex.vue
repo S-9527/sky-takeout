@@ -38,7 +38,7 @@ const props = withDefaults(
   defineProps<{
     flag?: number
     tateData?: string[]
-    turnoverData?: any
+    turnoverData?: Record<string, unknown>
   }>(),
   {
     flag: 0,
@@ -49,7 +49,7 @@ const props = withDefaults(
 const emit = defineEmits(['sendTitleInd'])
 
 const nowIndex = ref(2 - 1)
-const value = ref<any[]>([])
+const value = ref<string[]>([])
 const tabsParam = ref(['昨日', '近7日', '近30日', '本周', '本月'])
 
 watch(

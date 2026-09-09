@@ -82,7 +82,7 @@
         <el-table-column prop="price"
                          label="套餐价">
           <template #default="scope">
-            <span>￥{{ ((scope.row.price ).toFixed(2) * 100) / 100 }}</span>
+            <span>￥{{ (Number((scope.row.price ?? 0).toFixed(2)) * 100) / 100 }}</span>
           </template>
         </el-table-column>
         <el-table-column label="售卖状态">
@@ -119,11 +119,11 @@
                        size="small"
                        class="blueBug non"
                        :class="{
-                         blueBug: scope.row.status == '0',
-                         delBut: scope.row.status != '0'
+                         blueBug: scope.row.status === 0,
+                         delBut: scope.row.status !== 0
                        }"
                        @click="statusHandle(scope.row)">
-              {{ scope.row.status == '0' ? '启售' : '停售' }}
+              {{ scope.row.status === 0 ? '启售' : '停售' }}
             </el-button>
           </template>
         </el-table-column>
@@ -153,23 +153,24 @@ import {
   setmealStatusByStatus,
   dishCategoryList as getDishCategoryListApi
 } from '@/api/setMeal'
+import type { Category, SetmealVO } from '@/api/types'
 import Empty from '@/components/Empty/index.vue'
 
 const router = useRouter()
 
 void moment
 
-const input = ref<any>('')
+const input = ref('')
 const counts = ref<number>(0)
 const page = ref<number>(1)
 const pageSize = ref<number>(10)
-const checkList = ref<any[]>([])
-const tableData = ref<any[]>([])
-const dishCategoryList = ref<any[]>([])
-const categoryId = ref('')
-const dishStatus = ref('')
+const checkList = ref<number[]>([])
+const tableData = ref<SetmealVO[]>([])
+const dishCategoryList = ref<{ value: number; label: string }[]>([])
+const categoryId = ref<number | ''>('')
+const dishStatus = ref<number | ''>('')
 const isSearch = ref<boolean>(false)
-const saleStatus = ref<any>([
+const saleStatus = ref([
   {
     value: 0,
     label: '停售'
@@ -191,8 +192,8 @@ async function init(isSearchVal?: boolean) {
     page: page.value,
     pageSize: pageSize.value,
     name: input.value || undefined,
-    categoryId: categoryId.value || undefined,
-    status: dishStatus.value
+    categoryId: categoryId.value ? Number(categoryId.value) : undefined,
+    status: dishStatus.value || undefined
   })
     .then(res => {
       tableData.value = res.records
@@ -204,16 +205,16 @@ async function init(isSearchVal?: boolean) {
 }
 
 // 添加更改
-const addSetMeal = (st: any) => {
+const addSetMeal = (st: string | SetmealVO) => {
   if (st === 'add') {
     router.push({ path: '/setmeal/add' })
   } else {
-    router.push({ path: '/setmeal/add', query: { id: st.id } })
+    router.push({ path: '/setmeal/add', query: { id: String((st as SetmealVO).id) } })
   }
 }
 
 // 删除
-const deleteHandle = (type: string, id?: any) => {
+const deleteHandle = (type: string, id?: number) => {
   if (type === '批量' && id === null) {
     if (checkList.value.length === 0) {
       return ElMessage.error('请选择删除对象')
@@ -224,7 +225,7 @@ const deleteHandle = (type: string, id?: any) => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    deleteSetmeal(type === '批量' ? checkList.value.join(',') : id)
+    deleteSetmeal(type === '批量' ? checkList.value.join(',') : id ?? 0)
       .then(() => {
         ElMessage.success('删除成功！')
         init()
@@ -236,18 +237,19 @@ const deleteHandle = (type: string, id?: any) => {
 }
 
 //状态更改
-const statusHandle = (row: any) => {
-  let params: any = {}
+const statusHandle = (row: SetmealVO | string) => {
+  let ids: string
+  let status: '0' | '1'
   if (typeof row === 'string') {
     if (checkList.value.length == 0) {
       ElMessage.error('批量操作，请先勾选操作菜品！')
       return false
     }
-    params.ids = checkList.value.join(',')
-    params.status = row
+    ids = checkList.value.join(',')
+    status = row as '0' | '1'
   } else {
-    params.ids = row.id
-    params.status = row.status ? '0' : '1'
+    ids = String(row.id)
+    status = row.status ? '0' : '1'
   }
 
   ElMessageBox.confirm('确认更改该套餐状态?', '提示', {
@@ -255,7 +257,7 @@ const statusHandle = (row: any) => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    setmealStatusByStatus(params)
+    setmealStatusByStatus({ status: Number(status), ids })
       .then(() => {
         ElMessage.success('套餐状态已经更改成功！')
         init()
@@ -272,7 +274,7 @@ const getDishCategoryList = () => {
     type: 2
   })
     .then(res => {
-      dishCategoryList.value = res.map((item: any) => {
+      dishCategoryList.value = res.map((item: Category) => {
         return { value: item.id, label: item.name }
       })
     })
@@ -280,20 +282,20 @@ const getDishCategoryList = () => {
 }
 
 // 全部操作
-const handleSelectionChange = (val: any) => {
-  let checkArr: string[] = []
-  val.forEach((n: any) => {
-    checkArr.push(n.id)
+const handleSelectionChange = (val: SetmealVO[]) => {
+  let checkArr: number[] = []
+  val.forEach((n) => {
+    checkArr.push(n.id ?? 0)
   })
   checkList.value = checkArr
 }
 
-const handleSizeChange = (val: any) => {
+const handleSizeChange = (val: number) => {
   pageSize.value = val
   init()
 }
 
-const handleCurrentChange = (val: any) => {
+const handleCurrentChange = (val: number) => {
   page.value = val
   init()
 }

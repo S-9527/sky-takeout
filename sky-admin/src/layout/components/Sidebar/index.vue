@@ -37,6 +37,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/store/modules/app'
 import { useUserStore } from '@/store/modules/user'
 import SidebarItem from './SidebarItem.vue'
+import type { RouteRecordRaw } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
@@ -51,8 +52,9 @@ const variables = {
 
 const defOpen = computed(() => {
   const path = ['/']
-  routes.value.forEach((n: any) => {
-    if (n.meta.roles && n.meta.roles[0] === roles.value[0]) {
+  routes.value.forEach((n) => {
+    const routeRoles = n.meta?.roles as string[] | undefined
+    if (routeRoles && routeRoles[0] === roles.value[0]) {
       path.splice(0, 1, n.path)
     }
   })
@@ -69,14 +71,10 @@ const roles = computed(() => userStore.roles)
 
 const routes = computed(() => {
   const allRoutes = JSON.parse(
-    JSON.stringify([...(router.options.routes as any)])
-  )
-  let menuList = []
-  const menu = allRoutes.find((item: any) => item.path === '/')
-  if (menu) {
-    menuList = menu.children
-  }
-  return menuList
+    JSON.stringify([...router.options.routes])
+  ) as RouteRecordRaw[]
+  const menu = allRoutes.find((item: RouteRecordRaw) => item.path === '/')
+  return menu?.children ?? []
 })
 
 const isCollapse = computed(() => {

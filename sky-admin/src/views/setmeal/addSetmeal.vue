@@ -184,42 +184,54 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import type { FormInstance, FormItemRule } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import AddDish from './components/AddDish.vue'
 import ImageUpload from '@/components/ImgUpload/index.vue'
 import { querySetmealById, addSetmeal, editSetmeal } from '@/api/setMeal'
 import { getCategoryList } from '@/api/dish'
+import type { Category, SetmealDish, SetmealDTO } from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
 
 const value = ref<string>('')
-const setMealList = ref<any[]>([])
+const setMealList = ref<(Category & { idType: number })[]>([])
 const seachKey = ref<string>('')
-const dishList = ref<any[]>([])
+const dishList = ref<SetmealDish[]>([])
 const imageUrl = ref<string>('')
 const actionType = ref<string>('')
-const dishTable = ref<any[]>([])
+const dishTable = ref<SetmealDish[]>([])
 const dialogVisible = ref<boolean>(false)
-const checkList = ref<any[]>([])
-const ruleForm = ref({
+const checkList = ref<SetmealDish[]>([])
+const ruleForm = ref<{
+  name: string
+  categoryId: string
+  price: string
+  code: string
+  image: string
+  description: string
+  status: boolean
+  idType: number | ''
+}>({
   name: '',
   categoryId: '',
   price: '',
   code: '',
   image: '',
   description: '',
-  dishList: [],
   status: true,
   idType: ''
 })
-const ruleFormRef = ref<any>()
+const ruleFormRef = ref<FormInstance>()
+
+type Validator = NonNullable<FormItemRule['validator']>
 
 const rules = computed(() => {
   return {
     name: {
       required: true,
-      validator: (_rule: any, value: string, callback: Function) => {
+      validator: ((_rule, value, callback) => {
         if (!value) {
           callback(new Error('请输入套餐名称'))
         } else {
@@ -230,7 +242,7 @@ const rules = computed(() => {
             callback()
           }
         }
-      },
+      }) as Validator,
       trigger: 'blur'
     },
     idType: {
@@ -244,7 +256,7 @@ const rules = computed(() => {
     },
     price: {
       required: true,
-      validator: (_rules: any, value: string, callback: Function) => {
+      validator: ((_rules, value, callback) => {
         const reg = /^([1-9]\d{0,5}|0)(\.\d{1,2})?$/
         if (!reg.test(value) || Number(value) <= 0) {
           callback(
@@ -255,7 +267,7 @@ const rules = computed(() => {
         } else {
           callback()
         }
-      },
+      }) as Validator,
       trigger: 'blur'
     },
     code: { required: true, message: '请输入商品码', trigger: 'blur' }
@@ -263,14 +275,20 @@ const rules = computed(() => {
 })
 
 const init = async () => {
-  querySetmealById(String(route.query.id)).then(res => {
-    ruleForm.value = res
-    ruleForm.value.status = res.status == '1'
-    ;(ruleForm.value as any).price = res.price
+  querySetmealById(Number(route.query.id)).then(res => {
+    ruleForm.value = {
+      name: res.name,
+      categoryId: String(res.categoryId),
+      price: String(res.price),
+      code: '',
+      image: res.image,
+      description: res.description ?? '',
+      status: res.status === 1,
+      idType: res.categoryId
+    }
     imageUrl.value = res.image
     checkList.value = res.setmealDishes
-    dishTable.value = res.setmealDishes.reverse()
-    ruleForm.value.idType = res.categoryId
+    dishTable.value = res.setmealDishes.slice().reverse()
   })
 }
 
@@ -280,8 +298,8 @@ const seachHandle = () => {
 
 // 获取套餐分类
 const getDishTypeList = () => {
-  getCategoryList({ type: 2, page: 1, pageSize: 1000 }).then(res => {
-    setMealList.value = res.map((obj: any) => ({
+  getCategoryList({ type: 2 }).then(res => {
+    setMealList.value = res.map(obj => ({
       ...obj,
       idType: obj.id
     }))
@@ -289,14 +307,14 @@ const getDishTypeList = () => {
 }
 
 // 删除套餐菜品
-const delDishHandle = (index: any) => {
+const delDishHandle = (index: number) => {
   dishTable.value.splice(index, 1)
   checkList.value = dishTable.value
 }
 
 // 获取添加菜品数据 - 确定加菜倒序展示
-const getCheckList = (value: any) => {
-  checkList.value = [...value].reverse()
+const getCheckList = (val: SetmealDish[]) => {
+  checkList.value = [...val].reverse()
 }
 
 // 添加菜品
@@ -306,7 +324,7 @@ const openAddDish = (_st: string) => {
 }
 
 // 取消添加菜品
-const handleClose = (_done: any) => {
+const handleClose = (_done: () => void) => {
   dialogVisible.value = false
   checkList.value = JSON.parse(JSON.stringify(dishTable.value))
 }
@@ -314,38 +332,45 @@ const handleClose = (_done: any) => {
 // 保存添加菜品列表
 const addTableList = () => {
   dishTable.value = JSON.parse(JSON.stringify(checkList.value))
-  dishTable.value.forEach((n: any) => {
+  dishTable.value.forEach(n => {
     n.copies = 1
   })
   dialogVisible.value = false
 }
 
-const submitForm = (_formName: any, st: any) => {
-  ;(ruleFormRef.value as any).validate((valid: any) => {
+const submitForm = (_formName: string, st: boolean) => {
+  ruleFormRef.value?.validate((valid) => {
     if (valid) {
       if (dishTable.value.length === 0) {
-        return ElMessage.error('套餐下菜品不能为空')
+        ElMessage.error('套餐下菜品不能为空')
+        return
       }
-      if (!ruleForm.value.image) return ElMessage.error('套餐图片不能为空')
-      let prams = { ...ruleForm.value } as any
-      prams.setmealDishes = dishTable.value.map((obj: any) => ({
-        copies: obj.copies,
-        dishId: obj.dishId,
-        name: obj.name,
-        price: obj.price
-      }))
-      ;(prams as any).status =
-        actionType.value === 'add' ? 0 : ruleForm.value.status ? 1 : 0
-      prams.categoryId = ruleForm.value.idType
+      if (!ruleForm.value.image) {
+        ElMessage.error('套餐图片不能为空')
+        return
+      }
+      const prams: SetmealDTO = {
+        name: ruleForm.value.name,
+        categoryId: ruleForm.value.idType as number,
+        price: Number(ruleForm.value.price),
+        image: ruleForm.value.image,
+        description: ruleForm.value.description,
+        status: actionType.value === 'add' ? 0 : ruleForm.value.status ? 1 : 0,
+        setmealDishes: dishTable.value.map(obj => ({
+          dishId: obj.dishId,
+          name: obj.name,
+          price: obj.price,
+          copies: obj.copies
+        }))
+      }
       if (actionType.value == 'add') {
-        delete prams.id
         addSetmeal(prams)
           .then(() => {
             ElMessage.success('套餐添加成功！')
             if (!st) {
               router.push({ path: '/setmeal' })
             } else {
-              ;(ruleFormRef.value as any).resetFields()
+              ruleFormRef.value?.resetFields()
               dishList.value = []
               dishTable.value = []
               ruleForm.value = {
@@ -355,11 +380,9 @@ const submitForm = (_formName: any, st: any) => {
                 code: '',
                 image: '',
                 description: '',
-                dishList: [],
                 status: true,
-                id: '',
                 idType: ''
-              } as any
+              }
               imageUrl.value = ''
             }
           })
@@ -367,8 +390,7 @@ const submitForm = (_formName: any, st: any) => {
             ElMessage.error('请求出错了：' + err.message)
           })
       } else {
-        delete prams.updateTime
-        editSetmeal(prams)
+        editSetmeal({ ...prams, id: Number(route.query.id) })
           .then(() => {
             ElMessage.success('套餐修改成功！')
             router.push({ path: '/setmeal' })
@@ -377,13 +399,11 @@ const submitForm = (_formName: any, st: any) => {
             ElMessage.error('请求出错了：' + err.message)
           })
       }
-    } else {
-      return false
     }
   })
 }
 
-const imageChange = (value: any) => {
+const imageChange = (value: string) => {
   ruleForm.value.image = value
 }
 

@@ -1,68 +1,49 @@
 import request from '@/utils/request'
+import type {
+  OrderStatisticsVO,
+  OrdersCancelDTO,
+  OrdersConfirmDTO,
+  OrdersPageQueryDTO,
+  OrdersRejectionDTO,
+  OrderVO,
+  PageResult,
+} from './types'
 
-// 查询列表页接口
-export const getOrderDetailPage = (params: any) => {
-  return request({
-    url: '/order/conditionSearch',
-    method: 'get',
-    params
-  })
+// 订单搜索（分页查询）
+export const getOrderDetailPage = (params: OrdersPageQueryDTO) => {
+  return request.get<PageResult<OrderVO>>('/order/conditionSearch', { params })
 }
 
-// 查看接口
-export const queryOrderDetailById = (params: any) => {
-  return request({
-    url: `/order/details/${params.orderId}`,
-    method: 'get'
-  })
+// 订单详情
+export const queryOrderDetailById = (params: { orderId: number }) => {
+  return request.get<OrderVO>(`/order/details/${params.orderId}`)
 }
 
-// 派送接口
-export const deliveryOrder = (params: any) => {
-  return request({
-    url: `/order/delivery/${params.id}`,
-    method: 'put' /*  */
-  })
+// 派送订单
+export const deliveryOrder = (id: number) => {
+  return request.put(`/order/delivery/${id}`)
 }
-//完成接口
-export const completeOrder = (params: any) => {
-  return request({
-    url: `/order/complete/${params.id}`,
-    method: 'put' /*  */
-  })
+// 完成订单
+export const completeOrder = (id: number) => {
+  return request.put(`/order/complete/${id}`)
 }
 
-//订单取消
-export const orderCancel = (params: any) => {
-  return request({
-    url: '/order/cancel',
-    method: 'put' /*  */,
-    data: { ...params }
-  })
+// 取消订单
+export const orderCancel = (params: OrdersCancelDTO) => {
+  return request.put('/order/cancel', params)
 }
 
-//接单
-export const orderAccept = (params: any) => {
-  return request({
-    url: '/order/confirm',
-    method: 'put' /*  */,
-    data: { ...params }
-  })
+// 接单
+export const orderAccept = (params: OrdersConfirmDTO) => {
+  return request.put('/order/confirm', params)
 }
 
-//拒单
-export const orderReject = (params: any) => {
-  return request({
-    url: '/order/rejection',
-    method: 'put' /*  */,
-    data: { ...params }
-  })
+// 拒单
+export const orderReject = (params: OrdersRejectionDTO) => {
+  return request.put('/order/rejection', params)
 }
 
-//获取待处理，待派送，派送中数量
-export const getOrderListBy = (_params?: any) => {
-  return request({
-    url: '/order/statistics',
-    method: 'get' /*  */
-  })
+// 各状态订单数量统计
+export const getOrderListBy = () => {
+  return request.get<OrderStatisticsVO>('/order/statistics')
 }

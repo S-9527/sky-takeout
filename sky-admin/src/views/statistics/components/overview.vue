@@ -42,7 +42,7 @@
         <li>
           <p class="tit">订单完成率</p>
           <p class="num">
-            {{ (overviewData.orderCompletionRate * 100).toFixed(2) }}%
+            {{ ((overviewData.orderCompletionRate ?? 0) * 100).toFixed(2) }}%
           </p>
           <p class="tip">
             同比增长<span v-if="overviewData.orderCompletionRateGrowth">
@@ -63,7 +63,7 @@
         </li>
         <li>
           <p class="tit">平均客单价</p>
-          <p class="num">{{ overviewData.unitPrice.toFixed(2) }}</p>
+          <p class="num">{{ (overviewData.unitPrice ?? 0).toFixed(2) }}</p>
           <p class="tip">
             同比增长<span v-if="overviewData.unitPriceGrowth">
               <span
@@ -122,7 +122,19 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    overviewData?: any
+    overviewData?: {
+      turnover?: number
+      validOrderCount?: number
+      orderCompletionRate?: number
+      unitPrice?: number
+      newUsers?: number
+      totalUsers?: number
+      turnoverGrowth?: number
+      orderCompletionRateGrowth?: number
+      unitPriceGrowth?: number
+      validOrderCountGrowth?: number
+      newUsersGrowth?: number
+    }
   }>(),
   {
     overviewData: () => ({})

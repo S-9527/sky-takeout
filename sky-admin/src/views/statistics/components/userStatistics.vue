@@ -14,13 +14,14 @@
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
+import type { UserStatisticsData } from '@/api/types'
 
 const props = withDefaults(
   defineProps<{
-    userdata?: any
+    userdata?: UserStatisticsData
   }>(),
   {
-    userdata: () => ({})
+    userdata: () => ({ dateList: [], totalUserList: [], newUserList: [] })
   }
 )
 
@@ -34,9 +35,12 @@ watch(
 )
 
 function initChart() {
-  const chartDom = document.getElementById('usermain') as any
+  const chartDom = document.getElementById('usermain')
+  if (!chartDom) {
+    return
+  }
   const myChart = echarts.init(chartDom)
-  var option: any
+  var option: echarts.EChartsOption
   option = {
     // legend: {
     //   itemHeight: 3, //图例高
@@ -128,7 +132,6 @@ function initChart() {
         // symbol:"circle", //设置折线点定位实心点
         itemStyle: {
           color: '#FD7F7F',
-          fontWeight: 300,
         },
         lineStyle: {
           color: '#FD7F7F',

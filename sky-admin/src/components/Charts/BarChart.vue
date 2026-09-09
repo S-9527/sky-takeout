@@ -10,6 +10,7 @@
 import * as echarts from 'echarts';
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import useChartResize from './mixins/resize';
+import type { PieChartData } from '@/api/charts';
 
 const props = withDefaults(defineProps<{
   className?: string
@@ -17,17 +18,17 @@ const props = withDefaults(defineProps<{
   width?: string
   height?: string
   title?: string
-  chartData?: any
+  chartData?: PieChartData
 }>(), {
   className: 'chart',
   id: 'BarChart',
   width: '100%',
   height: '250px',
   title: 'Requests',
-  chartData: () => ({})
+  chartData: () => ({ legendData: [], seriesData: [], selected: {} })
 })
 
-const chart = ref<any>(null)
+const chart = ref<ReturnType<typeof echarts.init> | null>(null)
 
 useChartResize(() => chart.value)
 
@@ -89,7 +90,7 @@ const initChart = () => {
         },
         'itemStyle': {
           'normal': {
-            'color': function (params:any) {
+            'color': function (params: { dataIndex: number }) {
               const colorList = ['#389BFF', '#FFC200', '#52C41A', '#08979C', '#597EF7', '#B37FEB','#FF7875', '#5CDBD3', '#FFC53D'];
               return colorList[params.dataIndex]
             }
@@ -97,7 +98,7 @@ const initChart = () => {
         }
       }
     ]
-  } as any)
+  } as echarts.EChartsOption)
 }
 
 init()

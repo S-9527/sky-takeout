@@ -40,7 +40,7 @@
 
         <div class="tableLab">
           <span class="delBut non"
-                @click="deleteHandle('批量', null)">批量删除</span>
+                @click="deleteHandle('批量')">批量删除</span>
           <!-- <span class="blueBug non" @click="statusHandle('1')">批量启售</span>
           <span
             style="border: none"
@@ -82,7 +82,7 @@
                          label="菜品分类" />
         <el-table-column label="售价">
           <template #default="scope">
-            <span style="margin-right: 10px">￥{{ (scope.row.price ).toFixed(2)*100/100 }}</span>
+            <span style="margin-right: 10px">￥{{ Number((scope.row.price ?? 0).toFixed(2))*100/100 }}</span>
           </template>
         </el-table-column>
         <el-table-column label="售卖状态">
@@ -115,11 +115,11 @@
                        size="small"
                        class="non"
                        :class="{
-                         blueBug: scope.row.status == '0',
-                         delBut: scope.row.status != '0'
-                       }"
-                       @click="statusHandle(scope.row)">
-              {{ scope.row.status == '0' ? '启售' : '停售' }}
+blueBug: scope.row.status === 0,
+                        delBut: scope.row.status !== 0
+                      }"
+                      @click="statusHandle(scope.row)">
+              {{ scope.row.status === 0 ? '启售' : '停售' }}
             </el-button>
           </template>
         </el-table-column>
@@ -148,21 +148,22 @@ import {
   dishStatusByStatus,
   dishCategoryList as dishCategoryListApi
 } from '@/api/dish'
+import type { DishVO } from '@/api/types'
 import Empty from '@/components/Empty/index.vue'
 
 const router = useRouter()
-const input = ref<any>('')
+const input = ref('')
 const counts = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
-const checkList = ref<string[]>([])
-const tableData = ref<any[]>([])
-const dishState = ref<any>('')
-const dishCategoryList = ref<any[]>([])
-const categoryId = ref<any>('')
-const dishStatus = ref<any>('')
+const checkList = ref<Array<string | number>>([])
+const tableData = ref<DishVO[]>([])
+const dishState = ref<{ id: number | string; status: string }>({ id: 0, status: '0' })
+const dishCategoryList = ref<{ value: number; label: string }[]>([])
+const categoryId = ref<number | ''>('')
+const dishStatus = ref<number | ''>('')
 const isSearch = ref(false)
-const saleStatus: any = [
+const saleStatus = [
   {
     value: 0,
     label: '停售'
@@ -181,14 +182,14 @@ const initFun = () => {
   init()
 }
 
-async function init(searchValue?: any) {
-  isSearch.value = searchValue
+async function init(searchValue?: boolean) {
+  isSearch.value = searchValue ?? false
   await getDishPage({
     page: page.value,
     pageSize: pageSize.value,
     name: input.value || undefined,
-    categoryId: categoryId.value || undefined,
-    status: dishStatus.value
+    categoryId: categoryId.value ? Number(categoryId.value) : undefined,
+    status: dishStatus.value || undefined
   })
     .then(res => {
       tableData.value = res.records
@@ -200,16 +201,16 @@ async function init(searchValue?: any) {
 }
 
 // 添加
-const addDishtype = (st: string) => {
+const addDishtype = (st: string | DishVO) => {
   if (st === 'add') {
     router.push({ path: '/dish/add' })
   } else {
-    router.push({ path: '/dish/add', query: { id: st } })
+    router.push({ path: '/dish/add', query: { id: String((st as DishVO).id ?? '') } })
   }
 }
 
 // 删除
-const deleteHandle = (type: string, id: any) => {
+const deleteHandle = (type: string, id?: number | string) => {
   if (type === '批量' && id === null) {
     if (checkList.value.length === 0) {
       return ElMessage.error('请选择删除对象')
@@ -220,7 +221,7 @@ const deleteHandle = (type: string, id: any) => {
     cancelButtonText: '取消',
     type: 'warning'
   }).then(() => {
-    deleteDish(type === '批量' ? checkList.value.join(',') : id)
+    deleteDish(type === '批量' ? checkList.value.join(',') : id ?? 0)
       .then(() => {
         ElMessage.success('删除成功！')
         init()
@@ -236,7 +237,7 @@ function getDishCategoryList() {
     type: 1
   })
     .then(res => {
-      dishCategoryList.value = res.map((item: any) => {
+      dishCategoryList.value = res.map((item) => {
         return { value: item.id, label: item.name }
       })
     })
@@ -244,18 +245,16 @@ function getDishCategoryList() {
 }
 
 //状态更改
-const statusHandle = (row: any) => {
-  let params: any = {}
+const statusHandle = (row: DishVO | string) => {
+  let params: { id: number | string; status: string }
   if (typeof row === 'string') {
     if (checkList.value.length === 0) {
       ElMessage.error('批量操作，请先勾选操作菜品！')
       return false
     }
-    params.id = checkList.value.join(',')
-    params.status = row
+    params = { id: checkList.value.join(','), status: row }
   } else {
-    params.id = row.id
-    params.status = row.status ? '0' : '1'
+    params = { id: row.id ?? 0, status: row.status ? '0' : '1' }
   }
   dishState.value = params
   ElMessageBox.confirm('确认更改该菜品状态?', '提示', {
@@ -264,7 +263,7 @@ const statusHandle = (row: any) => {
     type: 'warning'
   }).then(() => {
     // 起售停售---批量起售停售接口
-    dishStatusByStatus(dishState.value)
+    dishStatusByStatus({ status: Number(dishState.value.status), id: dishState.value.id })
       .then(() => {
         ElMessage.success('菜品状态已经更改成功！')
         init()
@@ -276,20 +275,20 @@ const statusHandle = (row: any) => {
 }
 
 // 全部操作
-const handleSelectionChange = (val: any) => {
-  let checkArr: any[] = []
-  val.forEach((n: any) => {
-    checkArr.push(n.id)
+const handleSelectionChange = (val: DishVO[]) => {
+  let checkArr: Array<string | number> = []
+  val.forEach((n) => {
+    checkArr.push(n.id ?? 0)
   })
   checkList.value = checkArr
 }
 
-const handleSizeChange = (val: any) => {
+const handleSizeChange = (val: number) => {
   pageSize.value = val
   init()
 }
 
-const handleCurrentChange = (val: any) => {
+const handleCurrentChange = (val: number) => {
   page.value = val
   init()
 }

@@ -1,12 +1,9 @@
-import * as echarts from 'echarts';
 import { onActivated, onDeactivated, onMounted, onBeforeUnmount } from 'vue';
 
-type ChartType = ReturnType<typeof echarts.init>
-
-export default function useChartResize(chartRef: () => ChartType | null | undefined) {
+export default function useChartResize(chartGetter: () => { resize: () => void } | null | undefined) {
 
   const getChart = () => {
-    return chartRef()
+    return chartGetter()
   }
 
   const chartResizeHandler = () => {

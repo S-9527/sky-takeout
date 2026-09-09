@@ -204,8 +204,32 @@ import {
   setStatus,
   getCountUnread as getCountUnreadApi,
 } from '@/api/inform'
+import type { Message, MessagePageQuery } from '@/api/types'
 
 const appStore = useAppStore()
+
+interface InformDetails {
+  orderTime?: string
+  estimatedDeliveryTime?: string
+  consignee?: string
+  phone?: string
+  address?: string
+  orderDishes?: string
+  turnover?: number | string
+  validOrderCount?: number | string
+  orderCompletionRate?: number | string
+  newUsers?: number | string
+  cancelledOrders?: number | string
+  cancelledAmount?: number | string
+}
+
+interface InformMessage {
+  id: number
+  type: number
+  createTime?: string
+  arrNew: string[]
+  details: InformDetails
+}
 
 const activeIndex = ref(0)
 const shopShow = ref(false)
@@ -213,7 +237,7 @@ const counts = ref<number>(0)
 const page = ref<number>(1)
 const pageSize = ref<number>(10)
 const status = ref(1)
-const baseData = ref<any[]>([])
+const baseData = ref<InformMessage[]>([])
 const showIndex = ref(0)
 const isSearch = ref<boolean>(false)
 const isActive = ref(false)
@@ -234,31 +258,30 @@ const ountUnread = computed(() => appStore.statusNumber)
 
 // 获取列表数据
 const getData = async () => {
-  const parent = {
+  const parent: MessagePageQuery = {
     pageNum: page.value,
     pageSize: pageSize.value,
     status: status.value,
   }
   const data = await getInformData(parent)
-  baseData.value = data.records
-  counts.value = data.total
-  let objNew = {} as any
-  let arrDetails: any[] = []
-  baseData.value.forEach((val: any) => {
-    const arrContent = val.content.split(' ')
-    val.arrNew = arrContent
-    objNew = { ...val }
-    objNew.details = eval('(' + objNew.details + ')')
-    arrDetails.push(objNew)
+  baseData.value = data.records.map((val: Message) => {
+    const arrNew = val.content.split(' ')
+    const details = JSON.parse(val.details) as InformDetails
+    return {
+      id: val.id,
+      type: val.type ?? 0,
+      createTime: val.createTime,
+      arrNew,
+      details,
+    }
   })
-
-  baseData.value = arrDetails
+  counts.value = data.total
 }
 
 // 全部已读
 const handleBatch = async () => {
-  const ids: any[] = []
-  baseData.value.forEach((val: any) => {
+  const ids: number[] = []
+  baseData.value.forEach((val) => {
     ids.push(val.id)
   })
   await batchMsg(ids)
@@ -267,7 +290,7 @@ const handleBatch = async () => {
 }
 
 // 设置单个订单已读
-const handleSetStatus = async (id: any) => {
+const handleSetStatus = async (id: number) => {
   await setStatus(id)
   if (!isActive.value) {
     getCountUnread()
@@ -282,7 +305,7 @@ const getCountUnread = async () => {
 }
 
 // 触发已读未读按钮
-const handleClass = (index: any) => {
+const handleClass = (index: number) => {
   activeIndex.value = index
   if (index === 0) {
     status.value = 1
@@ -293,7 +316,7 @@ const handleClass = (index: any) => {
 }
 
 // 下拉菜单显示
-const toggleShow = (id: any, index: any) => {
+const toggleShow = (id: number, index: number) => {
   shopShow.value = true
   showIndex.value = index
   let t = 3
@@ -311,17 +334,17 @@ const toggleShow = (id: any, index: any) => {
 }
 
 // 下拉菜单隐藏
-const mouseLeaves = (index: any) => {
+const mouseLeaves = (index: number) => {
   shopShow.value = false
   showIndex.value = index
 }
 
-const handleSizeChange = (val: any) => {
+const handleSizeChange = (val: number) => {
   pageSize.value = val
   getData()
 }
 
-const handleCurrentChange = (val: any) => {
+const handleCurrentChange = (val: number) => {
   page.value = val
   getData()
 }

@@ -10,13 +10,14 @@
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
+import type { SalesTop10Data } from '@/api/types'
 
 const props = withDefaults(
   defineProps<{
-    top10data?: any
+    top10data?: SalesTop10Data
   }>(),
   {
-    top10data: () => ({})
+    top10data: () => ({ nameList: [], numberList: [] })
   }
 )
 
@@ -30,9 +31,12 @@ watch(
 )
 
 function initChart() {
-  const chartDom = document.getElementById('top') as any
+  const chartDom = document.getElementById('top')
+  if (!chartDom) {
+    return
+  }
   const myChart = echarts.init(chartDom)
-  var option: any
+  var option: echarts.EChartsOption
   option = {
     tooltip: {
       trigger: 'axis',

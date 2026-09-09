@@ -106,10 +106,10 @@ const sidebar = computed(() => appStore.sidebar)
 
 const name = computed(() => {
   const user_info = Cookies.get('user_info')
-  return (userStore.userInfo as any).name
-    ? (userStore.userInfo as any).name
+  return userStore.userInfo.name
+    ? userStore.userInfo.name
     : user_info
-      ? JSON.parse(user_info).name
+      ? (JSON.parse(user_info) as { name?: string }).name || ''
       : ''
 })
 

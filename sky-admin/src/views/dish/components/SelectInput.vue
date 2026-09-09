@@ -27,21 +27,26 @@
 import { computed, ref } from 'vue'
 import type { PropType } from 'vue'
 
+interface FlavorOption {
+  name: string
+  value: string[]
+}
+
 const props = defineProps({
-  selectFlavorsData: { type: Array as PropType<any[]>, default: () => [] },
-  dishFlavorsData: { type: Array as PropType<any[]>, default: () => [] },
+  selectFlavorsData: { type: Array as PropType<FlavorOption[]>, default: () => [] },
+  dishFlavorsData: { type: Array as PropType<FlavorOption[]>, default: () => [] },
   value: { type: [String, Number], default: '' },
   index: { type: Number, default: 0 }
 })
 const emit = defineEmits(['select', 'update:value'])
 
-const keyValue = ref(NaN)
+const keyValue = ref('')
 
 const mak = ref(false)
 
 const value = computed({
   get: () => props.value,
-  set: (val: any) => {
+  set: (val: string | number) => {
     emit('update:value', val)
   }
 })
@@ -56,7 +61,7 @@ const outSelect = (st: boolean) => {
   }, 200)
 }
 
-const checkOption = (val: any, ind: any) => {
+const checkOption = (val: FlavorOption, ind: number) => {
   emit('select', val.name, props.index, ind)
   keyValue.value = val.name
 }

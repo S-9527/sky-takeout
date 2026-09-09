@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import type { UploadProps } from 'element-plus'
 import { getToken } from '@/utils/cookies'
 
 const props = defineProps({
@@ -57,16 +58,16 @@ watch(() => props.propImageUrl, (val) => {
 
 const handleRemove = () => {}
 
-const handleError = (err: any, file: any, fileList: any) => {
-  console.log(err, file, fileList, 'handleError')
+const handleError: UploadProps['onError'] = (err, file) => {
+  console.log(err, file, 'handleError')
   ElMessage({
     message: '图片上传失败',
     type: 'error'
   })
 }
 
-const handleAvatarSuccess = (response: any, _file: any, _fileList: any) => {
-  imageUrl.value = `${response.data}`
+const handleAvatarSuccess: UploadProps['onSuccess'] = (response) => {
+  imageUrl.value = `${(response as { data?: string }).data ?? ''}`
   emit('imageChange', imageUrl.value)
 }
 
@@ -74,7 +75,7 @@ const oploadImgDel = () => {
   imageUrl.value = ''
   emit('imageChange', imageUrl.value)
 }
-const beforeAvatarUpload = (file: any) => {
+const beforeAvatarUpload: UploadProps['beforeUpload'] = (file) => {
   const isLt2M = file.size / 1024 / 1024 < props.size
   if (!isLt2M) {
     ElMessage({

@@ -9,7 +9,11 @@
 <script setup lang="ts">
 import * as echarts from 'echarts'
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+
+useChartResize(() => chart.value)
+
 import useChartResize from './mixins/resize'
+import type { LineChartData } from '@/api/charts'
 
 const props = withDefaults(defineProps<{
   className?: string
@@ -17,17 +21,17 @@ const props = withDefaults(defineProps<{
   width?: string
   height?: string
   title?: string
-  chartData?: any
+  chartData?: LineChartData
 }>(), {
   className: 'chart',
   id: 'mixedChart',
   width: '100%',
   height: '250px',
   title: 'Requests',
-  chartData: () => ({})
+  chartData: () => ({ xData: [], yData: [] })
 })
 
-const chart = ref<any>(null)
+const chart = ref<ReturnType<typeof echarts.init> | null>(null)
 
 useChartResize(() => chart.value)
 
@@ -142,8 +146,8 @@ const initChart = () => {
           'color': '#fff'
         },
         'position': 'insideTop',
-        formatter(p: any) {
-          return p.value > 0 ? p.value : ''
+        formatter(p: { value: number }) {
+          return p.value > 0 ? String(p.value) : ''
         }
       },
       'data': props.chartData.yData

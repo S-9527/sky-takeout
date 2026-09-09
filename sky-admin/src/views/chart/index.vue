@@ -201,8 +201,14 @@ import {
   getTimeQuantumDiscount,
   getChartsDataes,
 } from '@/api/charts'
+import type {
+  DiscountItem,
+  LineChartData,
+  PieChartData,
+  SalesSummary,
+} from '@/api/charts'
 
-const dataTime = ref<any>('')
+const dataTime = ref('')
 const restKey = ref(0)
 const Today = moment().format('YYYY-MM-DD')
 const week = [
@@ -213,19 +219,18 @@ const month = [
   moment().startOf('month').format('YYYY-MM-DD'),
   moment().endOf('month').format('YYYY-MM-DD'),
 ]
-const topData = ref<any>({})
+const topData = ref<SalesSummary>({ payTotal: 0, noPayTotal: 0, totalPerson: 0 })
 const stateTime = ref(moment().format('YYYY-MM-DD'))
 const endTime = ref(moment().format('YYYY-MM-DD'))
 const act = ref('day')
 const dataType = ref(1) //类型(1:金额;2:数量)
 const typeA = ref(1)
 const typeB = ref(1)
-const chartDataA = ref<any>({}) // 销售趋势
-const chartDataB = ref<any>({}) // 销售排行
-
-const chartDataC = ref<any>({}) //分类占比
-const chartDataD = ref<any>({}) // 收款构成
-const discount = ref<any[]>([]) // 优惠指标
+const chartDataA = ref<LineChartData>() // 销售趋势
+const chartDataB = ref<LineChartData>() // 销售排行
+const chartDataC = ref<PieChartData>() //分类占比
+const chartDataD = ref<PieChartData>() // 收款构成
+const discount = ref<DiscountItem[]>([]) // 优惠指标
 const discountTotal = ref(0)
 const discountPercentTotal = ref(0)
 
@@ -237,7 +242,7 @@ const init = async () => {
   await getTimeWuantumData()
 }
 
-const checkaffterDate = (val: any, st: any) => {
+const checkaffterDate = (val: string, st: string) => {
   const date = moment(dataTime.value).valueOf()
   if (st == 'before') {
     // 前一天、周、月
@@ -352,22 +357,10 @@ const dateAct = (val: string) => {
 const topActiveHandle = (activeKey: string) => {
   if (activeKey === 'typeA') {
     typeA.value = typeA.value === 1 ? 2 : 1
-    if (act.value == 'day') {
-      // moment(this.dataTime).format('YYYY-MM-DD') ===  moment().format('YYYY-MM-DD')){
-      // this.getDayData()
-      getTimeQuantumData()
-    } else {
-      getTimeQuantumData()
-    }
+    getTimeQuantumData()
   } else {
     typeB.value = typeB.value === 1 ? 2 : 1
-    if (act.value == 'day') {
-      // moment(this.dataTime).format('YYYY-MM-DD') ===  moment().format('YYYY-MM-DD')){
-      // this.getSalesRankData()
-      getTimeQuantumTypeData()
-    } else {
-      getTimeQuantumTypeData()
-    }
+    getTimeQuantumTypeData()
   }
 }
 
@@ -389,13 +382,13 @@ const getDayData = () => {
         let yData: number[] = []
         if (typeA.value === 1) {
           data.series.length > 0 &&
-            data.series.map((n: number) => {
+            data.series.map((n) => {
               yData.push(n / 100)
             })
         } else {
           yData = data.series
         }
-        const charts = { xData: data.xaxis, yData: yData }
+        const charts: LineChartData = { xData: data.xaxis, yData: yData }
         chartDataA.value = charts
       })
     .catch((err) => {
@@ -407,26 +400,24 @@ const getSalesRankData = () => {
   getSalesRanking({ type: typeB.value, date: dataTime.value })
     .then((res) => {
       const data = res
-        let chartData: any[] = []
+        const chartData: SalesRankItemForChart[] = []
         if (typeB.value === 1) {
           data.length > 0 &&
-            data.map((n: { name: string; percent: any; value: number }) => {
+            data.forEach((n) => {
               chartData.push({ ...n, value: n.value / 100 })
             })
         } else {
-          chartData = data
+          chartData.push(...data)
         }
-        let charts: any = {
+        const charts: PieChartData = {
           legendData: [],
           seriesData: chartData,
           selected: {},
         }
-        data &&
-          data.length > 0 &&
-          data.forEach((item: any) => {
-            ;(charts.legendData as Array<string>).push(item.name as string)
-            ;(charts.selected as any)[item.name] = true
-          })
+        data.forEach((item) => {
+          charts.legendData.push(item.name)
+          charts.selected[item.name] = true
+        })
         chartDataC.value = charts
       })
     .catch((err) => {
@@ -438,26 +429,24 @@ const getDayPayTypeData = () => {
   getDayPayType({ date: dataTime.value })
     .then((res) => {
       const data = res
-        let chartData: any[] = []
+        const chartData: SalesRankItemForChart[] = []
         if (typeB.value === 1) {
           data.length > 0 &&
-            data.map((n: { name: string; percent: any; value: number }) => {
+            data.forEach((n) => {
               chartData.push({ ...n, value: n.value / 100 })
             })
         } else {
-          chartData = data
+          chartData.push(...data)
         }
-        let charts: any = {
+        const charts: PieChartData = {
           legendData: [],
           seriesData: chartData,
           selected: {},
         }
-        data &&
-          data.length > 0 &&
-          data.forEach((item: any) => {
-            ;(charts.legendData as Array<string>).push(item.name as string)
-            ;(charts.selected as any)[item.name] = true
-          })
+        data.forEach((item) => {
+          charts.legendData.push(item.name)
+          charts.selected[item.name] = true
+        })
         chartDataD.value = charts
       })
     .catch((err) => {
@@ -469,7 +458,7 @@ const getDayRankingData = () => {
   getDayRanking({ type: dataType.value, date: dataTime.value })
     .then((res) => {
       const data = res
-        const charts = { xData: data.xaxis, yData: data.series }
+        const charts: LineChartData = { xData: data.xaxis, yData: data.series }
         chartDataB.value = charts
       })
     .catch((err) => {
@@ -481,8 +470,7 @@ const getDaySalesVolumeData = () => {
   // 获取当日销售数据
   getChartsDataes({ start: dataTime.value, end: dataTime.value })
     .then((res) => {
-      const data = res
-        topData.value = data
+      topData.value = res
       })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
@@ -492,16 +480,13 @@ const getDaySalesVolumeData = () => {
 const getprivilegeData = () => {
   getprivilege({ date: dataTime.value })
     .then((res) => {
-      const data = res
-        discountTotal.value = 0
-        discountPercentTotal.value = 0
-        data &&
-          data.dataList.length > 0 &&
-          data.dataList.forEach((item: any) => {
-            discountTotal.value += item.value
-            discountPercentTotal.value += item.percent
-          })
-        discount.value = data.dataList
+      discountTotal.value = 0
+      discountPercentTotal.value = 0
+      res.dataList.forEach((item) => {
+        discountTotal.value += item.value
+        discountPercentTotal.value += item.percent
+      })
+      discount.value = res.dataList
       })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
@@ -523,16 +508,13 @@ const getTimeWuantumData = () => {
 const getDiscount = () => {
   getTimeQuantumDiscount({ start: stateTime.value, end: endTime.value })
     .then((res) => {
-      const data = res
-        discountTotal.value = 0
-        discountPercentTotal.value = 0
-        data &&
-          data.dataList.length > 0 &&
-          data.dataList.forEach((item: any) => {
-            discountTotal.value += item.value
-            discountPercentTotal.value += item.percent
-          })
-        discount.value = data.dataList
+      discountTotal.value = 0
+      discountPercentTotal.value = 0
+      res.dataList.forEach((item) => {
+        discountTotal.value += item.value
+        discountPercentTotal.value += item.percent
+      })
+      discount.value = res.dataList
       })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
@@ -549,13 +531,13 @@ const getTimeQuantumData = () => {
       let yData: number[] = []
       if (typeA.value === 1) {
         data.series.length > 0 &&
-          data.series.map((n: number) => {
+          data.series.map((n) => {
             yData.push(n / 100)
           })
       } else {
         yData = data.series
       }
-      const charts = { xData: data.xaxis, yData: yData }
+      const charts: LineChartData = { xData: data.xaxis, yData: yData }
       chartDataA.value = charts
     })
 }
@@ -564,26 +546,24 @@ const getReceivables = () => {
   getTimeQuantumReceivables({ start: stateTime.value, end: endTime.value })
     .then((res) => {
       const data = res
-        let chartData: any[] = []
+        const chartData: SalesRankItemForChart[] = []
         if (typeB.value === 1) {
           data.length > 0 &&
-            data.map((n: { name: string; percent: any; value: number }) => {
+            data.forEach((n) => {
               chartData.push({ ...n, value: n.value / 100 })
             })
         } else {
-          chartData = data
+          chartData.push(...data)
         }
-        let charts: any = {
+        const charts: PieChartData = {
           legendData: [],
           seriesData: chartData,
           selected: {},
         }
-        data &&
-          data.length > 0 &&
-          data.forEach((item: any) => {
-            ;(charts.legendData as Array<string>).push(item.name as string)
-            ;(charts.selected as any)[item.name] = true
-          })
+        data.forEach((item) => {
+          charts.legendData.push(item.name)
+          charts.selected[item.name] = true
+        })
         chartDataD.value = charts
       })
     .catch((err) => {
@@ -600,25 +580,24 @@ const getTimeQuantumTypeData = () => {
   })
     .then((res) => {
       const data = res
-        let chartData: any[] = []
+        const chartData: SalesRankItemForChart[] = []
         if (typeB.value === 1) {
           data.length > 0 &&
-            data.map((n: { name: string; percent: any; value: number }) => {
+            data.forEach((n) => {
               chartData.push({ ...n, value: n.value / 100 })
             })
         } else {
-          chartData = data
+          chartData.push(...data)
         }
-        let charts: any = {
+        const charts: PieChartData = {
           legendData: [],
           seriesData: chartData,
           selected: {},
         }
-        data.length > 0 &&
-          data.forEach((item: any) => {
-            ;(charts.legendData as Array<string>).push(item.name as string)
-            ;(charts.selected as any)[item.name] = true
-          })
+        data.forEach((item) => {
+          charts.legendData.push(item.name)
+          charts.selected[item.name] = true
+        })
         chartDataC.value = charts
       })
     .catch((err) => {
@@ -630,17 +609,22 @@ const getTimeQuantumDishesDataes = () => {
   getTimeQuantumDishes({ start: stateTime.value, end: endTime.value })
     .then((res) => {
       const data = res
-        let yData: number[] = []
-        data.series.length > 0 &&
-          data.series.map((n: number) => {
-            yData.push(n / 100)
-          })
-        const charts = { xData: data.xaxis, yData: yData }
+        const yData: number[] = []
+        data.series.forEach((n) => {
+          yData.push(n / 100)
+        })
+        const charts: LineChartData = { xData: data.xaxis, yData: yData }
         chartDataB.value = charts
       })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })
+}
+
+interface SalesRankItemForChart {
+  name: string
+  percent: number
+  value: number
 }
 
 init()

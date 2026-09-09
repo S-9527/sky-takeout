@@ -95,7 +95,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, type FormInstance, type FormItemRule } from 'element-plus'
 import HeadLable from '@/components/HeadLable/index.vue'
 import { queryEmployeeById, addEmployee, editEmployee } from '@/api/employee'
 
@@ -111,9 +111,9 @@ const ruleForm = ref({
   idNumber: '',
   username: ''
 })
-const ruleFormRef = ref<any>()
+const ruleFormRef = ref<FormInstance>()
 
-const isCellPhone = (val: any) => {
+const isCellPhone = (val: string) => {
   if (!/^1(3|4|5|6|7|8)\d{9}$/.test(val)) {
     return false
   } else {
@@ -121,7 +121,9 @@ const isCellPhone = (val: any) => {
   }
 }
 
-const checkphone = (_rule: any, value: any, callback: any) => {
+type Validator = NonNullable<FormItemRule['validator']>
+
+const checkphone: Validator = (_rule, value, callback) => {
   if (value == '') {
     callback(new Error('请输入手机号'))
   } else if (!isCellPhone(value)) {
@@ -131,7 +133,7 @@ const checkphone = (_rule: any, value: any, callback: any) => {
   }
 }
 
-const validID = (_rule: any, value: any, callback: any) => {
+const validID: Validator = (_rule, value, callback) => {
   let reg = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/
   if (value == '') {
     callback(new Error('请输入身份证号码'))
@@ -147,20 +149,20 @@ const rules = computed(() => {
     name: [
       {
         required: true,
-        validator: (_rule: any, value: string, callback: Function) => {
+        validator: ((_rule, value, callback) => {
           if (!value) {
             callback(new Error('请输入员工姓名'))
           } else {
             callback()
           }
-        },
+        }) as Validator,
         trigger: 'blur'
       }
     ],
     username: [
       {
         required: true,
-        validator: (_rule: any, value: string, callback: Function) => {
+        validator: ((_rule, value, callback) => {
           if (!value) {
             callback(new Error('请输入账号'))
           } else {
@@ -171,7 +173,7 @@ const rules = computed(() => {
               callback()
             }
           }
-        },
+        }) as Validator,
         trigger: 'blur'
       }
     ],
@@ -182,14 +184,14 @@ const rules = computed(() => {
 
 const init = async () => {
   const id = route.query.id
-  queryEmployeeById(String(id)).then((res: any) => {
+  queryEmployeeById(Number(id)).then((res) => {
     ruleForm.value = res
     ruleForm.value.sex = res.sex === '0' ? '女' : '男'
   })
 }
 
-const submitForm = (_formName: any, st: any) => {
-  ;(ruleFormRef.value as any).validate((valid: any) => {
+const submitForm = (_formName: string, st: boolean) => {
+  ruleFormRef.value?.validate((valid) => {
     if (valid) {
       if (actionType.value === 'add') {
         const params = {
@@ -224,8 +226,6 @@ const submitForm = (_formName: any, st: any) => {
           })
           .catch(() => {})
       }
-    } else {
-      return false
     }
   })
 }

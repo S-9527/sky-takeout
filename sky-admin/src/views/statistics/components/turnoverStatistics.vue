@@ -13,13 +13,14 @@
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
+import type { TurnoverStatisticsData } from '@/api/types'
 
 const props = withDefaults(
   defineProps<{
-    turnoverdata?: any
+    turnoverdata?: TurnoverStatisticsData
   }>(),
   {
-    turnoverdata: () => ({})
+    turnoverdata: () => ({ dateList: [], turnoverList: [] })
   }
 )
 
@@ -33,10 +34,13 @@ watch(
 )
 
 function initChart() {
-  const chartDom = document.getElementById('main') as any
+  const chartDom = document.getElementById('main')
+  if (!chartDom) {
+    return
+  }
   const myChart = echarts.init(chartDom)
 
-  var option: any
+  var option: echarts.EChartsOption
   option = {
     // title: {
     //   text: '营业额(元)',

@@ -1,88 +1,49 @@
 import request from '@/utils/request'
-// 营业额数据
-// export const getTurnoverDataes = (data) =>
-//   request({
-//     'url': `/report/turnoverStatistics`,
-//     'method': 'get',
-//     data
-//   })
-// 首页数据
-// // 今日数据
-// export const getTodayDataes = () =>
-//   request({
-//     'url': `/workspace/todaydate`,
-//     'method': 'get'
-//   })
+import type {
+  BusinessDataVO,
+  DishOverViewVO,
+  OrderOverViewVO,
+  OrderReportVO,
+  ReportQuery,
+  SalesTop10ReportVO,
+  SetmealOverViewVO,
+  TurnoverReportVO,
+  UserReportVO,
+} from './types'
 // 订单管理
-  export const getOrderData = () =>
-  request({
-    'url': `/workspace/overviewOrders`,
-    'method': 'get'
-  })
+export const getOrderData = () =>
+  request.get<OrderOverViewVO>('/workspace/overviewOrders')
 // 菜品总览
 export const getOverviewDishes = () =>
-request({
-  'url': `/workspace/overviewDishes`,
-  'method': 'get'
-})
+  request.get<DishOverViewVO>('/workspace/overviewDishes')
 // 套餐总览
 export const getSetMealStatistics = () =>
-request({
-  'url': `/workspace/overviewSetmeals`,
-  'method': 'get'
-})
+  request.get<SetmealOverViewVO>('/workspace/overviewSetmeals')
 // 营业数据
-export const getBusinessData= () =>
-request({
-  'url': `/workspace/businessData`,
-  'method': 'get'
-})
+export const getBusinessData = () =>
+  request.get<BusinessDataVO>('/workspace/businessData')
 /**
  *
  * 报表数据
  *
  **/
 // 营业额统计
-export const getTurnoverStatistics= (params: any) =>
-  request({
-    'url': `/report/turnoverStatistics`,
-    'method': 'get',
-    params
-  })
+export const getTurnoverStatistics = (params: ReportQuery) =>
+  request.get<TurnoverReportVO>('/report/turnoverStatistics', { params })
 
 // 用户统计
-export const getUserStatistics= (params: any) =>
-  request({
-    'url': `/report/userStatistics`,
-    'method': 'get',
-    params
-  })
-  // 订单统计
-export const getOrderStatistics= (params: any) =>
-request({
-  'url': `/report/ordersStatistics`,
-  'method': 'get',
-  params
-})
-  // 销量排名TOP10
-  export const getTop= (params: any) =>
-  request({
-    'url': `/report/top10`,
-    'method': 'get',
-    params
-  })
-  // 数据概览
-  export const getDataOverView= (params: any) =>
-  request({
-    'url': `/report/dataOverView`,
-    'method': 'get',
-    params
-  })
-  // 导出
-  export function exportInfor() {
-    return request({
-      url: '/report/export',
-      method: 'get',
-      responseType: "blob"
-    })
-  }
+export const getUserStatistics = (params: ReportQuery) =>
+  request.get<UserReportVO>('/report/userStatistics', { params })
+// 订单统计
+export const getOrderStatistics = (params: ReportQuery) =>
+  request.get<OrderReportVO>('/report/ordersStatistics', { params })
+// 销量排名TOP10
+export const getTop = (params: ReportQuery) =>
+  request.get<SalesTop10ReportVO>('/report/top10', { params })
+// 数据概览
+export const getDataOverView = (params: ReportQuery) =>
+  request.get<BusinessDataVO>('/report/dataOverView', { params })
+// 导出
+export function exportInfor() {
+  return request.get<Blob>('/report/export', { responseType: 'blob' })
+}

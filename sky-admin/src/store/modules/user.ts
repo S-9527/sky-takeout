@@ -11,6 +11,15 @@ import {
   removeUserInfo
 } from '@/utils/cookies'
 import Cookies from 'js-cookie'
+import type { EmployeeLoginVO } from '@/api/types'
+
+interface StoreUserInfo extends EmployeeLoginVO {
+  avatar?: string
+  roles?: string[]
+  introduction?: string
+  applicant?: string
+  storeManagerName?: string
+}
 
 export const useUserStore = defineStore('user', () => {
   const token = ref<string>(getToken() || '')
@@ -18,7 +27,7 @@ export const useUserStore = defineStore('user', () => {
   const avatar = ref('')
   const storeId = ref<string>(getStoreId() || '')
   const introduction = ref('')
-  const userInfo = ref<any>({})
+  const userInfo = ref<Partial<StoreUserInfo>>({})
   const roles = ref<string[]>([])
   const username = ref<string>(Cookies.get('username') || '')
 
@@ -42,7 +51,7 @@ export const useUserStore = defineStore('user', () => {
     roles.value = []
   }
 
-  async function changeStore(data: any) {
+  async function changeStore(data: { data: string; authorization: string }) {
     storeId.value = data.data
     token.value = data.authorization
     setStoreId(data.data)
@@ -54,7 +63,7 @@ export const useUserStore = defineStore('user', () => {
       throw Error('GetUserInfo: token is undefined!')
     }
 
-    const data = JSON.parse(getUserInfo() as string)
+    const data = JSON.parse(getUserInfo() as string) as StoreUserInfo
     if (!data) {
       throw Error('Verification failed, please Login again.')
     }
@@ -73,13 +82,13 @@ export const useUserStore = defineStore('user', () => {
 
     roles.value = roleList
     userInfo.value = { ...data }
-    name.value = userName || applicant || storeManagerName
-    avatar.value = userAvatar
-    introduction.value = userIntroduction
+    name.value = userName || applicant || storeManagerName || ''
+    avatar.value = userAvatar || ''
+    introduction.value = userIntroduction || ''
   }
 
   async function LogOut() {
-    await userLogout({})
+    await userLogout()
     removeToken()
     token.value = ''
     roles.value = []

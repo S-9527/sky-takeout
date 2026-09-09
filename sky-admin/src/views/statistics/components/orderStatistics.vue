@@ -30,14 +30,20 @@
 <script setup lang="ts">
 import { nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
+import type { OrderReportChartData } from '@/api/types'
 
 const props = withDefaults(
   defineProps<{
-    orderdata?: any
-    overviewData?: any
+    orderdata?: OrderReportChartData
+    overviewData?: unknown
   }>(),
   {
-    orderdata: () => ({ data: {} }),
+    orderdata: () => ({
+      data: { dateList: [], orderCountList: [], validOrderCountList: [] },
+      totalOrderCount: 0,
+      validOrderCount: 0,
+      orderCompletionRate: 0,
+    }),
     overviewData: () => ({})
   }
 )
@@ -52,23 +58,13 @@ watch(
 )
 
 function initChart() {
-  const chartDom = document.getElementById('ordermain') as any
+  const chartDom = document.getElementById('ordermain')
+  if (!chartDom) {
+    return
+  }
   const myChart = echarts.init(chartDom)
-    // // 循环遍历出x轴的数据
-    // const baseDate = this.orderdata.list.map((item) => {
-    //   return (item as any).date
-    // })
-    // const baseAmount = this.orderdata.list.map((item) => {
-    //   return (item as any).amount
-    // })
-    // const baseValidNum = this.orderdata.list.map((item) => {
-    //   return (item as any).accomplishNum
-    // })
-    // const baseAccomplishNum = this.orderdata.list.map((item) => {
-    //   return (item as any).accomplishNum
-    // })
     console.log(props.orderdata)
-    var option: any
+    var option: echarts.EChartsOption
     option = {
       // legend: {
       //   itemHeight: 3, //图例高

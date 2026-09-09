@@ -58,21 +58,23 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import type { FormInstance } from 'element-plus'
+import type { FormInstance, FormItemRule, FormRules } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 const loginFormRef = ref<FormInstance>()
 
-const validateUsername = (_rule: any, value: string, callback: Function) => {
+type Validator = NonNullable<FormItemRule['validator']>
+
+const validateUsername: Validator = (_rule, value, callback) => {
   if (!value) {
     callback(new Error('请输入用户名'))
   } else {
     callback()
   }
 }
-const validatePassword = (_rule: any, value: string, callback: Function) => {
+const validatePassword: Validator = (_rule, value, callback) => {
   if (value.length < 6) {
     callback(new Error('密码必须在6位以上'))
   } else {
@@ -83,11 +85,11 @@ const loginForm = ref({
   username: 'admin',
   password: '123456',
 } as {
-  username: String
-  password: String
+  username: string
+  password: string
 })
 
-const loginRules = {
+const loginRules: FormRules = {
   username: [{ validator: validateUsername, trigger: 'blur' }],
   password: [{ validator: validatePassword, trigger: 'blur' }],
 }
@@ -99,7 +101,7 @@ const handleLogin = () => {
     if (valid) {
       loading.value = true
       await userStore
-        .Login(loginForm.value as any)
+        .Login(loginForm.value)
         .then(() => {
           router.push('/')
         })

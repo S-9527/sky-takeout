@@ -1,82 +1,120 @@
 import request from '@/utils/request'
 /**
  *
- * 报表数据
+ * 报表图表数据（日报/周报/月报）
  *
  **/
 
-// 获取当日销售数据 -> 顶部数据 - 营收概况
-export const getChartsDataes = (params: any) =>
-  request({
-    'url': `/report/dayCollect/${params.start}/${params.end}`,
-    'method': 'get'
-  })
+// 按单日查询
+export interface ChartDateQuery {
+  date: string
+}
 
-// 获取当日销售趋势数据（24小时）-> 销售趋势
-export const getDayDataes= (params: any) =>
-  request({
-    'url': `/report/hourCollect/${params.type}/${params.date}`,
-    'method': 'get'
-  })
+// 按类型+单日查询
+export interface ChartTypeDateQuery extends ChartDateQuery {
+  // 1 金额 2 数量
+  type: number
+}
 
-// 支付类型数据汇总 -> 店内收款构成 - 当日
-export const getDayPayType = (params: any) =>
-  request({
-    'url': `/report/payTypeCollect/${params.date}`,
-    'method': 'get'
-  })
-// 获取当日各种优惠类型数据汇总 -> 优惠指标
-export const getprivilege = (params: any) =>
-  request({
-    'url': `/report/privilegeCollect/${params.date}`,
-    'method': 'get'
-  })
+// 按日期范围查询
+export interface ChartRangeQuery {
+  start: string
+  end: string
+}
 
-// 获取菜品分类销售排行 - 菜品分类占比 -当日
-export const getSalesRanking = (params: any) =>
-  request({
-    'url': `/report/categoryCollect/${params.type}/${params.date}`,
-    'method': 'get'
-  })
+// 按类型+日期范围查询
+export interface ChartTypeRangeQuery extends ChartRangeQuery {
+  // 1 金额 2 数量
+  type: number
+}
+
+// 销售趋势/排行（折线、柱状图数据）
+export interface TrendData {
+  xaxis: string[]
+  series: number[]
+}
+
+// 分类占比/收款构成条目
+export interface SalesRankItem {
+  name: string
+  percent: number
+  value: number
+}
+
+// 顶部汇总数据
+export interface SalesSummary {
+  payTotal: number
+  noPayTotal: number
+  totalPerson: number
+}
+
+// 优惠指标条目
+export interface DiscountItem {
+  name: string
+  value: number
+  percent: number
+}
+
+// 优惠指标汇总
+export interface DiscountData {
+  dataList: DiscountItem[]
+}
+
+// ========== 图表组件数据 ==========
+
+// 折线图/柱状图数据
+export interface LineChartData {
+  xData: string[]
+  yData: number[]
+}
+
+// 饼图数据
+export interface PieChartData {
+  legendData: string[]
+  seriesData: SalesRankItem[]
+  selected: Record<string, boolean>
+}
+
+// 获取当日销售趋势
+export const getDayDataes = (params: ChartTypeDateQuery) =>
+  request.get<TrendData>('/charts/dayDataes', { params })
+
+// 获取当日菜品分类销售占比
+export const getDayPayType = (params: ChartDateQuery) =>
+  request.get<SalesRankItem[]>('/charts/dayPayType', { params })
+
+// 获取优惠类型汇总
+export const getprivilege = (params: ChartDateQuery) =>
+  request.get<DiscountData>('/charts/privilege', { params })
+
+// 获取当日菜品分类销售排行
+export const getSalesRanking = (params: ChartTypeDateQuery) =>
+  request.get<SalesRankItem[]>('/charts/salesRanking', { params })
 
 // 获取当日菜品销售排行
-export const getDayRanking = (params: any) =>
-  request({
-    'url': `/report/currentDishRank/${params.date}`,
-    'method': 'get'
-  })
+export const getDayRanking = (params: ChartTypeDateQuery) =>
+  request.get<TrendData>('/charts/dayRanking', { params })
 
-// 获取一定日期之内的销售趋势 - 销售趋势 图
-export const getTimeQuantumDataes = (params: any) =>
-  request({
-    'url': `/report/dayAmountCollect/${params.type}/${params.start}/${params.end}`,
-    'method': 'get'
-  })
+// 获取当日销售汇总
+export const getChartsDataes = (params: ChartRangeQuery) =>
+  request.get<SalesSummary>('/charts/chartsDataes', { params })
 
-// 获取时间范围之内的各种支付类型数据汇总 - 店内收款构成 - 时间段
-export const getTimeQuantumReceivables = (params: any) =>
-  request({
-    'url': `/report/datePayTypeCollect/${params.start}/${params.end}`,
-    'method': 'get'
-  })
+// 时间范围之内的销售趋势
+export const getTimeQuantumDataes = (params: ChartTypeRangeQuery) =>
+  request.get<TrendData>('/charts/timeQuantumDataes', { params })
 
-// 获取时间范围之内的菜品类别销售汇总 -  菜品分类占比 - 时间段
-export const getTimeQuantumType = (params: any) =>
-  request({
-    'url': `/report/dateCategoryCollect/${params.type}/${params.start}/${params.end}`,
-    'method': 'get'
-  })
+// 时间范围之内各种支付类型汇总
+export const getTimeQuantumReceivables = (params: ChartRangeQuery) =>
+  request.get<SalesRankItem[]>('/charts/timeQuantumReceivables', { params })
 
-// 获取时间范围之内的菜品销售排行 - 菜品销售排行
-export const getTimeQuantumDishes = (params: any) =>
-  request({
-    'url': `/report/dishRankForDate/${params.start}/${params.end}`,
-    'method': 'get'
-  })
+// 时间范围之内菜品类别销售汇总
+export const getTimeQuantumType = (params: ChartTypeRangeQuery) =>
+  request.get<SalesRankItem[]>('/charts/timeQuantumType', { params })
 
-// 获取时间范围之内的优惠指标汇总数据 - 顶部信息
-export const getTimeQuantumDiscount = (params: any) =>
-  request({
-    'url': `/report/privilegeByDate/${params.start}/${params.end}`,
-    'method': 'get'
-  })
+// 时间范围之内菜品销售排行
+export const getTimeQuantumDishes = (params: ChartRangeQuery) =>
+  request.get<TrendData>('/charts/timeQuantumDishes', { params })
+
+// 时间范围之内优惠指标汇总
+export const getTimeQuantumDiscount = (params: ChartRangeQuery) =>
+  request.get<DiscountData>('/charts/timeQuantumDiscount', { params })

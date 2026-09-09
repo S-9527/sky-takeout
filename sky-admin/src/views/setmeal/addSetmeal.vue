@@ -39,11 +39,11 @@
                         required>
             <el-form-item>
               <div class="addDish">
-                <span v-if="dishTable.length == 0"
+                <span v-if="dishTable.length === 0"
                       class="addBut"
                       @click="openAddDish('new')">
                   + 添加菜品</span>
-                <div v-if="dishTable.length != 0"
+                <div v-if="dishTable.length !== 0"
                      class="content">
                   <div class="addBut"
                        style="margin-bottom: 20px"
@@ -125,7 +125,7 @@
                        @click="submitForm('ruleForm', false)">
               保存
             </el-button>
-            <el-button v-if="actionType == 'add'"
+            <el-button v-if="actionType === 'add'"
                        type="primary"
                        @click="submitForm('ruleForm', true)">
               保存并继续添加
@@ -315,7 +315,7 @@ const submitForm = (_formName: string, st: boolean) => {
           copies: obj.copies
         }))
       }
-      if (actionType.value == 'add') {
+      if (actionType.value === 'add') {
         addSetmeal(prams)
           .then(() => {
             ElMessage.success('套餐添加成功！')
@@ -355,7 +355,7 @@ const imageChange = (value: string) => {
 
 getDishTypeList()
 actionType.value = route.query.id ? 'edit' : 'add'
-if (actionType.value == 'edit') {
+if (actionType.value === 'edit') {
   init()
 }
 </script>

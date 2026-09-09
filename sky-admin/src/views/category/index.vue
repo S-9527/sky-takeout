@@ -50,7 +50,7 @@
         <el-table-column prop="type"
                          label="分类类型">
           <template #default="scope">
-            <span>{{ scope.row.type == '1' ? '菜品分类' : '套餐分类' }}</span>
+            <span>{{ scope.row.type === 1 ? '菜品分类' : '套餐分类' }}</span>
           </template>
         </el-table-column>
 
@@ -87,11 +87,11 @@
                          size="small"
                          class="non"
                          :class="{
-                           blueBug: scope.row.status == '0',
-                           delBut: scope.row.status != '0'
+                           blueBug: scope.row.status === 0,
+                           delBut: scope.row.status !== 0
                          }"
                          @click="statusHandle(scope.row)">
-                {{ scope.row.status == '1' ? '禁用' : '启用' }}
+                {{ scope.row.status === 1 ? '禁用' : '启用' }}
               </el-button>
             </div>
           </template>
@@ -137,7 +137,7 @@
                      :class="{ continue: actionType === 'add' }"
                      size="default"
                      @click="submitForm()">确 定</el-button>
-          <el-button v-if="action != 'edit'"
+          <el-button v-if="action !== 'edit'"
                      type="primary"
                      size="default"
                      @click="submitForm('go')">
@@ -228,7 +228,7 @@ async function init(searchValue?: boolean) {
 
 // 添加
 const addClass = (st: string) => {
-  if (st == 'class') {
+  if (st === 'class') {
     classData.title = '新增菜品分类'
     type.value = 1
   } else {

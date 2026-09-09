@@ -50,7 +50,7 @@
                      @click="submitForm('ruleForm', false)">
             保存
           </el-button>
-          <el-button v-if="actionType == 'add'"
+          <el-button v-if="actionType === 'add'"
                      type="primary"
                      @click="submitForm('ruleForm', true)">
             保存并继续添加
@@ -99,7 +99,7 @@ const isCellPhone = (val: string) => {
 type Validator = NonNullable<FormItemRule['validator']>
 
 const checkphone: Validator = (_rule, value, callback) => {
-  if (value == '') {
+  if (!value) {
     callback(new Error('请输入手机号'))
   } else if (!isCellPhone(value)) {
     callback(new Error('请输入正确的手机号!'))
@@ -110,7 +110,7 @@ const checkphone: Validator = (_rule, value, callback) => {
 
 const validID: Validator = (_rule, value, callback) => {
   const reg = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/
-  if (value == '') {
+  if (!value) {
     callback(new Error('请输入身份证号码'))
   } else if (reg.test(value)) {
     callback()

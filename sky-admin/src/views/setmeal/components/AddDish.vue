@@ -1,17 +1,17 @@
 <template>
   <div class="addDish">
     <div class="leftCont">
-      <div v-show="seachKey.trim() == ''"
+      <div v-show="seachKey.trim() === ''"
            class="tabBut">
         <span v-for="(item, index) in dishType"
               :key="index"
-              :class="{ act: index == keyInd }"
+              :class="{ act: index === keyInd }"
               @click="checkTypeHandle(index, item.id)">{{ item.name }}</span>
       </div>
       <div class="tabList">
         <div class="table"
              :class="{ borderNone: !dishList.length }">
-          <div v-if="dishList.length == 0"
+          <div v-if="dishList.length === 0"
                style="padding-left: 10px">
             <Empty />
           </div>
@@ -27,7 +27,7 @@
                   <span style="flex: 3; text-align: left">{{
                     item.dishName
                   }}</span>
-                  <span>{{ item.status == 0 ? '停售' : '在售' }}</span>
+                  <span>{{ item.status === 0 ? '停售' : '在售' }}</span>
                   <span>{{ Number(Number(item.price).toFixed(2))*100/100 }}</span>
                 </div>
               </el-checkbox>
@@ -103,7 +103,7 @@ const getDishType = () => {
 // 通过分类ID获取菜品列表
 const getDishList = (id: number) => {
   queryDishList({ categoryId: id }).then(res => {
-    if (res.length == 0) {
+    if (res.length === 0) {
       dishList.value = []
       return
     }

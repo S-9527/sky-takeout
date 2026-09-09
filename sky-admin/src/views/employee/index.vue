@@ -61,12 +61,12 @@
               class="non"
               :class="{
                 'disabled-text': scope.row.username === 'admin',
-                blueBug: scope.row.status == '0',
-                delBut: scope.row.status != '0',
+                blueBug: scope.row.status === 0,
+                delBut: scope.row.status !== 0,
               }"
               @click="statusHandle(scope.row)"
             >
-              {{ scope.row.status == '1' ? '禁用' : '启用' }}
+              {{ scope.row.status === 1 ? '禁用' : '启用' }}
             </el-button>
           </template>
         </el-table-column>

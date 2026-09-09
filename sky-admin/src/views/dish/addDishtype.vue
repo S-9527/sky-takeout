@@ -37,11 +37,11 @@
         <el-form-item label="口味做法配置:">
           <el-form-item>
             <div class="flavorBox">
-              <span v-if="dishFlavors.length == 0"
+              <span v-if="dishFlavors.length === 0"
                     class="addBut"
                     @click="addFlavore">
                 + 添加口味</span>
-              <div v-if="dishFlavors.length != 0"
+              <div v-if="dishFlavors.length !== 0"
                    class="flavor">
                 <div class="title">
                   <span>口味名（3个字内）</span>
@@ -109,7 +109,7 @@
                      @click="submitForm('ruleForm')">
             保存
           </el-button>
-          <el-button v-if="actionType == 'add'"
+          <el-button v-if="actionType === 'add'"
                      type="primary"
                      @click="submitForm('ruleForm', 'goAnd')">
             保存并继续添加
@@ -287,7 +287,7 @@ const submitForm = (_formName: string, st?: string) => {
           value: JSON.stringify(obj.value)
         }))
       }
-      if (actionType.value == 'add') {
+      if (actionType.value === 'add') {
         addDish(params)
           .then(() => {
             ElMessage.success('菜品添加成功！')

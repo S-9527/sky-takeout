@@ -221,7 +221,7 @@ const statusHandle = (row: SetmealVO | string) => {
   let ids: string
   let status: '0' | '1'
   if (typeof row === 'string') {
-    if (checkList.value.length == 0) {
+    if (checkList.value.length === 0) {
       ElMessage.error('批量操作，请先勾选操作菜品！')
       return false
     }

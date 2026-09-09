@@ -11,7 +11,6 @@ import {
   removeUserInfo
 } from '@/utils/cookies'
 import Cookies from 'js-cookie'
-import { ElMessage } from 'element-plus'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref<string>(getToken() || '')
@@ -28,16 +27,13 @@ export const useUserStore = defineStore('user', () => {
     uname = uname.trim()
     username.value = uname
     Cookies.set('username', uname)
-    const { data } = await login({ username: uname, password })
-    if (String(data.code) === '200') {
-      token.value = data.data.token
-      setToken(data.data.token)
-      userInfo.value = { ...data.data }
-      Cookies.set('user_info', JSON.stringify(data.data))
-      return data
-    } else {
-      return ElMessage.error(data.msg)
-    }
+    // 拦截器已剥离 Result 外壳并统一处理失败，成功时 data 即业务数据
+    const data = await login({ username: uname, password })
+    token.value = data.token
+    setToken(data.token)
+    userInfo.value = { ...data }
+    Cookies.set('user_info', JSON.stringify(data))
+    return data
   }
 
   function ResetToken() {

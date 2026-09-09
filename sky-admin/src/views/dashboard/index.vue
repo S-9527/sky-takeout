@@ -63,32 +63,28 @@ function init() {
 // 获取营业数据
 async function getBusinessData() {
   const data = await getBusinessDataApi()
-  overviewData.value = data.data.data
+  overviewData.value = data
 }
 // 获取今日订单
 async function getOrderStatisticsData() {
   const data = await getOrderData()
-  orderviewData.value = data.data.data
+  orderviewData.value = data
 }
 // 获取菜品总览数据
 async function getOverStatisticsData() {
   const data = await getOverviewDishes()
-  dishesData.value = data.data.data
+  dishesData.value = data
 }
 // 获取套餐总览数据
 async function getSetMealStatisticsData() {
   const data = await getSetMealStatistics()
-  setMealData.value = data.data.data
+  setMealData.value = data
 }
 //获取待处理，待派送，派送中数量
 function getOrderListBy3Status() {
   getOrderListBy({})
     .then((res) => {
-      if (res.data.code === 200) {
-        orderStatics.value = res.data.data
-      } else {
-        ElMessage.error(res.data.msg)
-      }
+      orderStatics.value = res
     })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)

@@ -606,11 +606,7 @@ function change(activeIndex: any) {
 function getOrderListBy3Status() {
   getOrderListBy({})
     .then((res) => {
-      if (res.data.code === 200) {
-        orderStatics.value = res.data.data
-      } else {
-        ElMessage.error(res.data.msg)
-      }
+      orderStatics.value = res
     })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
@@ -636,25 +632,21 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
   }
   getOrderDetailPage({ ...params })
     .then((res) => {
-      if (res.data.code === 200) {
-        tableData.value = res.data.data.records
-        orderStatus.value = activeIndex
-        counts.value = Number(res.data.data.total)
-        getOrderListBy3Status()
-        if (
-          dialogOrderStatus.value === 2 &&
-          orderStatus.value === 2 &&
-          isAutoNext.value &&
-          !isTableOperateBtn.value &&
-          res.data.data.records.length > 1
-        ) {
-          const firstRow = res.data.data.records[0]
-          goDetail(firstRow.id, firstRow.status, firstRow)
-        } else {
-          return null
-        }
+      tableData.value = res.records
+      orderStatus.value = activeIndex
+      counts.value = Number(res.total)
+      getOrderListBy3Status()
+      if (
+        dialogOrderStatus.value === 2 &&
+        orderStatus.value === 2 &&
+        isAutoNext.value &&
+        !isTableOperateBtn.value &&
+        res.records.length > 1
+      ) {
+        const firstRow = res.records[0]
+        goDetail(firstRow.id, firstRow.status, firstRow)
       } else {
-        ElMessage.error(res.data.msg)
+        return null
       }
     })
     .catch((err) => {
@@ -686,8 +678,8 @@ async function goDetail(id: any, status: number, rowData?: any) {
   dialogVisible.value = true
   dialogOrderStatus.value = status
   orderId.value = id
-  const { data } = await queryOrderDetailById({ orderId: id })
-  diaForm.value = data.data
+  const data = await queryOrderDetailById({ orderId: id })
+  diaForm.value = data
   row.value = rowData || { id: route.query.orderId, status: status }
   if (route.query.orderId) {
     router.push('/order')
@@ -709,15 +701,11 @@ function orderAccept(rowData: any) {
   orderId.value = rowData.id
   dialogOrderStatus.value = rowData.status
   orderAcceptApi({ id: orderId.value })
-    .then((res) => {
-      if (res.data.code === 200) {
-        ElMessage.success('操作成功')
-        orderId.value = ''
-        dialogVisible.value = false
-        init(orderStatus.value)
-      } else {
-        ElMessage.error(res.data.msg)
-      }
+    .then(() => {
+      ElMessage.success('操作成功')
+      orderId.value = ''
+      dialogVisible.value = false
+      init(orderStatus.value)
     })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
@@ -747,15 +735,11 @@ function confirmCancel(_type: any) {
     [cancelDialogTitle.value === '取消' ? 'cancelReason' : 'rejectionReason']:
       cancelReason.value === '自定义原因' ? remark.value : cancelReason.value,
   })
-    .then((res) => {
-      if (res.data.code === 200) {
-        ElMessage.success('操作成功')
-        cancelDialogVisible.value = false
-        orderId.value = ''
-        init(orderStatus.value)
-      } else {
-        ElMessage.error(res.data.msg)
-      }
+    .then(() => {
+      ElMessage.success('操作成功')
+      cancelDialogVisible.value = false
+      orderId.value = ''
+      init(orderStatus.value)
     })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
@@ -769,15 +753,11 @@ function cancelOrDeliveryOrComplete(status: number, id: string) {
     id,
   }
   ;(status === 3 ? deliveryOrder : completeOrder)(params)
-    .then((res) => {
-      if (res.data.code === 200) {
-        ElMessage.success('操作成功')
-        orderId.value = ''
-        dialogVisible.value = false
-        init(orderStatus.value)
-      } else {
-        ElMessage.error(res.data.msg)
-      }
+    .then(() => {
+      ElMessage.success('操作成功')
+      orderId.value = ''
+      dialogVisible.value = false
+      init(orderStatus.value)
     })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)

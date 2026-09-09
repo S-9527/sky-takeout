@@ -549,17 +549,17 @@ async function getOrderListData(val: number) {
     status: val,
   }
   const data = await getOrderDetailPage(params)
-  orderData.value = data.data.data.records
-  counts.value = data.data.data.total
+  orderData.value = data.records
+  counts.value = data.total
   emit('getOrderListBy3Status')
   if (
     dialogOrderStatus.value === 2 &&
     status.value === 2 &&
     isAutoNext.value &&
     !isTableOperateBtn.value &&
-    data.data.records.length > 1
+    data.records.length > 1
   ) {
-    const row = data.data.records[0]
+    const row = data.records[0]
     goDetail(row.id, row.status, row, row)
   } else {
     return null
@@ -572,15 +572,11 @@ function orderAccept(row: any, event: any) {
   orderId.value = row.id
   dialogOrderStatus.value = row.status
   apiOrderAccept({ id: orderId.value })
-    .then((res) => {
-      if (res.data.code === 200) {
-        ElMessage.success('操作成功')
-        orderId.value = ''
-        dialogVisible.value = false
-        getOrderListData(status.value)
-      } else {
-        ElMessage.error(res.data.msg)
-      }
+    .then(() => {
+      ElMessage.success('操作成功')
+      orderId.value = ''
+      dialogVisible.value = false
+      getOrderListData(status.value)
     })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
@@ -620,15 +616,11 @@ function confirmCancel(_type: any) {
     [cancelDialogTitle.value === '取消' ? 'cancelReason' : 'rejectionReason']:
       cancelReason.value === '自定义原因' ? remark.value : cancelReason.value,
   })
-    .then((res) => {
-      if (res.data.code === 200) {
-        ElMessage.success('操作成功')
-        cancelDialogVisible.value = false
-        orderId.value = ''
-        getOrderListData(status.value)
-      } else {
-        ElMessage.error(res.data.msg)
-      }
+    .then(() => {
+      ElMessage.success('操作成功')
+      cancelDialogVisible.value = false
+      orderId.value = ''
+      getOrderListData(status.value)
     })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
@@ -643,15 +635,11 @@ function cancelOrDeliveryOrComplete(status: number, id: string, event: any) {
     id,
   }
   ;(status === 3 ? deliveryOrder : completeOrder)(params)
-    .then((res) => {
-      if (res.data.code === 200) {
-        ElMessage.success('操作成功')
-        orderId.value = ''
-        dialogVisible.value = false
-        getOrderListData(status)
-      } else {
-        ElMessage.error(res.data.msg)
-      }
+    .then(() => {
+      ElMessage.success('操作成功')
+      orderId.value = ''
+      dialogVisible.value = false
+      getOrderListData(status)
     })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
@@ -664,8 +652,8 @@ async function goDetail(id: any, status: number, rowData: any, event: any) {
   diaForm.value = []
   dialogVisible.value = true
   dialogOrderStatus.value = status
-  const { data } = await queryOrderDetailById({ orderId: id })
-  diaForm.value = data.data
+  const data = await queryOrderDetailById({ orderId: id })
+  diaForm.value = data
   row.value = rowData
 }
 // 关闭弹层

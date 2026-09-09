@@ -73,7 +73,7 @@ function handleExport() {
     type: 'warning',
   })
     .then(async function () {
-      const { data } = await exportInfor()
+      const data = await exportInfor()
       let url = window.URL.createObjectURL(data)
       var a = document.createElement('a')
       document.body.appendChild(a)

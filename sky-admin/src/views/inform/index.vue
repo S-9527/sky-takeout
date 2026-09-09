@@ -196,7 +196,6 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
 import Empty from '@/components/Empty/index.vue'
 import { useAppStore } from '@/store/modules/app'
 import {
@@ -240,24 +239,20 @@ const getData = async () => {
     pageSize: pageSize.value,
     status: status.value,
   }
-  const { data } = await getInformData(parent)
-  if (data.code === 200) {
-    baseData.value = data.data.records
-    counts.value = data.data.total
-    let objNew = {} as any
-    let arrDetails: any[] = []
-    baseData.value.forEach((val: any) => {
-      const arrContent = val.content.split(' ')
-      val.arrNew = arrContent
-      objNew = { ...val }
-      objNew.details = eval('(' + objNew.details + ')')
-      arrDetails.push(objNew)
-    })
+  const data = await getInformData(parent)
+  baseData.value = data.records
+  counts.value = data.total
+  let objNew = {} as any
+  let arrDetails: any[] = []
+  baseData.value.forEach((val: any) => {
+    const arrContent = val.content.split(' ')
+    val.arrNew = arrContent
+    objNew = { ...val }
+    objNew.details = eval('(' + objNew.details + ')')
+    arrDetails.push(objNew)
+  })
 
-    baseData.value = arrDetails
-  } else {
-    ElMessage.error(data.msg)
-  }
+  baseData.value = arrDetails
 }
 
 // 全部已读
@@ -266,36 +261,24 @@ const handleBatch = async () => {
   baseData.value.forEach((val: any) => {
     ids.push(val.id)
   })
-  const { data } = await batchMsg(ids)
-  if (data.code === 200) {
-    getCountUnread()
-    getData()
-  } else {
-    ElMessage.error(data.msg)
-  }
+  await batchMsg(ids)
+  getCountUnread()
+  getData()
 }
 
 // 设置单个订单已读
 const handleSetStatus = async (id: any) => {
-  const { data } = await setStatus(id)
-  if (data.code === 200) {
-    if (!isActive.value) {
-      getCountUnread()
-      getData()
-    }
-  } else {
-    ElMessage.error(data.msg)
+  await setStatus(id)
+  if (!isActive.value) {
+    getCountUnread()
+    getData()
   }
 }
 
 // 获取未读消息
 const getCountUnread = async () => {
-  const { data } = await getCountUnreadApi()
-  if (data.code === 200) {
-    appStore.StatusNumber(data.data)
-  } else {
-    ElMessage.error(data.msg)
-  }
+  const data = await getCountUnreadApi()
+  appStore.StatusNumber(data)
 }
 
 // 触发已读未读按钮

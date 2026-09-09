@@ -203,8 +203,8 @@ const logout = async () => {
 }
 // 营业状态
 const getStatus = async () => {
-  const { data } = await getApiStatus()
-  status.value = data.data
+  const data = await getApiStatus()
+  status.value = data
   setStatus.value = status.value
 }
 // 下拉菜单显示
@@ -225,11 +225,9 @@ const handleStatus = () => {
 }
 // 营业状态设置
 const handleSave = async () => {
-  const { data } = await setApiStatus(setStatus.value)
-  if (data.code === 200) {
-    dialogVisible.value = false
-    getStatus()
-  }
+  await setApiStatus(setStatus.value)
+  dialogVisible.value = false
+  getStatus()
 }
 // 修改密码
 const handlePwd = () => {

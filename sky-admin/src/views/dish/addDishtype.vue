@@ -246,21 +246,17 @@ const selectHandle = (val: any, key: any, _ind: any) => {
 
 async function init() {
   queryDishById(String(route.query.id)).then(res => {
-    if (res && res.data && res.data.code === 200) {
-      ruleForm.value = { ...res.data.data }
-      ruleForm.value.price = String(res.data.data.price)
-      ruleForm.value.status = res.data.data.status == '1'
-      dishFlavors.value =
-        res.data.data.flavors &&
-        res.data.data.flavors.map((obj: any) => ({
-          ...obj,
-          value: JSON.parse(obj.value)
-        }))
-      getLeftDishFlavors()
-      imageUrl.value = res.data.data.image
-    } else {
-      ElMessage.error(res.data.msg)
-    }
+    ruleForm.value = { ...res }
+    ruleForm.value.price = String(res.price)
+    ruleForm.value.status = res.status == '1'
+    dishFlavors.value =
+      res.flavors &&
+      res.flavors.map((obj: any) => ({
+        ...obj,
+        value: JSON.parse(obj.value)
+      }))
+    getLeftDishFlavors()
+    imageUrl.value = res.image
   })
 }
 
@@ -283,17 +279,7 @@ const delFlavorLabel = (index2: number, ind: number) => {
 // 获取菜品分类
 function getDishList() {
   getCategoryList({ type: 1 }).then(res => {
-    if (res.data.code === 200) {
-      dishList.value = res && res.data && res.data.data
-    } else {
-      ElMessage.error(res.data.msg)
-    }
-    // if (res.data.code == 200) {
-    //   const {data} = res.data
-    //   this.dishList = data
-    // } else {
-    //   ElMessage.error(res.data.desc)
-    // }
+    dishList.value = res
   })
 }
 
@@ -327,30 +313,26 @@ const submitForm = (_formName: any, st?: any) => {
       if (actionType.value == 'add') {
         delete params.id
         addDish(params)
-          .then(res => {
-            if (res.data.code === 200) {
-              ElMessage.success('菜品添加成功！')
-              if (!st) {
-                router.push({ path: '/dish' })
-              } else {
-                dishFlavors.value = []
-                // this.dishFlavorsData = []
-                imageUrl.value = ''
-                ruleForm.value = {
-                  name: '',
-                  id: '',
-                  price: '',
-                  code: '',
-                  image: '',
-                  description: '',
-                  dishFlavors: [],
-                  status: true,
-                  categoryId: ''
-                }
-                restKey.value++
-              }
+          .then(() => {
+            ElMessage.success('菜品添加成功！')
+            if (!st) {
+              router.push({ path: '/dish' })
             } else {
-              ElMessage.error(res.data.desc || res.data.msg)
+              dishFlavors.value = []
+              // this.dishFlavorsData = []
+              imageUrl.value = ''
+              ruleForm.value = {
+                name: '',
+                id: '',
+                price: '',
+                code: '',
+                image: '',
+                description: '',
+                dishFlavors: [],
+                status: true,
+                categoryId: ''
+              }
+              restKey.value++
             }
           })
           .catch(err => {
@@ -360,19 +342,9 @@ const submitForm = (_formName: any, st?: any) => {
         delete params.createTime
         delete params.updateTime
         editDish(params)
-          .then(res => {
-            if (res && res.data && res.data.code === 200) {
-              router.push({ path: '/dish' })
-              ElMessage.success('菜品修改成功！')
-            } else {
-              ElMessage.error(res.data.desc || res.data.msg)
-            }
-            // if (res.data.code == 200) {
-            //   router.push({'path': '/dish'})
-            //   ElMessage.success('菜品修改成功！')
-            // } else {
-            //   ElMessage.error(res.data.desc || res.data.message)
-            // }
+          .then(() => {
+            router.push({ path: '/dish' })
+            ElMessage.success('菜品修改成功！')
           })
           .catch(err => {
             ElMessage.error('请求出错了：' + err.message)

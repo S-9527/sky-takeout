@@ -1,5 +1,6 @@
-import axios from 'axios'
+import axios, { type AxiosRequestConfig } from 'axios'
 import { useUserStore } from '@/store/modules/user'
+import { ElMessage } from 'element-plus'
 import pinia from '@/store'
 import {
   getRequestKey,
@@ -66,18 +67,26 @@ service.interceptors.request.use(
 // Response interceptors
 service.interceptors.response.use(
   (response: any) => {
-    if (response.data.status === 401) {
-      router.push('/login')
-    }
     //请求响应中的config的url会带上代理的api需要去掉
     response.config.url = response.config.url.replace('/api', '')
     // 请求完成，删除请求中状态
     const key = getRequestKey(response.config);
     removePending(key);
-    if (response.data.code === 200) {
-      return response
+    const body = response.data
+    // 二进制响应(blob/arraybuffer 等)直接返回，不做业务码校验
+    if (
+      response.config.responseType === 'blob' ||
+      response.config.responseType === 'arraybuffer'
+    ) {
+      return body
     }
-    return response
+    // 业务失败(HTTP 仍为 200):统一提示并拒绝，调用方无需再判断 code
+    if (body && body.code !== 200) {
+      ElMessage.error(body.msg || '操作失败')
+      return Promise.reject(body)
+    }
+    // 业务成功：剥离 Result 外壳，直接返回业务数据
+    return isResult(body) ? body.data : body
   },
   (error: any) => {
     if (error && error.response) {
@@ -98,4 +107,14 @@ service.interceptors.response.use(
   }
 )
 
-export default service
+// 判断响应是否为后端 Result 结构
+function isResult(body: any) {
+  return body && typeof body === 'object' && 'code' in body
+}
+
+// 请求函数：拦截器已剥离 Result 外壳，成功时 resolve 业务数据，失败时 reject
+function request<T = any>(config: AxiosRequestConfig): Promise<T> {
+  return service.request(config) as unknown as Promise<T>
+}
+
+export default request

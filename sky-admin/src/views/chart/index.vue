@@ -385,8 +385,7 @@ const getData = () => {
 const getDayData = () => {
   getDayDataes({ type: typeA.value, date: dataTime.value })
     .then((res) => {
-      if (res.data.code == 200) {
-        const { data } = res.data
+      const data = res
         let yData: number[] = []
         if (typeA.value === 1) {
           data.series.length > 0 &&
@@ -398,10 +397,7 @@ const getDayData = () => {
         }
         const charts = { xData: data.xaxis, yData: yData }
         chartDataA.value = charts
-      } else {
-        ElMessage.error(res.data.desc)
-      }
-    })
+      })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })
@@ -410,8 +406,7 @@ const getDayData = () => {
 const getSalesRankData = () => {
   getSalesRanking({ type: typeB.value, date: dataTime.value })
     .then((res) => {
-      if (res.data.code == 200) {
-        const { data } = res.data
+      const data = res
         let chartData: any[] = []
         if (typeB.value === 1) {
           data.length > 0 &&
@@ -433,10 +428,7 @@ const getSalesRankData = () => {
             ;(charts.selected as any)[item.name] = true
           })
         chartDataC.value = charts
-      } else {
-        ElMessage.error(res.data.desc)
-      }
-    })
+      })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })
@@ -445,8 +437,7 @@ const getSalesRankData = () => {
 const getDayPayTypeData = () => {
   getDayPayType({ date: dataTime.value })
     .then((res) => {
-      if (res.data.code == 200) {
-        const { data } = res.data
+      const data = res
         let chartData: any[] = []
         if (typeB.value === 1) {
           data.length > 0 &&
@@ -468,10 +459,7 @@ const getDayPayTypeData = () => {
             ;(charts.selected as any)[item.name] = true
           })
         chartDataD.value = charts
-      } else {
-        ElMessage.error(res.data.desc)
-      }
-    })
+      })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })
@@ -480,14 +468,10 @@ const getDayPayTypeData = () => {
 const getDayRankingData = () => {
   getDayRanking({ type: dataType.value, date: dataTime.value })
     .then((res) => {
-      if (res.data.code == 200) {
-        const { data } = res.data
+      const data = res
         const charts = { xData: data.xaxis, yData: data.series }
         chartDataB.value = charts
-      } else {
-        ElMessage.error(res.data.desc)
-      }
-    })
+      })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })
@@ -497,13 +481,9 @@ const getDaySalesVolumeData = () => {
   // 获取当日销售数据
   getChartsDataes({ start: dataTime.value, end: dataTime.value })
     .then((res) => {
-      if (res.data.code == 200) {
-        const { data } = res.data
+      const data = res
         topData.value = data
-      } else {
-        ElMessage.error(res.data.desc)
-      }
-    })
+      })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })
@@ -512,8 +492,7 @@ const getDaySalesVolumeData = () => {
 const getprivilegeData = () => {
   getprivilege({ date: dataTime.value })
     .then((res) => {
-      if (res.data.code == 200) {
-        const { data } = res.data
+      const data = res
         discountTotal.value = 0
         discountPercentTotal.value = 0
         data &&
@@ -523,10 +502,7 @@ const getprivilegeData = () => {
             discountPercentTotal.value += item.percent
           })
         discount.value = data.dataList
-      } else {
-        ElMessage.error(res.data.desc)
-      }
-    })
+      })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })
@@ -547,8 +523,7 @@ const getTimeWuantumData = () => {
 const getDiscount = () => {
   getTimeQuantumDiscount({ start: stateTime.value, end: endTime.value })
     .then((res) => {
-      if (res.data.code == 200) {
-        const { data } = res.data
+      const data = res
         discountTotal.value = 0
         discountPercentTotal.value = 0
         data &&
@@ -558,10 +533,7 @@ const getDiscount = () => {
             discountPercentTotal.value += item.percent
           })
         discount.value = data.dataList
-      } else {
-        ElMessage.error(res.data.desc)
-      }
-    })
+      })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })
@@ -573,8 +545,7 @@ const getTimeQuantumData = () => {
     start: stateTime.value,
     end: endTime.value,
   }).then((res) => {
-    if (res.data.code == 200) {
-      const { data } = res.data
+    const data = res
       let yData: number[] = []
       if (typeA.value === 1) {
         data.series.length > 0 &&
@@ -586,17 +557,13 @@ const getTimeQuantumData = () => {
       }
       const charts = { xData: data.xaxis, yData: yData }
       chartDataA.value = charts
-    } else {
-      ElMessage.error(res.data.desc)
-    }
-  })
+    })
 }
 // 获取时间范围之内的各种支付类型数据汇总 - 店内收款构成 - 时间段
 const getReceivables = () => {
   getTimeQuantumReceivables({ start: stateTime.value, end: endTime.value })
     .then((res) => {
-      if (res.data.code == 200) {
-        const { data } = res.data
+      const data = res
         let chartData: any[] = []
         if (typeB.value === 1) {
           data.length > 0 &&
@@ -618,10 +585,7 @@ const getReceivables = () => {
             ;(charts.selected as any)[item.name] = true
           })
         chartDataD.value = charts
-      } else {
-        ElMessage.error(res.data.desc)
-      }
-    })
+      })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })
@@ -635,8 +599,7 @@ const getTimeQuantumTypeData = () => {
     end: endTime.value,
   })
     .then((res) => {
-      if (res.data.code == 200) {
-        const { data } = res.data
+      const data = res
         let chartData: any[] = []
         if (typeB.value === 1) {
           data.length > 0 &&
@@ -657,10 +620,7 @@ const getTimeQuantumTypeData = () => {
             ;(charts.selected as any)[item.name] = true
           })
         chartDataC.value = charts
-      } else {
-        ElMessage.error(res.data.desc)
-      }
-    })
+      })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })
@@ -669,8 +629,7 @@ const getTimeQuantumTypeData = () => {
 const getTimeQuantumDishesDataes = () => {
   getTimeQuantumDishes({ start: stateTime.value, end: endTime.value })
     .then((res) => {
-      if (res.data.code == 200) {
-        const { data } = res.data
+      const data = res
         let yData: number[] = []
         data.series.length > 0 &&
           data.series.map((n: number) => {
@@ -678,10 +637,7 @@ const getTimeQuantumDishesDataes = () => {
           })
         const charts = { xData: data.xaxis, yData: yData }
         chartDataB.value = charts
-      } else {
-        ElMessage.error(res.data.desc)
-      }
-    })
+      })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
     })

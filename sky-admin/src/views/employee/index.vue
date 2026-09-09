@@ -117,10 +117,8 @@ async function init(isSearchVal?: boolean) {
   }
   await getEmployeeList(params)
     .then((res: any) => {
-      if (String(res.data.code) === '200') {
-        tableData.value = res.data && res.data.data && res.data.data.records
-        counts.value = res.data.data.total
-      }
+      tableData.value = res.records
+      counts.value = res.total
     })
     .catch((err) => {
       ElMessage.error('请求出错了：' + err.message)
@@ -152,11 +150,9 @@ const statusHandle = (row: any) => {
     type: 'warning',
   }).then(() => {
     enableOrDisableEmployee({ id: id.value, status: !status.value ? 1 : 0 })
-      .then((res) => {
-        if (String(res.status) === '200') {
-          ElMessage.success('账号状态更改成功！')
-          init()
-        }
+      .then(() => {
+        ElMessage.success('账号状态更改成功！')
+        init()
       })
       .catch((err) => {
         ElMessage.error('请求出错了：' + err.message)

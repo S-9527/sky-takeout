@@ -72,7 +72,7 @@ function init(begin: any, end: any) {
 // 获取营业额统计数据
 async function getTurnoverStatisticsData(begin: any, end: any) {
   const data = await getTurnoverStatistics({ begin: begin, end: end })
-  const turnoverDataRes = data.data.data
+  const turnoverDataRes = data
   turnoverData.value = {
     dateList: turnoverDataRes.dateList.split(','),
     turnoverList: turnoverDataRes.turnoverList.split(','),
@@ -81,7 +81,7 @@ async function getTurnoverStatisticsData(begin: any, end: any) {
 // 获取用户统计数据
 async function getUserStatisticsData(begin: any, end: any) {
   const data = await getUserStatistics({ begin: begin, end: end })
-  const userDataRes = data.data.data
+  const userDataRes = data
   userData.value = {
     dateList: userDataRes.dateList.split(','),
     totalUserList: userDataRes.totalUserList.split(','),
@@ -91,7 +91,7 @@ async function getUserStatisticsData(begin: any, end: any) {
 // 获取订单统计数据
 async function getOrderStatisticsData(begin: any, end: any) {
   const data = await getOrderStatistics({ begin: begin, end: end })
-  const orderDataRes = data.data.data
+  const orderDataRes = data
   orderData.value = {
     data: {
       dateList: orderDataRes.dateList.split(','),
@@ -106,7 +106,7 @@ async function getOrderStatisticsData(begin: any, end: any) {
 // 获取排行数据
 async function getTopData(begin: any, end: any) {
   const data = await getTop({ begin: begin, end: end })
-  const top10DataRes = data.data.data
+  const top10DataRes = data
   top10Data.value = {
     nameList: top10DataRes.nameList.split(',').reverse(),
     numberList: top10DataRes.numberList.split(',').reverse(),

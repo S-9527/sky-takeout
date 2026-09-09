@@ -61,7 +61,6 @@
 import { ref, watch } from 'vue'
 import type { PropType } from 'vue'
 import { getCategoryList, queryDishList } from '@/api/dish'
-import { ElMessage } from 'element-plus'
 import Empty from '@/components/Empty/index.vue'
 
 const props = defineProps({
@@ -90,53 +89,41 @@ watch(
 
 const getDishType = () => {
   getCategoryList({ type: 1 }).then(res => {
-    if (res && res.data && res.data.code === 200) {
-      dishType.value = res.data.data
-      getDishList(res.data.data[0].id)
-    } else {
-      ElMessage.error(res.data.msg)
-    }
+    dishType.value = res
+    getDishList(res[0].id)
   })
 }
 
 // 通过套餐ID获取菜品列表分类
 const getDishList = (id: number) => {
   queryDishList({ categoryId: id }).then(res => {
-    if (res && res.data && res.data.code === 200) {
-      if (res.data.data.length == 0) {
-        dishList.value = []
-        return
-      }
-      let newArr = res.data.data
-      newArr.forEach((n: any) => {
-        n.dishId = n.id
-        n.copies = 1
-        n.dishName = n.name
-      })
-      dishList.value = newArr
-      if (!ids.value.has(id)) {
-        allDishList.value = [...allDishList.value, ...newArr]
-      }
-      ids.value.add(id)
-    } else {
-      ElMessage.error(res.data.msg)
+    if (res.length == 0) {
+      dishList.value = []
+      return
     }
+    let newArr = res
+    newArr.forEach((n: any) => {
+      n.dishId = n.id
+      n.copies = 1
+      n.dishName = n.name
+    })
+    dishList.value = newArr
+    if (!ids.value.has(id)) {
+      allDishList.value = [...allDishList.value, ...newArr]
+    }
+    ids.value.add(id)
   })
 }
 
 // 关键词收搜菜品列表分类
 const getDishForName = (name: any) => {
   queryDishList({ name }).then(res => {
-    if (res && res.data && res.data.code === 200) {
-      let newArr = res.data.data
-      newArr.forEach((n: any) => {
-        n.dishId = n.id
-        n.dishName = n.name
-      })
-      dishList.value = newArr
-    } else {
-      ElMessage.error(res.data.msg)
-    }
+    let newArr = res
+    newArr.forEach((n: any) => {
+      n.dishId = n.id
+      n.dishName = n.name
+    })
+    dishList.value = newArr
   })
 }
 

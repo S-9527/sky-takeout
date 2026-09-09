@@ -117,20 +117,16 @@ const handleSave = async () => {
 
   saving.value = true
   try {
-    const { data } = await editPassword({
+    await editPassword({
       oldPassword: form.oldPassword,
       newPassword: form.newPassword
     })
-    if (data.code === 200) {
-      ElMessage.success('密码修改成功，请重新登录')
-      resetFields()
-      onVisibleChange(false)
-      userStore.LogOut().then(() => {
-        router.replace({ path: '/login' })
-      })
-    } else {
-      ElMessage.error(data.msg || '密码修改失败')
-    }
+    ElMessage.success('密码修改成功，请重新登录')
+    resetFields()
+    onVisibleChange(false)
+    userStore.LogOut().then(() => {
+      router.replace({ path: '/login' })
+    })
   } catch {
     ElMessage.error('密码修改失败，请稍后重试')
   } finally {

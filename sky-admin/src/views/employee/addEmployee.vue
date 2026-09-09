@@ -183,12 +183,8 @@ const rules = computed(() => {
 const init = async () => {
   const id = route.query.id
   queryEmployeeById(String(id)).then((res: any) => {
-    if (res.data.code === 200) {
-      ruleForm.value = res.data.data
-      ruleForm.value.sex = res.data.data.sex === '0' ? '女' : '男'
-    } else {
-      ElMessage.error(res.data.msg)
-    }
+    ruleForm.value = res
+    ruleForm.value.sex = res.sex === '0' ? '女' : '男'
   })
 }
 
@@ -201,22 +197,18 @@ const submitForm = (_formName: any, st: any) => {
           sex: ruleForm.value.sex === '女' ? '0' : '1'
         }
         addEmployee(params)
-          .then((res: any) => {
-            if (res.data.code === 200) {
-              ElMessage.success('员工添加成功！')
-              if (!st) {
-                router.push({ path: '/employee' })
-              } else {
-                ruleForm.value = {
-                  username: '',
-                  name: '',
-                  phone: '',
-                  sex: '男',
-                  idNumber: ''
-                }
-              }
+          .then(() => {
+            ElMessage.success('员工添加成功！')
+            if (!st) {
+              router.push({ path: '/employee' })
             } else {
-              ElMessage.error(res.data.msg)
+              ruleForm.value = {
+                username: '',
+                name: '',
+                phone: '',
+                sex: '男',
+                idNumber: ''
+              }
             }
           })
           .catch(() => {})
@@ -226,13 +218,9 @@ const submitForm = (_formName: any, st: any) => {
           sex: ruleForm.value.sex === '女' ? '0' : '1'
         }
         editEmployee(params)
-          .then((res: any) => {
-            if (res.data.code === 200) {
-              ElMessage.success('员工信息修改成功！')
-              router.push({ path: '/employee' })
-            } else {
-              ElMessage.error(res.data.msg)
-            }
+          .then(() => {
+            ElMessage.success('员工信息修改成功！')
+            router.push({ path: '/employee' })
           })
           .catch(() => {})
       }

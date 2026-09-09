@@ -47,16 +47,6 @@ export const queryDishList = (params: { categoryId?: number; name?: string }) =>
   return request.get<Dish[]>('/dish/list', { params })
 }
 
-// 文件down预览
-export const commonDownload = (params: Record<string, unknown>) => {
-  return request.get('/common/download', {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-    },
-    params
-  })
-}
-
 // 起售停售
 export const dishStatusByStatus = (params: {
   status: number

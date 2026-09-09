@@ -40,9 +40,6 @@ export const getOrderStatistics = (params: ReportQuery) =>
 // 销量排名TOP10
 export const getTop = (params: ReportQuery) =>
   request.get<SalesTop10ReportVO>('/report/top10', { params })
-// 数据概览
-export const getDataOverView = (params: ReportQuery) =>
-  request.get<BusinessDataVO>('/report/dataOverView', { params })
 // 导出
 export function exportInfor() {
   return request.get<Blob>('/report/export', { responseType: 'blob' })

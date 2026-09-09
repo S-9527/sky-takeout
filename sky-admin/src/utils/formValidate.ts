@@ -1,14 +1,3 @@
-export const formatDate = () => {
-  const now = new Date();
-  let hour: string | number = now.getHours();
-  let minute: string | number = now.getMinutes();
-  let second: string | number = now.getSeconds();
-  if (hour < 10) hour = `0${hour}`;
-  if (minute < 10) minute = `0${minute}`;
-  if (second < 10) second = `0${second}`;
-  return `${hour}:${minute}:${second}`;
-};
-
 function dateFormat(fmt: string, time: number) {
   let date = new Date(time);
   let ret: RegExpExecArray | null;

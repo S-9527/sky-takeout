@@ -77,12 +77,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElNotification } from 'element-plus'
 import { useAppStore } from '@/store/modules/app'
 import { useUserStore } from '@/store/modules/user'
 import Hamburger from '@/components/Hamburger/index.vue'
+import { useNotifications } from '@/composables/useNotifications'
 import { getStatus as getApiStatus, setStatus as setApiStatus } from '@/api/users'
 import Password from '../components/password.vue'
 
@@ -90,9 +90,11 @@ const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
 
-const websocket = ref<WebSocket | null>(null)
+// 提示音元素由组件持有,WebSocket 建连与消息分发交给 composable
 const audioVo = ref<HTMLAudioElement>()
 const audioVo2 = ref<HTMLAudioElement>()
+useNotifications({ pending: audioVo, urging: audioVo2 })
+
 const shopShow = ref(false)
 const dialogVisible = ref(false)
 const status = ref(1)
@@ -107,66 +109,6 @@ onMounted(() => {
   document.addEventListener('click', handleClose)
   getStatus()
 })
-
-onUnmounted(() => {
-  if (websocket.value) {
-    websocket.value.close()
-  }
-})
-
-// 添加新订单提示弹窗
-const webSocket = () => {
-  const clientId = Math.random().toString(36).substr(2)
-  const socketUrl = import.meta.env.VITE_SOCKET_URL + clientId
-  if (typeof WebSocket === 'undefined') {
-    ElNotification({
-      title: '提示',
-      message: '当前浏览器无法接收实时报警信息，请使用谷歌浏览器！',
-      type: 'warning',
-      duration: 0
-    })
-  } else {
-    websocket.value = new WebSocket(socketUrl)
-    // 监听socket消息接收
-    websocket.value.onmessage = function (msg) {
-      if (audioVo.value) audioVo.value.currentTime = 0
-      if (audioVo2.value) audioVo2.value.currentTime = 0
-
-      const jsonMsg = JSON.parse(msg.data)
-      if (jsonMsg.type === 1) {
-        audioVo.value?.play()
-      } else if (jsonMsg.type === 2) {
-        audioVo2.value?.play()
-      }
-      ElNotification({
-        title: jsonMsg.type === 1 ? '待接单' : '催单',
-        duration: 0,
-        dangerouslyUseHTMLString: true,
-        onClick: () => {
-          router.push(`/order?orderId=${jsonMsg.orderId}`)
-          setTimeout(() => {
-            location.reload()
-          }, 100)
-        },
-        message: `${
-          jsonMsg.type === 1
-            ? `<span>您有1个<span style=color:#419EFF>订单待处理</span>,${jsonMsg.content},请及时接单</span>`
-            : `${jsonMsg.content}<span style='color:#419EFF;cursor: pointer'>去处理</span>`
-        }`
-      })
-    }
-    // 监听socket错误
-    websocket.value.onerror = function () {
-      ElNotification({
-        title: '错误',
-        message: '服务器错误，无法接收实时报警信息',
-        type: 'error',
-        duration: 0
-      })
-    }
-  }
-}
-webSocket()
 
 const toggleSideBar = () => {
   appStore.ToggleSideBar(false)

@@ -191,19 +191,7 @@ if (route.query.id) {
       margin-bottom: 0px;
       padding-left: 0px;
     }
-    .container {
-      position: relative;
-      z-index: 1;
-      background: #fff;
-      padding: 30px;
-      border-radius: 4px;
-      // min-height: 500px;
-      .subBox {
-        padding-top: 30px;
-        text-align: center;
-        border-top: solid 1px $gray-5;
-      }
-    }
+    /* 外壳与底部按钮区见 styles/component/form-overrides.scss */
     .idNumber {
       margin-bottom: 39px;
     }

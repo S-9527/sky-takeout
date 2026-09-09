@@ -1,0 +1,23 @@
+// 编辑页(addDishtype / addSetmeal / addEmployee)共用外壳:
+// 白底容器 + 底部按钮区的分隔线与居中。
+// 原先三个页面各抄一份 scoped 版本,这里收敛成单一来源。
+// @use 'variables' 需要在文件内自己声明:vite 的 additionalData 不会注入到 @use 到的模块
+@use 'variables' as *;
+
+.addBrand {
+  &-container {
+    .container {
+      position: relative;
+      z-index: 1;
+      background: #fff;
+      padding: 30px;
+      border-radius: 4px;
+    }
+
+    .container .subBox {
+      padding-top: 30px;
+      text-align: center;
+      border-top: solid 1px $gray-5;
+    }
+  }
+}

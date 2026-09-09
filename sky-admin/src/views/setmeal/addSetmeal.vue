@@ -377,21 +377,6 @@ if (actionType.value === 'edit') {
     border-color: #ffc200;
   }
 
-  .avatar-uploader-icon {
-    font-size: 28px;
-    color: #8c939d;
-    width: 200px;
-    height: 160px;
-    line-height: 160px;
-    text-align: center;
-  }
-
-  .avatar {
-    width: 200px;
-    height: 160px;
-    display: block;
-  }
-
   .el-input {
     width: 293px;
   }
@@ -491,19 +476,10 @@ if (actionType.value === 'edit') {
   &-container {
     margin: 30px;
 
+    /* 外壳与底部按钮区见 styles/component/form-overrides.scss */
     .container {
-      position: relative;
-      z-index: 1;
-      background: #fff;
-      padding: 30px;
-      border-radius: 4px;
       min-height: 500px;
 
-      .subBox {
-        padding-top: 30px;
-        text-align: center;
-        border-top: solid 1px $gray-5;
-      }
       .el-input {
         width: 350px;
       }

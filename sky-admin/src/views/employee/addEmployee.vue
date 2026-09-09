@@ -8,14 +8,7 @@
                :rules="rules"
                :inline="false"
                label-width="180px"
-               class="demo-ruleForm">
-        <!--          <el-form-item label="员工职级" prop="region">-->
-        <!--            <el-select v-model="ruleForm.region" placeholder="请选择品牌名称">-->
-        <!--              <el-option label="区域一" value="shanghai"></el-option>-->
-        <!--              <el-option label="区域二" value="beijing"></el-option>-->
-        <!--            </el-select>-->
-        <!--            <el-button @click="submitForm('ruleForm')" type="primary" class="continue" style="margin-left: 10px;" >+新增职级</el-button>-->
-        <!--          </el-form-item>-->
+                class="demo-ruleForm">
         <el-form-item label="账号:"
                       prop="username">
           <el-input v-model="ruleForm.username"
@@ -28,28 +21,6 @@
                     placeholder="请输入员工姓名"
                     maxlength="12" />
         </el-form-item>
-        <!-- <el-form-item
-          label="密码:"
-          prop="password"
-        >
-          <el-input
-            v-model="ruleForm.password"
-            type="password"
-            autocomplete="off"
-            placeholder="请输入密码"
-          />
-        </el-form-item> -->
-        <!-- <el-form-item
-          label="确认密码:"
-          prop="rePassword"
-        >
-          <el-input
-            v-model="ruleForm.rePassword"
-            type="password"
-            autocomplete="off"
-            placeholder="请输入确认密码"
-          />
-        </el-form-item> -->
         <el-form-item label="手机号:"
                       prop="phone">
           <el-input v-model="ruleForm.phone"
@@ -71,7 +42,6 @@
                     maxlength="20" />
         </el-form-item>
         <div class="subBox address">
-          <!-- <el-form-item> -->
           <el-button @click="() => $router.push('/employee')">
             取消
           </el-button>
@@ -85,7 +55,6 @@
                      @click="submitForm('ruleForm', true)">
             保存并继续添加
           </el-button>
-          <!-- </el-form-item> -->
         </div>
       </el-form>
     </div>
@@ -213,7 +182,6 @@ const submitForm = (_formName: string, st: boolean) => {
               }
             }
           })
-          .catch(() => {})
       } else {
         const params = {
           ...ruleForm.value,
@@ -224,7 +192,6 @@ const submitForm = (_formName: string, st: boolean) => {
             ElMessage.success('员工信息修改成功！')
             router.push({ path: '/employee' })
           })
-          .catch(() => {})
       }
     }
   })

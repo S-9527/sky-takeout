@@ -109,7 +109,6 @@
               "
             >
               <template #default="{ row }">
-                <!-- <el-divider direction="vertical" /> -->
                 <div class="before">
                   <el-button
                     v-if="row.status === 2"
@@ -658,7 +657,6 @@ function cancelOrDeliveryOrComplete(status: number, id: number, event: Event) {
 // 查看详情
 async function goDetail(id: number, status: number, rowData: OrderVO, event?: Event) {
   event?.stopPropagation()
-  // console.log(111, index, row)
   diaForm.value = {}
   dialogVisible.value = true
   dialogOrderStatus.value = status

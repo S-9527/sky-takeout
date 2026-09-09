@@ -271,7 +271,6 @@ async function init(searchValue?: boolean) {
       counts.value = Number(res.total)
     })
     .catch(err => {
-      console.log(err, 'err')
       ElMessage.error('请求出错了：' + err.message)
     })
 }
@@ -305,7 +304,6 @@ const editHandle = (dat: Category) => {
 
 // 关闭弹窗
 const handleClose = (_st: string) => {
-  console.log(classDataRef.value, '$refs.classData')
   classData.dialogVisible = false
   //对该表单项进行重置，将其值重置为初始值并移除校验结果
   classDataRef.value?.resetFields()

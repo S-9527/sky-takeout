@@ -63,7 +63,6 @@ function initChart() {
     return
   }
   const myChart = echarts.init(chartDom)
-    console.log(props.orderdata)
     var option: echarts.EChartsOption
     option = {
       // legend: {

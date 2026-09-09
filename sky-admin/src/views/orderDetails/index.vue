@@ -163,7 +163,6 @@
           "
         >
           <template #default="{ row }">
-            <!-- <el-divider direction="vertical" /> -->
             <div class="before">
               <el-button
                 v-if="row.status === 2"
@@ -597,7 +596,6 @@ function change(activeIndex: number) {
   valueTime.value = []
   dialogOrderStatus.value = 0
   router.push('/order')
-  console.log(activeIndex, '接收到了子组件的index')
 }
 
 //获取待处理，待派送，派送中数量

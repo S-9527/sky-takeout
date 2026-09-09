@@ -134,7 +134,6 @@ async function getTopData(begin: string, end: string) {
     nameList: top10DataRes.nameList.split(',').reverse(),
     numberList: top10DataRes.numberList.split(',').reverse(),
   }
-  console.log(top10Data.value)
 }
 // 获取当前选中的tab时间
 function getTitleNum(data: number) {

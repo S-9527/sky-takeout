@@ -1,6 +1,5 @@
 <template>
-  <div :key="vueRest"
-       class="addBrand-container">
+  <div class="addBrand-container">
     <div :key="restKey"
          class="container">
       <el-form ref="ruleFormRef"
@@ -46,7 +45,6 @@
                    class="flavor">
                 <div class="title">
                   <span>口味名（3个字内）</span>
-                  <!-- <span class="des-box">口味标签（输入标签回车添加）</span> -->
                 </div>
                 <div class="cont">
                   <div v-for="(item, index) in dishFlavors"
@@ -148,7 +146,6 @@ const dishList = ref<Category[]>([])
 const dishFlavorsData = ref<{ name: string; value: string[] }[]>([]) //原始口味数据
 const dishFlavors = ref<{ name: string; value: string[] }[]>([]) //待上传口味的数据
 const leftDishFlavors = ref<{ name: string; value: string[] }[]>([]) //下拉框剩余可选择的口味数据
-const vueRest = ref('1')
 const inputStyle = ref({ flex: 1 })
 const ruleForm = ref<{
   name: string
@@ -314,7 +311,6 @@ function getFlavorListHand() {
 
 const submitForm = (_formName: string, st?: string) => {
   ruleFormRef.value?.validate((valid) => {
-    console.log(valid, 'valid')
     if (valid) {
       if (!ruleForm.value.image) {
         ElMessage.error('菜品图片不能为空')

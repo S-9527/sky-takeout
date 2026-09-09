@@ -58,8 +58,7 @@ watch(() => props.propImageUrl, (val) => {
 
 const handleRemove = () => {}
 
-const handleError: UploadProps['onError'] = (err, file) => {
-  console.log(err, file, 'handleError')
+const handleError: UploadProps['onError'] = () => {
   ElMessage({
     message: '图片上传失败',
     type: 'error'

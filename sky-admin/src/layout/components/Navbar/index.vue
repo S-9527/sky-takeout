@@ -11,8 +11,7 @@
             class="businessBtn closing">打烊中</span>
     </div>
 
-    <div :key="restKey"
-         class="right-menu">
+    <div class="right-menu">
       <div class="rightStatus">
         <audio ref="audioVo"
                hidden>
@@ -92,7 +91,6 @@ const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
 
-const restKey = 0
 const websocket = ref<WebSocket | null>(null)
 const audioVo = ref<HTMLAudioElement>()
 const audioVo2 = ref<HTMLAudioElement>()
@@ -128,7 +126,6 @@ onUnmounted(() => {
 const webSocket = () => {
   const clientId = Math.random().toString(36).substr(2)
   const socketUrl = import.meta.env.VITE_SOCKET_URL + clientId
-  console.log(socketUrl, 'socketUrl')
   if (typeof WebSocket === 'undefined') {
     ElNotification({
       title: '提示',
@@ -138,16 +135,11 @@ const webSocket = () => {
     })
   } else {
     websocket.value = new WebSocket(socketUrl)
-    // 监听socket打开
-    websocket.value.onopen = function () {
-      console.log('浏览器WebSocket已打开')
-    }
     // 监听socket消息接收
     websocket.value.onmessage = function (msg) {
       if (audioVo.value) audioVo.value.currentTime = 0
       if (audioVo2.value) audioVo2.value.currentTime = 0
 
-      console.log(msg, JSON.parse(msg.data), 'msg')
       const jsonMsg = JSON.parse(msg.data)
       if (jsonMsg.type === 1) {
         audioVo.value?.play()
@@ -159,11 +151,7 @@ const webSocket = () => {
         duration: 0,
         dangerouslyUseHTMLString: true,
         onClick: () => {
-          router
-            .push(`/order?orderId=${jsonMsg.orderId}`)
-            .catch((err) => {
-              console.log(err)
-            })
+          router.push(`/order?orderId=${jsonMsg.orderId}`)
           setTimeout(() => {
             location.reload()
           }, 100)
@@ -183,10 +171,6 @@ const webSocket = () => {
         type: 'error',
         duration: 0
       })
-    }
-    // 监听socket关闭
-    websocket.value.onclose = function () {
-      console.log('WebSocket已关闭')
     }
   }
 }

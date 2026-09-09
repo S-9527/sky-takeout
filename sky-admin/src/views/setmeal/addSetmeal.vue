@@ -106,15 +106,6 @@
             </image-upload>
           </el-form-item>
         </div>
-        <!-- <el-form-item
-          label="商品码:"
-          prop="code"
-        >
-          <el-input
-            v-model="ruleForm.code"
-            placeholder="请输入商品码"
-          />
-        </el-form-item> -->
         <div class="address">
           <el-form-item label="套餐描述:">
             <el-input v-model="ruleForm.description"

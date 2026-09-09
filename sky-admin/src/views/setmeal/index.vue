@@ -40,13 +40,6 @@
         <div class="tableLab">
           <span class="delBut non"
                 @click="deleteHandle('批量')">批量删除</span>
-          <!-- <span class="blueBug non" @click="statusHandle('1')">批量启售</span>
-          <span
-            style="border: none"
-            class="delBut non"
-            @click="statusHandle('0')"
-            >批量停售</span
-          > -->
           <el-button type="primary"
                      style="margin-left: 15px"
                      @click="addSetMeal('add')">
@@ -94,11 +87,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="updateTime"
-                         label="最后操作时间">
-          <!-- <template slot-scope="scope">
-            {{ moment(scope.row.lastUpdateTime).format('YYYY-MM-DD h:m:s') }}
-          </template> -->
-        </el-table-column>
+                         label="最后操作时间" />
         <el-table-column label="操作"
                          width="250"
                          align="center">
@@ -146,7 +135,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import moment from 'moment'
 import {
   getSetmealPage,
   deleteSetmeal,
@@ -157,8 +145,6 @@ import type { Category, SetmealVO } from '@/api/types'
 import Empty from '@/components/Empty/index.vue'
 
 const router = useRouter()
-
-void moment
 
 const input = ref('')
 const counts = ref<number>(0)
@@ -278,7 +264,6 @@ const getDishCategoryList = () => {
         return { value: item.id, label: item.name }
       })
     })
-    .catch(() => {})
 }
 
 // 全部操作

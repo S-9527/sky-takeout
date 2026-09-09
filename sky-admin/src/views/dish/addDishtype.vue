@@ -137,6 +137,7 @@ import { getCategoryList } from '@/api/category'
 import type { Category } from '@/api/types/category'
 import type { DishDTO } from '@/api/types/dish'
 import { amountRule, nameRule } from '@/utils/formRules'
+import { parseQueryNumber } from '@/utils/query'
 
 const route = useRoute()
 const router = useRouter()
@@ -211,7 +212,9 @@ const selectHandle = (val: string, key: number, _ind: number) => {
 }
 
 async function init() {
-  queryDishById(Number(route.query.id)).then(res => {
+  const id = parseQueryNumber(route.query.id)
+  if (id === undefined) return
+  queryDishById(id).then(res => {
     ruleForm.value = {
       name: res.name,
       id: String(res.id ?? ''),

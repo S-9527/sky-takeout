@@ -73,6 +73,7 @@ import {
 import HeadLable from '@/components/HeadLable/index.vue'
 import { queryEmployeeById, addEmployee, editEmployee } from '@/api/employee'
 import { accountRule } from '@/utils/formRules'
+import { parseQueryNumber } from '@/utils/query'
 
 const route = useRoute()
 const router = useRouter()
@@ -127,8 +128,9 @@ const rules: FormRules = {
 }
 
 const init = async () => {
-  const id = route.query.id
-  queryEmployeeById(Number(id)).then((res) => {
+  const id = parseQueryNumber(route.query.id)
+  if (id === undefined) return
+  queryEmployeeById(id).then((res) => {
     ruleForm.value = res
     ruleForm.value.sex = res.sex === '0' ? '女' : '男'
   })

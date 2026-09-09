@@ -222,7 +222,7 @@ async function init(searchValue?: boolean) {
   })
     .then(res => {
       tableData.value = res.records
-      counts.value = Number(res.total)
+      counts.value = res.total
     })
 }
 

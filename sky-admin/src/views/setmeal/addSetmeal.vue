@@ -184,6 +184,7 @@ import { getCategoryList } from '@/api/category'
 import type { Category } from '@/api/types/category'
 import type { SetmealDish, SetmealDTO } from '@/api/types/setmeal'
 import { amountRule, nameRule } from '@/utils/formRules'
+import { parseQueryNumber } from '@/utils/query'
 
 const route = useRoute()
 const router = useRouter()
@@ -227,7 +228,9 @@ const rules: FormRules = {
 }
 
 const init = async () => {
-  querySetmealById(Number(route.query.id)).then(res => {
+  const id = parseQueryNumber(route.query.id)
+  if (id === undefined) return
+  querySetmealById(id).then(res => {
     ruleForm.value = {
       name: res.name,
       categoryId: String(res.categoryId),
@@ -339,7 +342,7 @@ const submitForm = (_formName: string, st: boolean) => {
             }
           })
       } else {
-        editSetmeal({ ...prams, id: Number(route.query.id) })
+        editSetmeal({ ...prams, id: parseQueryNumber(route.query.id) })
           .then(() => {
             ElMessage.success('套餐修改成功！')
             router.push({ path: '/setmeal' })

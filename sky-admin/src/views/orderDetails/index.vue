@@ -260,6 +260,7 @@ import {
   orderStatusFromQuery,
   statusText
 } from '@/constants/order'
+import { parseQueryNumber } from '@/utils/query'
 import type { OrderStatisticsVO, OrderVO } from '@/api/types/order'
 
 const route = useRoute()
@@ -328,7 +329,7 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
     .then((res) => {
       tableData.value = res.records
       orderStatus.value = activeIndex
-      counts.value = Number(res.total)
+      counts.value = res.total
       getOrderListBy3Status()
       if (
         actions.state.detailStatus === OrderStatus.ToBeConfirmed &&
@@ -360,8 +361,9 @@ init(orderStatusFromQuery(route.query.status))
 
 onMounted(() => {
   //如果有值说明是消息通知点击进来的
-  if (route.query.orderId && route.query.orderId !== 'undefined') {
-    goDetail(Number(route.query.orderId), OrderStatus.ToBeConfirmed)
+  const orderId = parseQueryNumber(route.query.orderId)
+  if (orderId !== undefined) {
+    goDetail(orderId, OrderStatus.ToBeConfirmed)
   }
   defaultActivity.value = orderStatusFromQuery(route.query.status)
 })

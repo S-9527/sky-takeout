@@ -1,3 +1,5 @@
+import { parseQueryNumber } from '@/utils/query'
+
 // 订单状态(取值与后端 com.sky.order.enumeration.OrderStatus 一致)
 export const OrderStatus = {
   All: 0,
@@ -30,9 +32,10 @@ export const statusText = (code: number, fallback = ''): string =>
 export const isOrderStatus = (status: number, ...allowed: number[]) =>
   allowed.includes(status)
 
-// 路由 query 上的状态值解析:缺省、非法或数组一律回到"全部订单"
+// 路由 query 上的状态值解析:缺省、非法或小数一律回到"全部订单"
 export const orderStatusFromQuery = (value: unknown): OrderStatus => {
-  const n = Number(value)
+  const n = parseQueryNumber(value)
+  if (n === undefined) return OrderStatus.All
   const allowed: number[] = Object.values(OrderStatus)
   return allowed.includes(n) ? (n as OrderStatus) : OrderStatus.All
 }

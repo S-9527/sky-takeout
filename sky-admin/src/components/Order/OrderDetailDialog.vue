@@ -103,11 +103,7 @@
           </div>
           <div class="dish-all-amount">
             <label>菜品小计</label>
-            <span
-              >￥{{
-                ((state.detail.amount ?? 0) - 6 - (state.detail.packAmount ?? 0)).toFixed(2)
-              }}</span
-            >
+            <span>￥{{ dishSubtotal }}</span>
           </div>
         </div>
       </div>
@@ -118,17 +114,11 @@
           <div class="amount-list">
             <div class="dish-amount">
               <span class="amount-name">菜品小计：</span>
-              <span class="amount-price"
-                >￥{{
-                  Number(
-                    ((state.detail.amount ?? 0) - 6 - (state.detail.packAmount ?? 0)).toFixed(2)
-                  ) * 100 / 100
-                }}</span
-              >
+              <span class="amount-price">￥{{ Number(dishSubtotal) * 100 / 100 }}</span>
             </div>
             <div class="send-amount">
               <span class="amount-name">派送费：</span>
-              <span class="amount-price">￥{{ 6 }}</span>
+              <span class="amount-price">￥{{ DELIVERY_FEE }}</span>
             </div>
             <div class="package-amount">
               <span class="amount-name">打包费：</span>
@@ -152,9 +142,7 @@
             </div>
             <div class="pay-type">
               <span class="pay-name">支付渠道：</span>
-              <span class="pay-value">{{
-                state.detail.payMethod === 1 ? '微信支付' : '支付宝支付'
-              }}</span>
+              <span class="pay-value">{{ payMethodText(state.detail.payMethod) }}</span>
             </div>
             <div class="pay-time">
               <span class="pay-name">支付时间：</span>
@@ -223,12 +211,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import {
-  isOrderStatus,
-  ORDER_STATUS_TEXT,
+  DELIVERY_FEE,
   OrderStatus,
-  type OrderStatus as OrderStatusCode
-} from '@/api/types'
+  isOrderStatus,
+  payMethodText,
+  statusText
+} from '@/constants/order'
 import type { OrderActions } from '@/composables/useOrderActions'
 
 const props = withDefaults(
@@ -244,7 +234,9 @@ const props = withDefaults(
 
 const { state, accept, closeDetail, deliverOrComplete, openCancel, openReject } = props.actions
 
-const statusText = (code: number) => ORDER_STATUS_TEXT[code as OrderStatusCode] ?? ''
+const dishSubtotal = computed(() =>
+  ((state.detail.amount ?? 0) - DELIVERY_FEE - (state.detail.packAmount ?? 0)).toFixed(2)
+)
 </script>
 
 <style lang="scss" scoped>

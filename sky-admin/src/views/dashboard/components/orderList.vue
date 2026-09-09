@@ -198,10 +198,9 @@ import { useTablePage } from '@/composables/useTablePage'
 import {
   OrderStatus,
   ORDER_STATUS_TEXT,
-  isOrderStatus,
-  type OrderStatisticsVO,
-  type OrderVO
-} from '@/api/types'
+  isOrderStatus
+} from '@/constants/order'
+import type { OrderStatisticsVO, OrderVO } from '@/api/types'
 
 const activeIndex = ref(0)
 const isSearch = ref(false)

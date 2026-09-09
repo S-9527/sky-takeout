@@ -8,7 +8,8 @@ import {
   orderReject as orderRejectApi,
   orderAccept as orderAcceptApi
 } from '@/api/order'
-import { OrderStatus, type OrderVO } from '@/api/types'
+import { OrderStatus } from '@/constants/order'
+import type { OrderVO } from '@/api/types'
 
 export type CancelTitle = '取消' | '拒绝'
 

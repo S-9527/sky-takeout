@@ -254,14 +254,8 @@ import OrderCancelDialog from '@/components/Order/OrderCancelDialog.vue'
 import { getOrderDetailPage, getOrderListBy } from '@/api/order'
 import { useOrderActions } from '@/composables/useOrderActions'
 import { useTablePage } from '@/composables/useTablePage'
-import {
-  OrderStatus,
-  ORDER_STATUS_TEXT,
-  isOrderStatus,
-  type OrderStatisticsVO,
-  type OrderVO,
-  type OrderStatus as OrderStatusCode
-} from '@/api/types'
+import { OrderStatus, isOrderStatus, statusText } from '@/constants/order'
+import type { OrderStatisticsVO, OrderVO } from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -344,7 +338,7 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
 }
 
 function getOrderType(row: OrderVO) {
-  return ORDER_STATUS_TEXT[row.status as OrderStatusCode] ?? '退款'
+  return statusText(row.status, '退款')
 }
 
 // 查看详情

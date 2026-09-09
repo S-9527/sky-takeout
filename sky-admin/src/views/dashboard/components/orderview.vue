@@ -59,7 +59,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { OrderStatus } from '@/api/types'
+import { OrderStatus } from '@/constants/order'
 import { getday } from '@/utils/formValidate'
 const props = defineProps({
   orderviewData: {

@@ -20,7 +20,7 @@
           </li>
         </ul>
       </h2>
-      <div class="">
+      <div>
         <div v-if="orderData.length > 0">
           <el-table
             :data="orderData"
@@ -194,7 +194,7 @@ import { computed, ref } from 'vue'
 import Empty from '@/components/Empty/index.vue'
 import OrderDetailDialog from '@/components/Order/OrderDetailDialog.vue'
 import OrderCancelDialog from '@/components/Order/OrderCancelDialog.vue'
-import { getOrderDetailPage } from '@/api/order'
+import { getOrderDetailPage, getOrderListBy } from '@/api/order'
 import { useOrderActions } from '@/composables/useOrderActions'
 import {
   OrderStatus,
@@ -204,16 +204,6 @@ import {
   type OrderVO
 } from '@/api/types'
 
-const props = withDefaults(
-  defineProps<{
-    orderStatics?: OrderStatisticsVO
-  }>(),
-  {
-    orderStatics: () => ({ toBeConfirmed: 0, confirmed: 0, deliveryInProgress: 0 })
-  }
-)
-const emit = defineEmits(['getOrderListBy3Status'])
-
 const activeIndex = ref(0)
 const isSearch = ref(false)
 const counts = ref(0)
@@ -221,6 +211,7 @@ const page = ref<number>(1)
 const pageSize = ref<number>(10)
 const status = ref<OrderStatus>(OrderStatus.ToBeConfirmed)
 const orderData = ref<OrderVO[]>([])
+const orderStatistics = ref<OrderStatisticsVO>()
 
 const actions = useOrderActions({
   onSuccess: () => getOrderListData(status.value)
@@ -230,12 +221,12 @@ const tabList = computed(() => [
   {
     label: ORDER_STATUS_TEXT[OrderStatus.ToBeConfirmed],
     value: OrderStatus.ToBeConfirmed,
-    num: props.orderStatics?.toBeConfirmed ?? 0
+    num: orderStatistics.value?.toBeConfirmed ?? 0
   },
   {
     label: ORDER_STATUS_TEXT[OrderStatus.Confirmed],
     value: OrderStatus.Confirmed,
-    num: props.orderStatics?.confirmed ?? 0
+    num: orderStatistics.value?.confirmed ?? 0
   }
 ])
 
@@ -251,7 +242,7 @@ async function getOrderListData(val: number) {
   const data = await getOrderDetailPage(params)
   orderData.value = data.records
   counts.value = data.total
-  emit('getOrderListBy3Status')
+  refreshStatistics()
   if (
     actions.state.detailStatus === OrderStatus.ToBeConfirmed &&
     status.value === OrderStatus.ToBeConfirmed &&
@@ -262,6 +253,17 @@ async function getOrderListData(val: number) {
     const firstRow = data.records[0]
     void actions.openDetail(firstRow.id, firstRow.status, firstRow)
   }
+}
+
+// 各状态订单数量,用于 tab 角标
+function refreshStatistics() {
+  getOrderListBy()
+    .then((res) => {
+      orderStatistics.value = res
+    })
+    .catch(() => {
+      // 拦截器已统一提示,角标保留上一次的值
+    })
 }
 
 // 查看详情

@@ -189,11 +189,11 @@ async function init(searchValue?: boolean) {
 }
 
 // 添加
-const addDishtype = (st: string | DishVO) => {
+const addDishtype = (st: string | number) => {
   if (st === 'add') {
     router.push({ path: '/dish/add' })
   } else {
-    router.push({ path: '/dish/add', query: { id: String((st as DishVO).id ?? '') } })
+    router.push({ path: '/dish/add', query: { id: String(st) } })
   }
 }
 

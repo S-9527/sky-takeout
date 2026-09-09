@@ -95,7 +95,7 @@
             <el-button link
                        size="small"
                        class="blueBug"
-                       @click="addSetMeal(scope.row)">
+                       @click="addSetMeal(scope.row.id)">
               修改
             </el-button>
             <el-button link
@@ -187,11 +187,11 @@ async function init(isSearchVal?: boolean) {
 }
 
 // 添加更改
-const addSetMeal = (st: string | SetmealVO) => {
+const addSetMeal = (st: string | number) => {
   if (st === 'add') {
     router.push({ path: '/setmeal/add' })
   } else {
-    router.push({ path: '/setmeal/add', query: { id: String((st as SetmealVO).id) } })
+    router.push({ path: '/setmeal/add', query: { id: String(st) } })
   }
 }
 

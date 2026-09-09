@@ -73,8 +73,10 @@ service.interceptors.response.use(
     if (body && typeof body === 'object' && isResult(body)) {
       const result = body as Result
       if (result.code !== 200) {
-        ElMessage.error(result.msg || '操作失败')
-        return Promise.reject(result)
+        const message = result.msg || '操作失败'
+        ElMessage.error(message)
+        // 归一化为 Error，视图里的 err.message 才拿得到后端 msg
+        return Promise.reject(new Error(message))
       }
       // 业务成功：剥离 Result 外壳，直接返回业务数据
       return result.data as unknown as AxiosResponse

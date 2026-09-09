@@ -5,7 +5,7 @@
                :accept="type"
                :class="{ borderNone: imageUrl }"
                class="avatar-uploader"
-               action="/api/common/upload"
+                :action="uploadAction"
                :show-file-list="false"
                :on-success="handleAvatarSuccess"
                :on-remove="handleRemove"
@@ -50,6 +50,8 @@ const emit = defineEmits(['imageChange'])
 const headers = {
   token: getToken()
 }
+// 与 axios 的 baseURL 共用同一个环境变量,避免硬编码 /api
+const uploadAction = `${import.meta.env.VITE_BASE_API}/common/upload`
 const imageUrl = ref('')
 
 watch(() => props.propImageUrl, (val) => {

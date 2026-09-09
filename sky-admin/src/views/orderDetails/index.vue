@@ -228,13 +228,10 @@
         </el-table-column>
       </el-table>
       <Empty v-else :is-search="isSearch" />
-      <el-pagination
-        v-if="counts > 10"
-        class="pageList"
-        :page-sizes="[10, 20, 30, 40]"
-        :page-size="pageSize"
-        layout="total, sizes, prev, pager, next, jumper"
+      <Pagination
         :total="counts"
+        :page="page"
+        :page-size="pageSize"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
       />
@@ -251,10 +248,12 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TabChange from './tabChange.vue'
 import Empty from '@/components/Empty/index.vue'
+import Pagination from '@/components/Pagination/index.vue'
 import OrderDetailDialog from '@/components/Order/OrderDetailDialog.vue'
 import OrderCancelDialog from '@/components/Order/OrderCancelDialog.vue'
 import { getOrderDetailPage, getOrderListBy } from '@/api/order'
 import { useOrderActions } from '@/composables/useOrderActions'
+import { useTablePage } from '@/composables/useTablePage'
 import {
   OrderStatus,
   ORDER_STATUS_TEXT,
@@ -274,8 +273,9 @@ const phone = ref('') //搜索条件的手机号
 const valueTime = ref<string[]>([])
 const defaultTime = [new Date(2000, 0, 1, 0, 0, 0), new Date(2000, 0, 1, 23, 59, 59)]
 const counts = ref(0)
-const page = ref(1)
-const pageSize = ref(10)
+const { page, pageSize, handleSizeChange, handleCurrentChange } = useTablePage(
+  () => init(orderStatus.value)
+)
 const tableData = ref<OrderVO[]>([])
 const isSearch = ref(false)
 const orderStatus = ref<number>(OrderStatus.All) //列表字段展示所需订单状态,用于分页请求数据
@@ -354,16 +354,6 @@ function goDetail(id: number, status: number, rowData?: OrderVO, event?: Event) 
   if (route.query.orderId) {
     router.push('/order')
   }
-}
-
-function handleSizeChange(val: number) {
-  pageSize.value = val
-  init(orderStatus.value)
-}
-
-function handleCurrentChange(val: number) {
-  page.value = val
-  init(orderStatus.value)
 }
 
 init(Number(route.query.status) || OrderStatus.All)

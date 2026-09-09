@@ -72,15 +72,11 @@
         </el-table-column>
       </el-table>
       <Empty v-else :is-search="isSearch" />
-      <el-pagination
-        class="pageList"
-        :page-sizes="[10, 20, 30, 40]"
-        :page-size="pageSize"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="counts"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
+      <Pagination :total="counts"
+                  :page="page"
+                  :page-size="pageSize"
+                  @size-change="handleSizeChange"
+                  @current-change="handleCurrentChange" />
     </div>
   </div>
 </template>
@@ -92,13 +88,14 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getEmployeeList, enableOrDisableEmployee } from '@/api/employee'
 import type { Employee } from '@/api/types'
 import Empty from '@/components/Empty/index.vue'
+import Pagination from '@/components/Pagination/index.vue'
+import { useTablePage } from '@/composables/useTablePage'
 
 const router = useRouter()
 
 const input = ref('')
 const counts = ref<number>(0)
-const page = ref<number>(1)
-const pageSize = ref<number>(10)
+const { page, pageSize, handleSizeChange, handleCurrentChange } = useTablePage(() => init())
 const tableData = ref<Employee[]>([])
 const id = ref('')
 const status = ref('')
@@ -153,16 +150,6 @@ const statusHandle = (row: Employee) => {
         init()
       })
   })
-}
-
-const handleSizeChange = (val: number) => {
-  pageSize.value = val
-  init()
-}
-
-const handleCurrentChange = (val: number) => {
-  page.value = val
-  init()
 }
 
 init()

@@ -99,14 +99,11 @@
       </el-table>
       <Empty v-else
              :is-search="isSearch" />
-      <el-pagination v-if="counts > 10"
-                     class="pageList"
-                     :page-sizes="[10, 20, 30, 40]"
-                     :page-size="pageSize"
-                     layout="total, sizes, prev, pager, next, jumper"
-                     :total="counts"
-                     @size-change="handleSizeChange"
-                     @current-change="handleCurrentChange" />
+      <Pagination :total="counts"
+                  :page="page"
+                  :page-size="pageSize"
+                  @size-change="handleSizeChange"
+                  @current-change="handleCurrentChange" />
     </div>
     <el-dialog :title="classData.title"
                v-model="classData.dialogVisible"
@@ -164,6 +161,8 @@ import {
   enableOrDisableEmployee
 } from '@/api/category'
 import Empty from '@/components/Empty/index.vue'
+import Pagination from '@/components/Pagination/index.vue'
+import { useTablePage } from '@/composables/useTablePage'
 import type { Category } from '@/api/types'
 
 const options: { value: number; label: string }[] = [
@@ -193,8 +192,7 @@ const categoryType = ref<number | null>(null)
 const name = ref('')
 const action = ref('')
 const counts = ref(0)
-const page = ref(1)
-const pageSize = ref(10)
+const { page, pageSize, handleSizeChange, handleCurrentChange } = useTablePage(() => init())
 const tableData = ref<Category[]>([])
 const type = ref(1)
 const isSearch = ref(false)
@@ -377,17 +375,6 @@ const submitForm = (st?: string) => {
       }
     })
   }
-}
-
-//分页
-const handleSizeChange = (val: number) => {
-  pageSize.value = val
-  init()
-}
-
-const handleCurrentChange = (val: number) => {
-  page.value = val
-  init()
 }
 </script>
 <style lang="scss" scoped>

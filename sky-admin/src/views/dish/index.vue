@@ -119,14 +119,11 @@ blueBug: scope.row.status === 0,
       </el-table>
       <Empty v-else
              :is-search="isSearch" />
-      <el-pagination v-if="counts > 10"
-                     class="pageList"
-                     :page-sizes="[10, 20, 30, 40]"
-                     :page-size="pageSize"
-                     layout="total, sizes, prev, pager, next, jumper"
-                     :total="counts"
-                     @size-change="handleSizeChange"
-                     @current-change="handleCurrentChange" />
+      <Pagination :total="counts"
+                  :page="page"
+                  :page-size="pageSize"
+                  @size-change="handleSizeChange"
+                  @current-change="handleCurrentChange" />
     </div>
   </div>
 </template>
@@ -143,12 +140,13 @@ import {
 } from '@/api/dish'
 import type { DishVO } from '@/api/types'
 import Empty from '@/components/Empty/index.vue'
+import Pagination from '@/components/Pagination/index.vue'
+import { useTablePage } from '@/composables/useTablePage'
 
 const router = useRouter()
 const input = ref('')
 const counts = ref(0)
-const page = ref(1)
-const pageSize = ref(10)
+const { page, pageSize, handleSizeChange, handleCurrentChange } = useTablePage(() => init())
 const checkList = ref<Array<string | number>>([])
 const tableData = ref<DishVO[]>([])
 const dishState = ref<{ id: number | string; status: string }>({ id: 0, status: '0' })
@@ -264,16 +262,6 @@ const handleSelectionChange = (val: DishVO[]) => {
     checkArr.push(n.id ?? 0)
   })
   checkList.value = checkArr
-}
-
-const handleSizeChange = (val: number) => {
-  pageSize.value = val
-  init()
-}
-
-const handleCurrentChange = (val: number) => {
-  page.value = val
-  init()
 }
 </script>
 <style lang="scss">

@@ -171,13 +171,10 @@
           </el-table>
         </div>
         <Empty v-else :is-search="isSearch" />
-        <el-pagination
-          v-if="counts > 10"
-          class="pageList"
-          :page-sizes="[10, 20, 30, 40]"
-          :page-size="pageSize"
-          layout="total, sizes, prev, pager, next, jumper"
+        <Pagination
           :total="counts"
+          :page="page"
+          :page-size="pageSize"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
         />
@@ -192,10 +189,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import Empty from '@/components/Empty/index.vue'
+import Pagination from '@/components/Pagination/index.vue'
 import OrderDetailDialog from '@/components/Order/OrderDetailDialog.vue'
 import OrderCancelDialog from '@/components/Order/OrderCancelDialog.vue'
 import { getOrderDetailPage, getOrderListBy } from '@/api/order'
 import { useOrderActions } from '@/composables/useOrderActions'
+import { useTablePage } from '@/composables/useTablePage'
 import {
   OrderStatus,
   ORDER_STATUS_TEXT,
@@ -207,9 +206,10 @@ import {
 const activeIndex = ref(0)
 const isSearch = ref(false)
 const counts = ref(0)
-const page = ref<number>(1)
-const pageSize = ref<number>(10)
 const status = ref<OrderStatus>(OrderStatus.ToBeConfirmed)
+const { page, pageSize, handleSizeChange, handleCurrentChange } = useTablePage(
+  () => getOrderListData(status.value)
+)
 const orderData = ref<OrderVO[]>([])
 const orderStatistics = ref<OrderStatisticsVO>()
 
@@ -286,17 +286,6 @@ function handleClass(index: number) {
 // 触发table某一行
 function handleTable(row: OrderVO, _column: unknown, event: Event) {
   openDetail(row, event)
-}
-
-// 分页
-function handleSizeChange(val: number) {
-  pageSize.value = val
-  getOrderListData(status.value)
-}
-
-function handleCurrentChange(val: number) {
-  page.value = val
-  getOrderListData(status.value)
 }
 </script>
 <style lang="scss" scoped>

@@ -114,7 +114,7 @@
           <div class="amount-list">
             <div class="dish-amount">
               <span class="amount-name">菜品小计：</span>
-              <span class="amount-price">￥{{ Number(dishSubtotal) * 100 / 100 }}</span>
+              <span class="amount-price">￥{{ money(dishSubtotal) }}</span>
             </div>
             <div class="send-amount">
               <span class="amount-name">派送费：</span>
@@ -125,7 +125,7 @@
               <span class="amount-price"
                 >￥{{
                   (state.detail.packAmount ?? 0)
-                    ? (Number((state.detail.packAmount ?? 0).toFixed(2)) * 100) / 100
+                    ? money(state.detail.packAmount)
                     : ''
                 }}</span
               >
@@ -135,7 +135,7 @@
               <span class="amount-price"
                 >￥{{
                   (state.detail.amount ?? 0)
-                    ? (Number((state.detail.amount ?? 0).toFixed(2)) * 100) / 100
+                    ? money(state.detail.amount)
                     : ''
                 }}</span
               >
@@ -220,6 +220,7 @@ import {
   statusText
 } from '@/constants/order'
 import type { OrderActions } from '@/composables/useOrderActions'
+import { money } from '@/utils/format'
 
 const props = withDefaults(
   defineProps<{

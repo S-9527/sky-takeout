@@ -5,7 +5,7 @@
       <div class="orderProportion">
         <div>
           <p>订单完成率</p>
-          <p>{{ (orderdata.orderCompletionRate * 100).toFixed(1) }}%</p>
+          <p>{{ percent(orderdata.orderCompletionRate, 1) }}</p>
         </div>
         <div class="symbol">=</div>
         <div>
@@ -32,6 +32,7 @@ import { computed } from 'vue'
 import Chart from '@/components/Chart/index.vue'
 import type { EChartsOption } from '@/utils/echarts'
 import type { OrderReportChartData } from '@/api/types/report'
+import { percent } from '@/utils/format'
 
 const props = withDefaults(
   defineProps<{

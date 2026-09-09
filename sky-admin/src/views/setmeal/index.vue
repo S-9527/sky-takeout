@@ -75,7 +75,7 @@
         <el-table-column prop="price"
                          label="套餐价">
           <template #default="scope">
-            <span>￥{{ (Number((scope.row.price ?? 0).toFixed(2)) * 100) / 100 }}</span>
+            <span>￥{{ money(scope.row.price) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="售卖状态">
@@ -143,6 +143,7 @@ import type { SetmealVO } from '@/api/types/setmeal'
 import Empty from '@/components/Empty/index.vue'
 import Pagination from '@/components/Pagination/index.vue'
 import { useTablePage } from '@/composables/useTablePage'
+import { money } from '@/utils/format'
 
 const router = useRouter()
 

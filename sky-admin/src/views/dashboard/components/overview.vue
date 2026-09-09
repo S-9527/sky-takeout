@@ -17,7 +17,7 @@
         <li>
           <p class="tit">订单完成率</p>
           <p class="num">
-            {{ (overviewData.orderCompletionRate * 100).toFixed(0) }}%
+            {{ percent(overviewData.orderCompletionRate, 0) }}
           </p>
         </li>
         <li>
@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { getday } from '@/utils/formValidate'
+import { percent } from '@/utils/format'
 defineProps({
   overviewData: {
     type: Object,

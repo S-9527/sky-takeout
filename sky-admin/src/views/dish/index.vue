@@ -75,7 +75,7 @@
                          label="菜品分类" />
         <el-table-column label="售价">
           <template #default="scope">
-            <span style="margin-right: 10px">￥{{ Number((scope.row.price ?? 0).toFixed(2))*100/100 }}</span>
+            <span style="margin-right: 10px">￥{{ money(scope.row.price) }}</span>
           </template>
         </el-table-column>
         <el-table-column label="售卖状态">
@@ -142,6 +142,7 @@ import type { DishVO } from '@/api/types/dish'
 import Empty from '@/components/Empty/index.vue'
 import Pagination from '@/components/Pagination/index.vue'
 import { useTablePage } from '@/composables/useTablePage'
+import { money } from '@/utils/format'
 
 const router = useRouter()
 const input = ref('')

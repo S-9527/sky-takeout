@@ -131,7 +131,7 @@
           align="center"
         >
           <template #default="{ row }">
-            <span>￥{{ ((row.amount ?? 0).toFixed(2) * 100) / 100 }}</span>
+            <span>￥{{ money(row.amount) }}</span>
           </template>
         </el-table-column>
         <el-table-column
@@ -261,6 +261,7 @@ import {
   statusText
 } from '@/constants/order'
 import { parseQueryNumber } from '@/utils/query'
+import { money } from '@/utils/format'
 import type { OrderStatisticsVO, OrderVO } from '@/api/types/order'
 
 const route = useRoute()

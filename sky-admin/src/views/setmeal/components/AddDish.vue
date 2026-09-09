@@ -28,7 +28,7 @@
                     item.dishName
                   }}</span>
                   <span>{{ item.status === 0 ? '停售' : '在售' }}</span>
-                  <span>{{ Number(Number(item.price).toFixed(2))*100/100 }}</span>
+                  <span>{{ money(item.price) }}</span>
                 </div>
               </el-checkbox>
             </div>
@@ -45,7 +45,7 @@
              :key="ind"
              class="item">
           <span>{{ item.dishName || item.name }}</span>
-          <span class="price">￥ {{ Number(Number(item.price).toFixed(2))*100/100 }} </span>
+          <span class="price">￥ {{ money(item.price) }} </span>
           <span class="del"
                 @click="delCheck(item.name)">
             <img src="./../../../assets/icons/btn_clean@2x.png"
@@ -66,6 +66,7 @@ import type { Category } from '@/api/types/category'
 import type { Dish } from '@/api/types/dish'
 import type { SetmealDish } from '@/api/types/setmeal'
 import Empty from '@/components/Empty/index.vue'
+import { money } from '@/utils/format'
 
 type PrintedDish = Dish & { dishId: number; dishName: string; copies: number }
 

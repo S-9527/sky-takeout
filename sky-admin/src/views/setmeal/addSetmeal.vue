@@ -62,7 +62,7 @@
                                        width="180"
                                        align="center">
                         <template #default="scope">
-                          {{ (Number(Number(scope.row.price).toFixed(2)) * 100) / 100 }}
+                          {{ money(scope.row.price) }}
                         </template>
                       </el-table-column>
                       <el-table-column prop="address"
@@ -185,6 +185,7 @@ import type { Category } from '@/api/types/category'
 import type { SetmealDish, SetmealDTO } from '@/api/types/setmeal'
 import { amountRule, nameRule } from '@/utils/formRules'
 import { parseQueryNumber } from '@/utils/query'
+import { money } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()

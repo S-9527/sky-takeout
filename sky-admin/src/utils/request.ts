@@ -13,7 +13,6 @@ import {
   checkPending,
   removePending
 } from './requestOptimize'
-import { removeUserInfo, removeUsername } from './cookies'
 import router from '@/router'
 
 const service = axios.create({
@@ -91,8 +90,6 @@ service.interceptors.response.use(
         case 401:
           // token 已失效:先清掉本地登录态,否则下次导航仍会带着旧 token 被弹回登录页
           useUserStore(pinia).ResetToken()
-          removeUserInfo()
-          removeUsername()
           router.push('/login')
           break
         case 405:

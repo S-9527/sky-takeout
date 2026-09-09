@@ -7,9 +7,6 @@ import {
   removeToken,
   getStoreId,
   setStoreId,
-  getUsername,
-  setUsername,
-  removeUsername,
   getUserInfo,
   setUserInfo,
   removeUserInfo
@@ -24,26 +21,47 @@ interface StoreUserInfo extends EmployeeLoginVO {
   storeManagerName?: string
 }
 
+// pinia 是唯一读入口,cookie 只负责跨刷新保留;这里启动时一次性水合
+function loadUserInfo(): Partial<StoreUserInfo> {
+  const saved = getUserInfo()
+  if (!saved) return {}
+  try {
+    return JSON.parse(saved) as StoreUserInfo
+  } catch {
+    return {}
+  }
+}
+
 export const useUserStore = defineStore('user', () => {
   const token = ref<string>(getToken() || '')
+  const storeId = ref<string>(getStoreId() || '')
+  const userInfo = ref<Partial<StoreUserInfo>>(loadUserInfo())
+  const roles = ref<string[]>([])
   const name = ref('')
   const avatar = ref('')
-  const storeId = ref<string>(getStoreId() || '')
   const introduction = ref('')
-  const userInfo = ref<Partial<StoreUserInfo>>({})
-  const roles = ref<string[]>([])
-  const username = ref<string>(getUsername() || '')
+  const username = ref('')
+
+  // 派生字段统一从 userInfo 同步,避免各处各写一遍
+  function syncFromUserInfo() {
+    const info = userInfo.value
+    roles.value = info.roles ?? []
+    name.value = info.name ?? ''
+    avatar.value = info.avatar ?? ''
+    introduction.value = info.introduction ?? ''
+  }
+  syncFromUserInfo()
 
   async function Login(params: { username: string; password: string }) {
     const { password } = params
     const uname = params.username.trim()
     username.value = uname
-    setUsername(uname)
     // 拦截器已剥离 Result 外壳并统一处理失败，成功时 data 即业务数据
     const data = await login({ username: uname, password })
     token.value = data.token
     setToken(data.token)
     userInfo.value = { ...data }
+    syncFromUserInfo()
     setUserInfo(JSON.stringify(data))
     return data
   }
@@ -52,14 +70,10 @@ export const useUserStore = defineStore('user', () => {
   function ResetToken() {
     removeToken()
     removeUserInfo()
-    removeUsername()
     token.value = ''
     username.value = ''
     userInfo.value = {}
-    name.value = ''
-    avatar.value = ''
-    introduction.value = ''
-    roles.value = []
+    syncFromUserInfo()
   }
 
   async function changeStore(data: { data: string; authorization: string }) {
@@ -67,35 +81,6 @@ export const useUserStore = defineStore('user', () => {
     token.value = data.authorization
     setStoreId(data.data)
     setToken(data.authorization)
-  }
-
-  async function GetUserInfo() {
-    if (token.value === '') {
-      throw Error('GetUserInfo: token is undefined!')
-    }
-
-    const data = JSON.parse(getUserInfo() as string) as StoreUserInfo
-    if (!data) {
-      throw Error('Verification failed, please Login again.')
-    }
-
-    const {
-      roles: roleList,
-      name: userName,
-      avatar: userAvatar,
-      introduction: userIntroduction,
-      applicant,
-      storeManagerName
-    } = data
-    if (!roleList || roleList.length <= 0) {
-      throw Error('GetUserInfo: roles must be a non-null array!')
-    }
-
-    roles.value = roleList
-    userInfo.value = { ...data }
-    name.value = userName || applicant || storeManagerName || ''
-    avatar.value = userAvatar || ''
-    introduction.value = userIntroduction || ''
   }
 
   async function LogOut() {
@@ -115,7 +100,6 @@ export const useUserStore = defineStore('user', () => {
     Login,
     ResetToken,
     changeStore,
-    GetUserInfo,
     LogOut
   }
 })

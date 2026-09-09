@@ -53,7 +53,7 @@ const variables = {
 const defOpen = computed(() => {
   const path = ['/']
   routes.value.forEach((n) => {
-    const routeRoles = n.meta?.roles as string[] | undefined
+    const routeRoles = n.meta?.roles
     if (routeRoles && routeRoles[0] === roles.value[0]) {
       path.splice(0, 1, n.path)
     }

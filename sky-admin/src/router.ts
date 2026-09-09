@@ -1,6 +1,20 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Layout from "@/layout/index.vue";
 
+declare module "vue-router" {
+  interface RouteMeta {
+    /** 页面标题,同时写入 document.title */
+    title?: string
+    /** 为 true 时不拦截到 /login */
+    notNeedAuth?: boolean
+    /** 为 true 时不渲染到侧边栏 */
+    hidden?: boolean
+    /** 允许访问的角色,缺省表示所有角色可见 */
+    roles?: string[]
+  }
+}
+
+
 const router = createRouter({
   history: createWebHistory('/'),
   scrollBehavior: (_to, _from, savedPosition) => {

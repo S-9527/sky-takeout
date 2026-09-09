@@ -37,7 +37,7 @@
 import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadProps } from 'element-plus'
-import { getToken } from '@/utils/cookies'
+import { useUserStore } from '@/store/modules/user'
 
 const props = defineProps({
   type: { type: String, default: '.jpg,.jpeg,.png' },
@@ -46,9 +46,10 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['imageChange'])
+const userStore = useUserStore()
 
 const headers = {
-  token: getToken()
+  token: userStore.token
 }
 // 与 axios 的 baseURL 共用同一个环境变量,避免硬编码 /api
 const uploadAction = `${import.meta.env.VITE_BASE_API}/common/upload`

@@ -35,9 +35,9 @@
           <template #default="scope">
             <div
               class="tableColumn-status"
-              :class="{ 'stop-use': String(scope.row.status) === '0' }"
+              :class="{ 'stop-use': scope.row.status === 0 }"
             >
-              {{ String(scope.row.status) === '0' ? '禁用' : '启用' }}
+              {{ scope.row.status === 0 ? '禁用' : '启用' }}
             </div>
           </template>
         </el-table-column>
@@ -97,8 +97,6 @@ const input = ref('')
 const counts = ref<number>(0)
 const { page, pageSize, handleSizeChange, handleCurrentChange } = useTablePage(() => init())
 const tableData = ref<Employee[]>([])
-const id = ref('')
-const status = ref(0)
 const isSearch = ref<boolean>(false)
 
 const initFun = () => {
@@ -137,15 +135,12 @@ const statusHandle = (row: Employee) => {
   if (row.username === 'admin') {
     return
   }
-  id.value = String(row.id)
-  // status 必须保持 number:下面靠 !status.value 取反,转成 '0' 后永远为 truthy,禁用就再也启不回来
-  status.value = row.status
   ElMessageBox.confirm('确认调整该账号的状态?', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning',
   }).then(() => {
-    enableOrDisableEmployee({ id: Number(id.value), status: !status.value ? 1 : 0 })
+    enableOrDisableEmployee({ id: row.id, status: row.status === 1 ? 0 : 1 })
       .then(() => {
         ElMessage.success('账号状态更改成功！')
         init()

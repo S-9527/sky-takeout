@@ -81,8 +81,8 @@
         <el-table-column label="售卖状态">
           <template #default="scope">
             <div class="tableColumn-status"
-                 :class="{ 'stop-use': String(scope.row.status) === '0' }">
-              {{ String(scope.row.status) === '0' ? '停售' : '启售' }}
+                 :class="{ 'stop-use': scope.row.status === 0 }">
+              {{ scope.row.status === 0 ? '停售' : '启售' }}
             </div>
           </template>
         </el-table-column>

@@ -59,8 +59,8 @@
         <el-table-column label="状态">
           <template #default="scope">
             <div class="tableColumn-status"
-                 :class="{ 'stop-use': String(scope.row.status) === '0' }">
-              {{ String(scope.row.status) === '0' ? '禁用' : '启用' }}
+                 :class="{ 'stop-use': scope.row.status === 0 }">
+              {{ scope.row.status === 0 ? '禁用' : '启用' }}
             </div>
           </template>
         </el-table-column>
@@ -185,8 +185,6 @@ interface CategoryForm {
 }
 
 const actionType = ref('')
-const id = ref('')
-const status = ref(0)
 const categoryType = ref<number | null>(null)
 const name = ref('')
 const action = ref('')
@@ -262,15 +260,13 @@ const handleClose = (_st: string) => {
 
 //状态修改
 const statusHandle = (row: Category) => {
-  id.value = String(row.id)
-  status.value = row.status
   ElMessageBox.confirm('确认调整该分类的状态?', '提示', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning',
     customClass: 'customClass'
   }).then(() => {
-    enableOrDisableCategory({ id: Number(id.value), status: !status.value ? 1 : 0 })
+    enableOrDisableCategory({ id: row.id, status: row.status === 1 ? 0 : 1 })
       .then(() => {
         ElMessage.success('分类状态更改成功！')
         init()

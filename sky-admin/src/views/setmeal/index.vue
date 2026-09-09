@@ -135,9 +135,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getSetmealPage,
   deleteSetmeal,
-  setmealStatusByStatus,
-  dishCategoryList as getDishCategoryListApi
+  setmealStatusByStatus
 } from '@/api/setMeal'
+import { getCategoryList as getDishCategoryListApi } from '@/api/category'
 import type { Category } from '@/api/types/category'
 import type { SetmealVO } from '@/api/types/setmeal'
 import Empty from '@/components/Empty/index.vue'

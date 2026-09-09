@@ -1,6 +1,5 @@
 import request from '@/utils/request'
 import type {
-  Category,
   Dish,
   DishDTO,
   DishPageQueryDTO,
@@ -37,11 +36,6 @@ export const queryDishById = (id: number) => {
   return request.get<DishVO>(`/dish/${id}`)
 }
 
-// 获取菜品分类列表
-export const getCategoryList = (params: { type: number }) => {
-  return request.get<Category[]>('/category/list', { params })
-}
-
 // 根据分类id/名称查询菜品列表
 export const queryDishList = (params: { categoryId?: number; name?: string }) => {
   return request.get<Dish[]>('/dish/list', { params })
@@ -55,9 +49,4 @@ export const dishStatusByStatus = (params: {
   return request.post(`/dish/status/${params.status}`, undefined, {
     params: { id: params.id }
   })
-}
-
-// 菜品分类数据查询
-export const dishCategoryList = (params: { type: number }) => {
-  return request.get<Category[]>('/category/list', { params: { ...params } })
 }

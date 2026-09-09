@@ -60,7 +60,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import type { PropType } from 'vue'
-import { getCategoryList, queryDishList } from '@/api/dish'
+import { queryDishList } from '@/api/dish'
+import { getCategoryList } from '@/api/category'
 import type { Category } from '@/api/types/category'
 import type { Dish } from '@/api/types/dish'
 import type { SetmealDish } from '@/api/types/setmeal'

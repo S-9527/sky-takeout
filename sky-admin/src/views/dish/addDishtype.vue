@@ -131,9 +131,9 @@ import ImageUpload from '@/components/ImgUpload/index.vue'
 import {
   queryDishById,
   addDish,
-  editDish,
-  getCategoryList
+  editDish
 } from '@/api/dish'
+import { getCategoryList } from '@/api/category'
 import type { Category } from '@/api/types/category'
 import type { DishDTO } from '@/api/types/dish'
 import { amountRule, nameRule } from '@/utils/formRules'

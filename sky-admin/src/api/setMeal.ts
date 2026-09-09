@@ -1,6 +1,5 @@
 import request from '@/utils/request'
 import type {
-  Category,
   PageResult,
   SetmealDTO,
   SetmealPageQueryDTO,
@@ -45,9 +44,4 @@ export const setmealStatusByStatus = (params: {
   return request.post(`/setmeal/status/${params.status}`, undefined, {
     params: { id: params.ids }
   })
-}
-
-// 套餐分类数据查询
-export const dishCategoryList = (params: { type: number }) => {
-  return request.get<Category[]>('/category/list', { params: { ...params } })
 }

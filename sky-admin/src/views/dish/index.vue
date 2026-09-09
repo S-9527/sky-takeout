@@ -135,9 +135,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getDishPage,
   deleteDish,
-  dishStatusByStatus,
-  dishCategoryList as dishCategoryListApi
+  dishStatusByStatus
 } from '@/api/dish'
+import { getCategoryList as dishCategoryListApi } from '@/api/category'
 import type { DishVO } from '@/api/types/dish'
 import Empty from '@/components/Empty/index.vue'
 import Pagination from '@/components/Pagination/index.vue'

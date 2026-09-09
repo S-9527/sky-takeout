@@ -158,7 +158,7 @@ import {
   deleCategory,
   editCategory,
   addCategory,
-  enableOrDisableEmployee
+  enableOrDisableCategory
 } from '@/api/category'
 import Empty from '@/components/Empty/index.vue'
 import Pagination from '@/components/Pagination/index.vue'
@@ -270,7 +270,7 @@ const statusHandle = (row: Category) => {
     type: 'warning',
     customClass: 'customClass'
   }).then(() => {
-    enableOrDisableEmployee({ id: Number(id.value), status: !status.value ? 1 : 0 })
+    enableOrDisableCategory({ id: Number(id.value), status: !status.value ? 1 : 0 })
       .then(() => {
         ElMessage.success('分类状态更改成功！')
         init()

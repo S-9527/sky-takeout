@@ -190,27 +190,16 @@ li {
   }
 }
 
+// 工作台页面是列表页外壳的变体,基础样式见 styles/component/page-shell.scss
 .dashboard {
-  &-container {
-    margin: 30px;
-
+  &-container.home {
     .container {
-      position: relative;
-      z-index: 1;
-      background: #fff;
-      padding: 30px;
-      border-radius: 4px;
+      padding: 20px;
+      margin-bottom: 20px;
     }
 
-    &.home {
-      .container {
-        padding: 20px;
-        margin-bottom: 20px;
-      }
-
-      .top10 {
-        padding-bottom: 0;
-      }
+    .top10 {
+      padding-bottom: 0;
     }
   }
 }

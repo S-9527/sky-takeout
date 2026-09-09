@@ -1,0 +1,20 @@
+// 工作台“订单信息”表与订单管理表里的图标操作列
+// 原先在 dashboard/components/orderList.vue 与 views/orderDetails/index.vue
+// 各写一份一模一样的非 scoped 样式,这里收敛成单一来源。
+.dashboard-container {
+  td.operate .cell {
+    .before,
+    .middle,
+    .after {
+      height: 39px;
+      width: 48px;
+    }
+  }
+
+  td.operate .cell,
+  td.otherOperate .cell {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+  }
+}

@@ -452,25 +452,25 @@ const dishSubtotal = computed(() =>
 </style>
 
 <style lang="scss">
-.dashboard-container {
-  .order-dialog {
-    .el-dialog__body {
-      height: 520px !important;
+// 只作用于订单详情弹窗本身(class="order-dialog"),
+// 原先 .el-dialog__body / .el-dialog__footer 是全局选择器,会污染营业状态、
+// 修改密码等所有弹窗
+.order-dialog {
+  .el-dialog__body {
+    height: 520px !important;
+    padding-top: 34px;
+    padding-left: 30px;
+    padding-right: 30px;
+  }
+
+  .el-dialog__footer {
+    .el-checkbox {
+      float: left;
+      margin-left: 40px;
     }
-  }
-}
-.el-dialog__body {
-  padding-top: 34px;
-  padding-left: 30px;
-  padding-right: 30px;
-}
-.el-dialog__footer {
-  .el-checkbox {
-    float: left;
-    margin-left: 40px;
-  }
-  .el-checkbox__label {
-    color: #333333 !important;
+    .el-checkbox__label {
+      color: #333333 !important;
+    }
   }
 }
 </style>

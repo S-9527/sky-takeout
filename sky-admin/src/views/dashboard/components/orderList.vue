@@ -293,26 +293,13 @@ function handleTable(row: OrderVO, _column: unknown, event: Event) {
 }
 </style>
 <style lang="scss">
+// 图标操作列的通用样式见 styles/component/order-table.scss
 .dashboard-container {
   .cancelTime {
     padding-left: 30px;
   }
   .orderTime {
     padding-left: 30px;
-  }
-  td.operate .cell {
-    .before,
-    .middle,
-    .after {
-      height: 39px;
-      width: 48px;
-    }
-  }
-  td.operate .cell,
-  td.otherOperate .cell {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: center;
   }
 }
 </style>

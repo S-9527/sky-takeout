@@ -1,0 +1,53 @@
+// 列表页页面外壳:白底容器 + 表头工具条 + 表格 + 分页 + 查询按钮
+// 原先在 styles/index.scss 里定义一次,又被 category / dish / setmeal /
+// orderDetails 四个页面各抄一份 scoped 版本,这里收敛成单一来源。
+// @use 'variables' 需要在文件内自己声明:vite 的 additionalData 不会注入到 @use 到的模块
+@use 'variables' as *;
+
+.dashboard {
+  &-container {
+    margin: 30px;
+
+    .container {
+      background: #fff;
+      position: relative;
+      z-index: 1;
+      padding: 30px 28px;
+      border-radius: 4px;
+
+      .tableBar {
+        margin-bottom: 20px;
+
+        // 工具条右侧的分段标签,如“全部 / 启售 / 停售”
+        .tableLab {
+          float: right;
+          span {
+            cursor: pointer;
+            display: inline-block;
+            font-size: 14px;
+            padding: 0 20px;
+            color: $gray-2;
+          }
+        }
+      }
+
+      .tableBox {
+        width: 100%;
+        border: 1px solid $gray-5;
+        border-bottom: 0;
+      }
+
+      .pageList {
+        text-align: center;
+        margin-top: 30px;
+      }
+    }
+
+    /* 查询黑色按钮样式 */
+    .normal-btn {
+      background: #333333;
+      color: white;
+      margin-left: 20px;
+    }
+  }
+}

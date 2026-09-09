@@ -1,0 +1,4 @@
+// 批量选择列的勾选框内边距,原来在菜品与套餐列表页各写一份全局样式
+.el-table-column--selection .cell {
+  padding-left: 10px;
+}

@@ -3,6 +3,10 @@
 
 @use './sidebar';
 
+@use './component/page-shell';
+@use './component/order-table';
+@use './component/table-selection';
+
 /* Global scss */
 
 body {
@@ -148,40 +152,3 @@ input[type="number"] {
   color: #000;
 }
 
-/* ========== 页面外壳 ========== */
-
-.dashboard {
-  &-container {
-    margin: 30px;
-
-    .container {
-      background: #fff;
-      position: relative;
-      z-index: 1;
-      padding: 30px 28px;
-      border-radius: 4px;
-
-      .tableBar {
-        margin-bottom: 20px;
-      }
-
-      .tableBox {
-        width: 100%;
-        border: 1px solid $gray-5;
-        border-bottom: 0;
-      }
-
-      .pageList {
-        text-align: center;
-        margin-top: 30px;
-      }
-    }
-
-    /* 查询黑色按钮样式 */
-    .normal-btn {
-      background: #333333;
-      color: white;
-      margin-left: 20px;
-    }
-  }
-}

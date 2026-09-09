@@ -364,39 +364,19 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+// 页面外壳的通用部分见 styles/component/page-shell.scss
 .dashboard {
   &-container {
-    margin: 30px;
     min-height: 700px;
 
     .container {
-      background: #fff;
-      position: relative;
-      z-index: 1;
-      padding: 30px 28px;
-      border-radius: 4px;
       height: calc(100% - 55px);
 
       .tableBar {
-        margin-bottom: 20px;
         justify-content: space-between;
       }
-      .tableBox {
-        width: 100%;
-        border: 1px solid $gray-5;
-        border-bottom: 0;
-      }
-      .pageList {
-        text-align: center;
-        margin-top: 30px;
-      }
-      //查询黑色按钮样式
-      .normal-btn {
-        background: #333333;
-        color: white;
-        margin-left: 20px;
-      }
     }
+
     .hContainer {
       height: auto !important;
     }
@@ -405,6 +385,7 @@ onMounted(() => {
 </style>
 
 <style lang="scss">
+// 图标操作列的通用样式见 styles/component/order-table.scss
 .dashboard-container {
   .cancelReason {
     padding-left: 40px;
@@ -414,20 +395,6 @@ onMounted(() => {
   }
   .orderTime {
     padding-left: 50px;
-  }
-  td.operate .cell {
-    .before,
-    .middle,
-    .after {
-      height: 39px;
-      width: 48px;
-    }
-  }
-  td.operate .cell,
-  td.otherOperate .cell {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: center;
   }
 }
 </style>

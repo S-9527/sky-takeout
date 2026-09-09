@@ -1,4 +1,3 @@
-<!--  -->
 <template>
   <div class="tab-change">
     <div v-for="item in changedOrderList"
@@ -6,9 +5,9 @@
          class="tab-item"
          :class="{ active: item.value === activeIndex }"
          @click="tabChange(item.value)">
-      <el-badge :class="{'special-item':item.num<10}"
+      <el-badge :class="{'special-item':(item.num ?? 0)<10}"
                 class="item"
-                :value="item.num > 99 ? '99+' : item.num"
+                :value="(item.num ?? 0) > 99 ? '99+' : (item.num ?? 0)"
                 :hidden="!(isOrderStatus(item.value, OrderStatus.ToBeConfirmed, OrderStatus.Confirmed, OrderStatus.DeliveryInProgress) && item.num)">
         {{ item.label }}
       </el-badge>
@@ -18,13 +17,24 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { OrderStatus, ORDER_STATUS_TEXT, isOrderStatus } from '@/api/types'
+import {
+  OrderStatus,
+  ORDER_STATUS_TEXT,
+  isOrderStatus,
+  type OrderStatisticsVO
+} from '@/api/types'
 
-const props = defineProps({
-  orderStatics: { type: Object, default: '' },
-  defaultActivity: { type: [Number, String], default: '' },
-})
-const emit = defineEmits(['tabChange'])
+const props = withDefaults(
+  defineProps<{
+    orderStatics?: OrderStatisticsVO
+    defaultActivity?: number
+  }>(),
+  {
+    orderStatics: () => ({ toBeConfirmed: 0, confirmed: 0, deliveryInProgress: 0 }),
+    defaultActivity: 0
+  }
+)
+const emit = defineEmits<{ tabChange: [value: number] }>()
 
 const activeIndex = ref<number>(Number(props.defaultActivity) || OrderStatus.All)
 

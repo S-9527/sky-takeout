@@ -168,7 +168,7 @@
                 v-if="row.status === OrderStatus.ToBeConfirmed"
                 link
                 class="blueBug"
-                @click="orderAccept(row), (isTableOperateBtn = true)"
+                @click="actions.accept(row, $event, true)"
               >
                 接单
               </el-button>
@@ -176,7 +176,7 @@
                 v-if="row.status === OrderStatus.Confirmed"
                 link
                 class="blueBug"
-                @click="cancelOrDeliveryOrComplete(3, row.id)"
+                @click="actions.deliverOrComplete(row, $event)"
               >
                 派送
               </el-button>
@@ -184,7 +184,7 @@
                 v-if="row.status === OrderStatus.DeliveryInProgress"
                 link
                 class="blueBug"
-                @click="cancelOrDeliveryOrComplete(4, row.id)"
+                @click="actions.deliverOrComplete(row, $event)"
               >
                 完成
               </el-button>
@@ -194,15 +194,23 @@
                 v-if="row.status === OrderStatus.ToBeConfirmed"
                 link
                 class="delBut"
-                @click="orderReject(row), (isTableOperateBtn = true)"
+                @click="actions.openReject(row, $event, true)"
               >
                 拒单
               </el-button>
               <el-button
-                v-if="[1, 3, 4, 5].includes(row.status)"
+                v-if="
+                  isOrderStatus(
+                    row.status,
+                    OrderStatus.PendingPayment,
+                    OrderStatus.Confirmed,
+                    OrderStatus.DeliveryInProgress,
+                    OrderStatus.Completed
+                  )
+                "
                 link
                 class="delBut"
-                @click="cancelOrder(row)"
+                @click="actions.openCancel(row, $event)"
               >
                 取消
               </el-button>
@@ -232,362 +240,49 @@
       />
     </div>
 
-    <!-- 查看弹框部分 -->
-    <el-dialog
-      title="订单信息"
-      v-model="dialogVisible"
-      width="53%"
-      :before-close="handleClose"
-      class="order-dialog"
-    >
-      <el-scrollbar style="height: 100%">
-        <div class="order-top">
-          <div>
-            <div style="display: inline-block">
-              <label style="font-size: 16px">订单号：</label>
-              <div class="order-num">
-                {{ diaForm.number }}
-              </div>
-            </div>
-            <div
-              style="display: inline-block"
-              class="order-status"
-              :class="{ status3: [3, 4].includes(dialogOrderStatus) }"
-            >
-              {{
-                orderList.find((item) => item.value === dialogOrderStatus)?.label
-              }}
-            </div>
-          </div>
-          <p><label>下单时间：</label>{{ diaForm.orderTime }}</p>
-        </div>
-
-        <div class="order-middle">
-          <div class="user-info">
-            <div class="user-info-box">
-              <div class="user-name">
-                <label>用户名：</label>
-                <span>{{ diaForm.consignee }}</span>
-              </div>
-              <div class="user-phone">
-                <label>手机号：</label>
-                <span>{{ diaForm.phone }}</span>
-              </div>
-              <div
-                v-if="[2, 3, 4, 5].includes(dialogOrderStatus)"
-                class="user-getTime"
-              >
-                <label>{{
-                  dialogOrderStatus === OrderStatus.Completed ? '送达时间：' : '预计送达时间：'
-                }}</label>
-                <span>{{
-                  dialogOrderStatus === OrderStatus.Completed
-                    ? diaForm.deliveryTime
-                    : diaForm.estimatedDeliveryTime
-                }}</span>
-              </div>
-              <div class="user-address">
-                <label>地址：</label>
-                <span>{{ diaForm.address }}</span>
-              </div>
-            </div>
-            <div
-              class="user-remark"
-              :class="{ orderCancel: dialogOrderStatus === OrderStatus.Cancelled }"
-            >
-              <div>{{ dialogOrderStatus === OrderStatus.Cancelled ? '取消原因' : '备注' }}</div>
-              <span>{{
-                dialogOrderStatus === OrderStatus.Cancelled
-                  ? diaForm.cancelReason || diaForm.rejectionReason
-                  : diaForm.remark
-              }}</span>
-            </div>
-          </div>
-
-          <div class="dish-info">
-            <div class="dish-label">菜品</div>
-            <div class="dish-list">
-              <div
-                v-for="(item, index) in diaForm.orderDetailList"
-                :key="index"
-                class="dish-item"
-              >
-                <div class="dish-item-box">
-                  <span class="dish-name">{{ item.name }}</span>
-                  <span class="dish-num">x{{ item.number }}</span>
-                </div>
-                <span class="dish-price"
-                  >￥{{ item.amount ? item.amount.toFixed(2) : '' }}</span
-                >
-              </div>
-            </div>
-            <div class="dish-all-amount">
-              <label>菜品小计</label>
-              <span
-                >￥{{
-                  ((diaForm.amount ?? 0) - 6 - (diaForm.packAmount ?? 0)).toFixed(2)
-                }}</span
-              >
-            </div>
-          </div>
-        </div>
-
-        <div class="order-bottom">
-          <div class="amount-info">
-            <div class="amount-label">费用</div>
-            <div class="amount-list">
-              <div class="dish-amount">
-                <span class="amount-name">菜品小计：</span>
-<span class="amount-price"
-                  >￥{{
-                    Number(
-                      ((diaForm.amount ?? 0) - 6 - (diaForm.packAmount ?? 0)).toFixed(2)
-                    ) *
-                    100 /
-                    100
-                  }}</span
-                  >
-              </div>
-              <div class="send-amount">
-                <span class="amount-name">派送费：</span>
-                <span class="amount-price">￥{{ 6 }}</span>
-              </div>
-              <div class="package-amount">
-                <span class="amount-name">打包费：</span>
-                <span class="amount-price"
-                  >￥{{
-                    (diaForm.packAmount ?? 0) ? (Number((diaForm.packAmount ?? 0).toFixed(2)) * 100) / 100 : ''
-                  }}</span
-                >
-              </div>
-              <div class="all-amount">
-                <span class="amount-name">合计：</span>
-                <span class="amount-price"
-                  >￥{{
-                    (diaForm.amount ?? 0) ? (Number((diaForm.amount ?? 0).toFixed(2)) * 100) / 100 : ''
-                  }}</span
-                >
-              </div>
-              <div class="pay-type">
-                <span class="pay-name">支付渠道：</span>
-                <span class="pay-value">{{
-                  diaForm.payMethod === 1 ? '微信支付' : '支付宝支付'
-                }}</span>
-              </div>
-              <div class="pay-time">
-                <span class="pay-name">支付时间：</span>
-                <span class="pay-value">{{ diaForm.checkoutTime }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </el-scrollbar>
-      <template #footer><span v-if="dialogOrderStatus !== OrderStatus.Cancelled" class="dialog-footer">
-        <el-checkbox
-          v-if="dialogOrderStatus === OrderStatus.ToBeConfirmed && orderStatus === OrderStatus.ToBeConfirmed"
-          v-model="isAutoNext"
-          >处理完自动跳转下一条</el-checkbox
-        >
-        <el-button
-          v-if="dialogOrderStatus === OrderStatus.ToBeConfirmed"
-          @click="orderReject(row), (isTableOperateBtn = false)"
-          >拒 单</el-button
-        >
-        <el-button
-          v-if="dialogOrderStatus === OrderStatus.ToBeConfirmed"
-          type="primary"
-          @click="orderAccept(row), (isTableOperateBtn = false)"
-          >接 单</el-button
-        >
-
-        <el-button
-          v-if="[1, 3, 4, 5].includes(dialogOrderStatus)"
-          @click="dialogVisible = false"
-          >返 回</el-button
-        >
-        <el-button
-          v-if="dialogOrderStatus === OrderStatus.Confirmed"
-          type="primary"
-          @click="cancelOrDeliveryOrComplete(3, row.id)"
-          >派 送</el-button
-        >
-        <el-button
-          v-if="dialogOrderStatus === OrderStatus.DeliveryInProgress"
-          type="primary"
-          @click="cancelOrDeliveryOrComplete(4, row.id)"
-          >完 成</el-button
-        >
-        <el-button
-          v-if="[1].includes(dialogOrderStatus)"
-          type="primary"
-          @click="cancelOrder(row)"
-          >取消订单</el-button
-        >
-      </span></template>
-    </el-dialog>
-    <el-dialog
-      :title="cancelDialogTitle + '原因'"
-      v-model="cancelDialogVisible"
-      width="42%"
-      :before-close="() => ((cancelDialogVisible = false), (cancelReason = ''))"
-      class="cancelDialog"
-    >
-      <el-form label-width="90px">
-        <el-form-item :label="cancelDialogTitle + '原因：'">
-          <el-select
-            v-model="cancelReason"
-            :placeholder="'请选择' + cancelDialogTitle + '原因'"
-          >
-            <el-option
-              v-for="(item, index) in cancelDialogTitle === '取消'
-                ? cancelrReasonList
-                : cancelOrderReasonList"
-              :key="index"
-              :label="item.label"
-              :value="item.label"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="cancelReason === '自定义原因'" label="原因：">
-          <el-input
-            v-model.trim="remark"
-            type="textarea"
-            :placeholder="'请填写您' + cancelDialogTitle + '的原因（限20字内）'"
-            maxlength="20"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer><span class="dialog-footer">
-        <el-button @click=";(cancelDialogVisible = false), (cancelReason = '')"
-          >取 消</el-button
-        >
-        <el-button type="primary" @click="confirmCancel">确 定</el-button>
-      </span></template>
-    </el-dialog>
+    <!-- 订单详情 / 取消拒单弹窗 -->
+    <OrderDetailDialog :actions="actions" :list-status="orderStatus" />
+    <OrderCancelDialog :actions="actions" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import TabChange from './tabChange.vue'
 import Empty from '@/components/Empty/index.vue'
-import {
-  getOrderDetailPage,
-  queryOrderDetailById,
-  completeOrder,
-  deliveryOrder,
-  orderCancel,
-  orderReject as orderRejectApi,
-  orderAccept as orderAcceptApi,
-  getOrderListBy,
-} from '@/api/order'
+import OrderDetailDialog from '@/components/Order/OrderDetailDialog.vue'
+import OrderCancelDialog from '@/components/Order/OrderCancelDialog.vue'
+import { getOrderDetailPage, getOrderListBy } from '@/api/order'
+import { useOrderActions } from '@/composables/useOrderActions'
 import {
   OrderStatus,
   ORDER_STATUS_TEXT,
   isOrderStatus,
   type OrderStatisticsVO,
-  type OrderVO
+  type OrderVO,
+  type OrderStatus as OrderStatusCode
 } from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
 
-const defaultActivity = ref<string | number>(OrderStatus.All)
+const defaultActivity = ref<number>(OrderStatus.All)
 const orderStatics = ref<OrderStatisticsVO>()
-const row = ref<OrderVO>({} as OrderVO)
-const isAutoNext = ref(true)
-const isTableOperateBtn = ref(true)
-const orderId = ref<number>() //订单号
 const input = ref('') //搜索条件的订单号
 const phone = ref('') //搜索条件的手机号
 const valueTime = ref<string[]>([])
 const defaultTime = [new Date(2000, 0, 1, 0, 0, 0), new Date(2000, 0, 1, 23, 59, 59)]
-const dialogVisible = ref(false) //详情弹窗
-const cancelDialogVisible = ref(false) //取消，拒单弹窗
-const cancelDialogTitle = ref('') //取消，拒绝弹窗标题
-const cancelReason = ref('')
-const remark = ref('') //自定义原因
 const counts = ref(0)
 const page = ref(1)
 const pageSize = ref(10)
 const tableData = ref<OrderVO[]>([])
-const diaForm = ref<Partial<OrderVO>>({})
 const isSearch = ref(false)
 const orderStatus = ref<number>(OrderStatus.All) //列表字段展示所需订单状态,用于分页请求数据
-const dialogOrderStatus = ref<number>(OrderStatus.All) //弹窗所需订单状态，用于详情展示字段
-const cancelOrderReasonList = ref([
-  {
-    value: 1,
-    label: '订单量较多，暂时无法接单',
-  },
-  {
-    value: 2,
-    label: '菜品已销售完，暂时无法接单',
-  },
-  {
-    value: 3,
-    label: '餐厅已打烊，暂时无法接单',
-  },
-  {
-    value: 0,
-    label: '自定义原因',
-  },
-])
 
-const cancelrReasonList = ref([
-  {
-    value: 1,
-    label: '订单量较多，暂时无法接单',
-  },
-  {
-    value: 2,
-    label: '菜品已销售完，暂时无法接单',
-  },
-  {
-    value: 3,
-    label: '骑手不足无法配送',
-  },
-  {
-    value: 4,
-    label: '客户电话取消',
-  },
-  {
-    value: 0,
-    label: '自定义原因',
-  },
-])
-const orderList = ref([
-  {
-    label: ORDER_STATUS_TEXT[OrderStatus.All],
-    value: OrderStatus.All,
-  },
-  {
-    label: ORDER_STATUS_TEXT[OrderStatus.PendingPayment],
-    value: OrderStatus.PendingPayment,
-  },
-  {
-    label: ORDER_STATUS_TEXT[OrderStatus.ToBeConfirmed],
-    value: OrderStatus.ToBeConfirmed,
-  },
-  {
-    label: ORDER_STATUS_TEXT[OrderStatus.Confirmed],
-    value: OrderStatus.Confirmed,
-  },
-  {
-    label: ORDER_STATUS_TEXT[OrderStatus.DeliveryInProgress],
-    value: OrderStatus.DeliveryInProgress,
-  },
-  {
-    label: ORDER_STATUS_TEXT[OrderStatus.Completed],
-    value: OrderStatus.Completed,
-  },
-  {
-    label: ORDER_STATUS_TEXT[OrderStatus.Cancelled],
-    value: OrderStatus.Cancelled,
-  },
-])
+const actions = useOrderActions({
+  onSuccess: () => init(orderStatus.value)
+})
 
 function initFun(orderStatus: number) {
   page.value = 1
@@ -600,7 +295,7 @@ function change(activeIndex: number) {
   input.value = ''
   phone.value = ''
   valueTime.value = []
-  dialogOrderStatus.value = OrderStatus.All
+  actions.state.detailStatus = OrderStatus.All
   router.push('/order')
 }
 
@@ -636,130 +331,29 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
       counts.value = Number(res.total)
       getOrderListBy3Status()
       if (
-        dialogOrderStatus.value === OrderStatus.ToBeConfirmed &&
+        actions.state.detailStatus === OrderStatus.ToBeConfirmed &&
         orderStatus.value === OrderStatus.ToBeConfirmed &&
-        isAutoNext.value &&
-        !isTableOperateBtn.value &&
+        actions.state.autoNext &&
+        !actions.state.tableOperated &&
         res.records.length > 1
       ) {
         const firstRow = res.records[0]
         goDetail(firstRow.id, firstRow.status, firstRow)
-      } else {
-        return null
       }
     })
 }
 
 function getOrderType(row: OrderVO) {
-  if (row.status === OrderStatus.PendingPayment) {
-    return '待付款'
-  } else if (row.status === OrderStatus.ToBeConfirmed) {
-    return '待接单'
-  } else if (row.status === OrderStatus.Confirmed) {
-    return '待派送'
-  } else if (row.status === OrderStatus.DeliveryInProgress) {
-    return '派送中'
-  } else if (row.status === OrderStatus.Completed) {
-    return '已完成'
-  } else if (row.status === OrderStatus.Cancelled) {
-    return '已取消'
-  } else {
-    return '退款'
-  }
+  return ORDER_STATUS_TEXT[row.status as OrderStatusCode] ?? '退款'
 }
 
 // 查看详情
-async function goDetail(id: number, status: number, rowData?: OrderVO) {
-  diaForm.value = {}
-  dialogVisible.value = true
-  dialogOrderStatus.value = status
-  orderId.value = id
-  const data = await queryOrderDetailById({ orderId: id })
-  diaForm.value = data
-  row.value =
-    rowData ||
-    ({ id: Number(route.query.orderId), status: status } as OrderVO)
+function goDetail(id: number, status: number, rowData?: OrderVO, event?: Event) {
+  void actions.openDetail(id, status, rowData, event)
+  // 从消息通知深链进入时,清除地址栏上的 orderId
   if (route.query.orderId) {
     router.push('/order')
   }
-}
-
-//打开拒单弹窗
-function orderReject(rowData: OrderVO) {
-  cancelDialogVisible.value = true
-  orderId.value = rowData.id
-  dialogOrderStatus.value = rowData.status
-  cancelDialogTitle.value = '拒绝'
-  dialogVisible.value = false
-  cancelReason.value = ''
-}
-
-//接单
-function orderAccept(rowData: OrderVO) {
-  orderId.value = rowData.id
-  dialogOrderStatus.value = rowData.status
-  orderAcceptApi({ id: orderId.value })
-    .then(() => {
-      ElMessage.success('操作成功')
-      orderId.value = undefined
-      dialogVisible.value = false
-      init(orderStatus.value)
-    })
-}
-
-//打开取消订单弹窗
-function cancelOrder(rowData: OrderVO) {
-  cancelDialogVisible.value = true
-  orderId.value = rowData.id
-  dialogOrderStatus.value = rowData.status
-  cancelDialogTitle.value = '取消'
-  dialogVisible.value = false
-  cancelReason.value = ''
-}
-
-//确认取消或拒绝订单并填写原因
-function confirmCancel() {
-  if (!cancelReason.value) {
-    return ElMessage.error(`请选择${cancelDialogTitle.value}原因`)
-  } else if (cancelReason.value === '自定义原因' && !remark.value) {
-    return ElMessage.error(`请输入${cancelDialogTitle.value}原因`)
-  }
-
-  const reason =
-    cancelReason.value === '自定义原因' ? remark.value : cancelReason.value
-
-  if (cancelDialogTitle.value === '取消') {
-    orderCancel({ id: orderId.value as number, cancelReason: reason })
-      .then(() => {
-        ElMessage.success('操作成功')
-        cancelDialogVisible.value = false
-        orderId.value = undefined
-        init(orderStatus.value)
-      })
-  } else {
-    orderRejectApi({ id: orderId.value as number, rejectionReason: reason })
-      .then(() => {
-        ElMessage.success('操作成功')
-        cancelDialogVisible.value = false
-        orderId.value = undefined
-        init(orderStatus.value)
-      })
-  }
-}
-
-// 派送，完成
-function cancelOrDeliveryOrComplete(status: number, id: number) {
-  ;(status === OrderStatus.Confirmed ? deliveryOrder : completeOrder)(id)
-    .then(() => {
-      ElMessage.success('操作成功')
-      orderId.value = undefined
-      dialogVisible.value = false
-      init(orderStatus.value)
-    })
-}
-
-function handleClose() {
-  dialogVisible.value = false
 }
 
 function handleSizeChange(val: number) {
@@ -776,11 +370,8 @@ init(Number(route.query.status) || OrderStatus.All)
 
 onMounted(() => {
   //如果有值说明是消息通知点击进来的
-  if (
-    route.query.orderId &&
-    route.query.orderId !== 'undefined'
-  ) {
-    goDetail(Number(route.query.orderId), 2)
+  if (route.query.orderId && route.query.orderId !== 'undefined') {
+    goDetail(Number(route.query.orderId), OrderStatus.ToBeConfirmed)
   }
   if (route.query.status) {
     defaultActivity.value = Number(route.query.status)
@@ -792,40 +383,25 @@ onMounted(() => {
 .dashboard {
   &-container {
     margin: 30px;
-    // height: 100%;
     min-height: 700px;
+
     .container {
       background: #fff;
       position: relative;
       z-index: 1;
       padding: 30px 28px;
       border-radius: 4px;
-      // min-height: 650px;
       height: calc(100% - 55px);
 
       .tableBar {
-        // display: flex;
         margin-bottom: 20px;
         justify-content: space-between;
-
-        .tableLab {
-          span {
-            cursor: pointer;
-            display: inline-block;
-            font-size: 14px;
-            padding: 0 20px;
-            color: $gray-2;
-            border-right: solid 1px $gray-4;
-          }
-        }
       }
-
       .tableBox {
         width: 100%;
         border: 1px solid $gray-5;
         border-bottom: 0;
       }
-
       .pageList {
         text-align: center;
         margin-top: 30px;
@@ -839,248 +415,6 @@ onMounted(() => {
     }
     .hContainer {
       height: auto !important;
-    }
-  }
-}
-
-.search-btn {
-  margin-left: 20px;
-}
-
-.info-box {
-  margin: -15px -44px 20px;
-  p {
-    display: flex;
-    height: 20px;
-    line-height: 20px;
-    font-size: 14px;
-    font-weight: 400;
-    color: #666666;
-    text-align: left;
-    margin-bottom: 14px;
-    &:last-child {
-      margin-bottom: 0;
-    }
-    label {
-      width: 100px;
-      display: inline-block;
-      color: #666;
-    }
-    .des {
-      flex: 1;
-      color: #333333;
-    }
-  }
-}
-
-.order-top {
-  // height: 80px;
-  border-bottom: 1px solid #e7e6e6;
-  padding-bottom: 26px;
-  padding-left: 22px;
-  padding-right: 22px;
-  // margin: 0 30px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  .order-status {
-    width: 57.25px;
-    height: 27px;
-    background: #333333;
-    border-radius: 13.5px;
-    color: white;
-    margin-left: 19px;
-    text-align: center;
-    line-height: 27px;
-  }
-  .status3 {
-    background: #f56c6c;
-  }
-  p {
-    color: #333;
-    label {
-      color: #666;
-    }
-  }
-  .order-num {
-    font-size: 16px;
-    color: #2a2929;
-    font-weight: bold;
-    display: inline-block;
-  }
-}
-
-.order-middle {
-  .user-info {
-    min-height: 140px;
-    background: #fbfbfa;
-    margin-top: 23px;
-
-    padding: 20px 43px;
-    color: #333;
-    .user-info-box {
-      min-height: 55px;
-      display: flex;
-      flex-wrap: wrap;
-      .user-name {
-        flex: 67%;
-      }
-      .user-phone {
-        flex: 33%;
-      }
-      .user-getTime {
-        margin-top: 14px;
-        flex: 80%;
-        label {
-          margin-right: 3px;
-        }
-      }
-      label {
-        margin-right: 17px;
-        color: #666;
-      }
-
-      .user-address {
-        margin-top: 14px;
-        flex: 80%;
-        label {
-          margin-right: 30px;
-        }
-      }
-    }
-    .user-remark {
-      min-height: 43px;
-      line-height: 43px;
-      background: #fffbf0;
-      border: 1px solid #fbe396;
-      border-radius: 4px;
-      margin-top: 10px;
-      padding: 6px;
-      display: flex;
-      align-items: center;
-      div {
-        display: inline-block;
-        min-width: 53px;
-        height: 32px;
-        background: #fbe396;
-        border-radius: 4px;
-        text-align: center;
-        line-height: 32px;
-        color: #333;
-        margin-right: 30px;
-        // padding: 12px 6px;
-      }
-      span {
-        color: #f2a402;
-        line-height: 1.15;
-      }
-    }
-    .orderCancel {
-      background: #ffffff;
-      border: 1px solid #b6b6b6;
-
-      div {
-        padding: 0 10px;
-        background-color: #e5e4e4;
-      }
-      span {
-        color: #f56c6c;
-      }
-    }
-  }
-  .dish-info {
-    // min-height: 180px;
-    display: flex;
-    flex-wrap: wrap;
-    padding: 20px 40px;
-    border-bottom: 1px solid #e7e6e6;
-    .dish-label {
-      color: #666;
-    }
-    .dish-list {
-      flex: 80%;
-      display: flex;
-      flex-wrap: wrap;
-      .dish-item {
-        flex: 50%;
-        margin-bottom: 14px;
-        color: #333;
-        .dish-num {
-        }
-        .dish-item-box {
-          display: inline-block;
-          width: 120px;
-        }
-      }
-    }
-    .dish-label {
-      margin-right: 65px;
-    }
-    .dish-all-amount {
-      flex: 1;
-      padding-left: 92px;
-      margin-top: 10px;
-      label {
-        color: #333333;
-        font-weight: bold;
-        margin-right: 5px;
-      }
-      span {
-        color: #f56c6c;
-      }
-    }
-  }
-}
-.order-bottom {
-  .amount-info {
-    // min-height: 180px;
-    display: flex;
-    flex-wrap: wrap;
-    padding: 20px 40px;
-    padding-bottom: 0px;
-    .amount-label {
-      color: #666;
-      margin-right: 65px;
-    }
-    .amount-list {
-      flex: 80%;
-      display: flex;
-      flex-wrap: wrap;
-      color: #333;
-      // height: 65px;
-      .dish-amount,
-      .package-amount,
-      .pay-type {
-        display: inline-block;
-        width: 300px;
-        margin-bottom: 14px;
-        flex: 50%;
-      }
-      .send-amount,
-      .all-amount,
-      .pay-time {
-        display: inline-block;
-        flex: 50%;
-        padding-left: 10%;
-      }
-      .package-amount {
-        .amount-name {
-          margin-right: 14px;
-        }
-      }
-      .all-amount {
-        .amount-name {
-          margin-right: 24px;
-        }
-        .amount-price {
-          color: #f56c6c;
-        }
-      }
-      .send-amount {
-        .amount-name {
-          margin-right: 10px;
-        }
-      }
     }
   }
 }
@@ -1110,57 +444,6 @@ onMounted(() => {
     display: flex;
     flex-wrap: nowrap;
     justify-content: center;
-  }
-  .order-dialog {
-    .el-dialog {
-      max-height: 764px !important;
-      display: flex;
-      flex-direction: column;
-      margin: 0 !important;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      max-height: calc(100% - 30px);
-      max-width: calc(100% - 30px);
-    }
-    .el-dialog__body {
-      height: 520px !important;
-    }
-  }
-}
-.el-dialog__body {
-  padding-top: 34px;
-  padding-left: 30px;
-  padding-right: 30px;
-}
-.cancelDialog {
-  .el-dialog__body {
-    padding-left: 64px;
-  }
-  .el-select,
-  .el-textarea {
-    width: 293px;
-  }
-  .el-textarea textarea {
-    height: 114px;
-  }
-}
-.el-dialog__footer {
-  .el-checkbox {
-    float: left;
-    margin-left: 40px;
-  }
-  .el-checkbox__label {
-    color: #333333 !important;
-  }
-}
-.empty-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  img {
-    margin-top: 0 !important;
   }
 }
 </style>

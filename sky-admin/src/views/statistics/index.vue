@@ -35,7 +35,7 @@ import {
   getTurnoverStatistics,
   getUserStatistics,
   getOrderStatistics,
-  getTop,
+  getSalesTop10
 } from '@/api/index'
 import type {
   OrderReportChartData,
@@ -88,7 +88,7 @@ function init(begin: string, end: string) {
     getTurnoverStatisticsData(begin, end)
     getUserStatisticsData(begin, end)
     getOrderStatisticsData(begin, end)
-    getTopData(begin, end)
+    getSalesTop10Data(begin, end)
   })
 }
 
@@ -126,9 +126,9 @@ async function getOrderStatisticsData(begin: string, end: string) {
     orderCompletionRate: orderDataRes.orderCompletionRate
   }
 }
-// 获取排行数据
-async function getTopData(begin: string, end: string) {
-  const data = await getTop({ begin: begin, end: end })
+// 获取销量排名 Top10
+async function getSalesTop10Data(begin: string, end: string) {
+  const data = await getSalesTop10({ begin: begin, end: end })
   const top10DataRes = data
   top10Data.value = {
     nameList: top10DataRes.nameList.split(',').reverse(),

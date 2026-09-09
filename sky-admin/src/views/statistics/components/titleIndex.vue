@@ -32,7 +32,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { exportInfor } from '@/api/index'
+import { exportReport } from '@/api/index'
 
 const props = withDefaults(
   defineProps<{
@@ -73,7 +73,7 @@ function handleExport() {
     type: 'warning',
   })
     .then(async function () {
-      const data = await exportInfor()
+      const data = await exportReport()
       let url = window.URL.createObjectURL(data)
       var a = document.createElement('a')
       document.body.appendChild(a)

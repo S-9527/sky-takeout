@@ -1,9 +1,9 @@
 import { onMounted, ref } from 'vue'
 import {
-  getBusinessData,
-  getOrderData,
-  getOverviewDishes,
-  getSetMealStatistics
+  getWorkspaceBusinessData,
+  getWorkspaceDishOverview,
+  getWorkspaceOrderOverview,
+  getWorkspaceSetmealOverview
 } from '@/api/index'
 import type {
   BusinessDataVO,
@@ -25,10 +25,10 @@ export function useWorkspaceData() {
     error.value = ''
     try {
       const [business, orders, dishes, setmeals] = await Promise.all([
-        getBusinessData(),
-        getOrderData(),
-        getOverviewDishes(),
-        getSetMealStatistics()
+        getWorkspaceBusinessData(),
+        getWorkspaceOrderOverview(),
+        getWorkspaceDishOverview(),
+        getWorkspaceSetmealOverview()
       ])
       overviewData.value = business
       orderviewData.value = orders

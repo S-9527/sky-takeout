@@ -30,6 +30,13 @@ export const statusText = (code: number, fallback = ''): string =>
 export const isOrderStatus = (status: number, ...allowed: number[]) =>
   allowed.includes(status)
 
+// 路由 query 上的状态值解析:缺省、非法或数组一律回到"全部订单"
+export const orderStatusFromQuery = (value: unknown): OrderStatus => {
+  const n = Number(value)
+  const allowed: number[] = Object.values(OrderStatus)
+  return allowed.includes(n) ? (n as OrderStatus) : OrderStatus.All
+}
+
 // 支付渠道
 export const PayMethod = {
   Wechat: 1,

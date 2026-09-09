@@ -254,7 +254,12 @@ import OrderCancelDialog from '@/components/Order/OrderCancelDialog.vue'
 import { getOrderDetailPage, getOrderListBy } from '@/api/order'
 import { useOrderActions } from '@/composables/useOrderActions'
 import { useTablePage } from '@/composables/useTablePage'
-import { OrderStatus, isOrderStatus, statusText } from '@/constants/order'
+import {
+  OrderStatus,
+  isOrderStatus,
+  orderStatusFromQuery,
+  statusText
+} from '@/constants/order'
 import type { OrderStatisticsVO, OrderVO } from '@/api/types/order'
 
 const route = useRoute()
@@ -316,7 +321,8 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
       valueTime.value && valueTime.value.length > 0
         ? valueTime.value[1]
         : undefined,
-    status: activeIndex || undefined,
+    // 不能写 activeIndex || undefined:全部订单的 All 就是 0,靠 falsy 巧合才没出错
+    status: activeIndex === OrderStatus.All ? undefined : activeIndex,
   }
   getOrderDetailPage({ ...params })
     .then((res) => {
@@ -350,16 +356,14 @@ function goDetail(id: number, status: number, rowData?: OrderVO, event?: Event) 
   }
 }
 
-init(Number(route.query.status) || OrderStatus.All)
+init(orderStatusFromQuery(route.query.status))
 
 onMounted(() => {
   //如果有值说明是消息通知点击进来的
   if (route.query.orderId && route.query.orderId !== 'undefined') {
     goDetail(Number(route.query.orderId), OrderStatus.ToBeConfirmed)
   }
-  if (route.query.status) {
-    defaultActivity.value = Number(route.query.status)
-  }
+  defaultActivity.value = orderStatusFromQuery(route.query.status)
 })
 </script>
 

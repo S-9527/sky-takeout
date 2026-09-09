@@ -177,8 +177,9 @@ async function init(isSearchVal?: boolean) {
     page: page.value,
     pageSize: pageSize.value,
     name: input.value || undefined,
-    categoryId: categoryId.value ? Number(categoryId.value) : undefined,
-    status: dishStatus.value || undefined
+    categoryId: categoryId.value === '' ? undefined : categoryId.value,
+    // status 不能写 || undefined:选"停售"(0)时 0 是 falsy,过滤条件会被整个丢掉
+    status: dishStatus.value === '' ? undefined : dishStatus.value
   })
     .then(res => {
       tableData.value = res.records

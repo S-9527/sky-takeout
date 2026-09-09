@@ -32,12 +32,12 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ tabChange: [value: number] }>()
 
-const activeIndex = ref<number>(Number(props.defaultActivity) || OrderStatus.All)
+const activeIndex = ref<number>(props.defaultActivity ?? OrderStatus.All)
 
 watch(
   () => props.defaultActivity,
   (val) => {
-    activeIndex.value = Number(val)
+    activeIndex.value = val ?? OrderStatus.All
   }
 )
 

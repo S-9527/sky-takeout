@@ -9,7 +9,6 @@ import {
   removePending
 } from './requestOptimize'
 import router from '@/router'
-const CancelToken = axios.CancelToken;
 
 const service = axios.create({
   baseURL: import.meta.env.VITE_BASE_API,
@@ -24,35 +23,12 @@ service.interceptors.request.use(
       config.headers['Authorization'] = `Bearer ${UserStore.token}`
     }
 
-    // get请求映射params参数
-    if (config.method === 'get' && config.params) {
-      let url = config.url + '?';
-      for (const propName of Object.keys(config.params)) {
-        const value = config.params[propName];
-        var part = encodeURIComponent(propName) + '=';
-        if (value !== null && typeof (value) !== 'undefined') {
-          if (typeof value === 'object') {
-            for (const key of Object.keys(value)) {
-              let params = propName + '[' + key + ']';
-              var subPart = encodeURIComponent(params) + '=';
-              url += subPart + encodeURIComponent(value[key]) + '&';
-            }
-          } else {
-            url += part + encodeURIComponent(value) + '&';
-          }
-        }
-      }
-      url = url.slice(0, -1);
-      config.params = {};
-      config.url = url;
-    }
-    // 计算当前请求key值
+    // 计算当前请求key值，相同请求在途时直接中止，防止重复提交
     const key = getRequestKey(config);
     if (checkPending(key)) {
-      // 重复请求则取消当前请求
-      const source = CancelToken.source();
-      config.cancelToken = source.token;
-      source.cancel('重复请求');
+      const controller = new AbortController();
+      config.signal = controller.signal;
+      controller.abort();
     } else {
       // 加入请求字典
       pending[key] = true;

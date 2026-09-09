@@ -8,8 +8,9 @@ const getRequestKey = (config?: AxiosRequestConfig): string => {
         return md5(String(+new Date()));
     }
 
-    const data = typeof config.data === 'string' ? config.data : JSON.stringify(config.data);
-    return md5(config.url + '&' + config.method + '&' + data);
+    const target = config.params ?? config.data;
+    const source = JSON.stringify(target ?? null);
+    return md5(config.url + '&' + config.method + '&' + source);
 }
 
 // 存储key值

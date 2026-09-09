@@ -51,13 +51,13 @@
       >
         <el-table-column key="number" prop="number" label="订单号" />
         <el-table-column
-          v-if="[2, 3, 4].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.ToBeConfirmed, OrderStatus.Confirmed, OrderStatus.DeliveryInProgress)"
           key="orderDishes"
           prop="orderDishes"
           label="订单菜品"
         />
         <el-table-column
-          v-if="[0].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.All)"
           key="status"
           prop="订单状态"
           label="订单状态"
@@ -67,27 +67,27 @@
           </template>
         </el-table-column>
         <el-table-column
-          v-if="[0, 5, 6].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.All, OrderStatus.Completed, OrderStatus.Cancelled)"
           key="consignee"
           prop="consignee"
           label="用户名"
           show-overflow-tooltip
         />
         <el-table-column
-          v-if="[0, 5, 6].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.All, OrderStatus.Completed, OrderStatus.Cancelled)"
           key="phone"
           prop="phone"
           label="手机号"
         />
         <el-table-column
-          v-if="[0, 2, 3, 4, 5, 6].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.All, OrderStatus.ToBeConfirmed, OrderStatus.Confirmed, OrderStatus.DeliveryInProgress, OrderStatus.Completed, OrderStatus.Cancelled)"
           key="address"
           prop="address"
           label="地址"
-          :class-name="orderStatus === 6 ? 'address' : ''"
+          :class-name="orderStatus === OrderStatus.Cancelled ? 'address' : ''"
         />
         <el-table-column
-          v-if="[0, 6].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.All, OrderStatus.Cancelled)"
           key="orderTime"
           prop="orderTime"
           label="下单时间"
@@ -95,7 +95,7 @@
           min-width="110"
         />
         <el-table-column
-          v-if="[6].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.Cancelled)"
           key="cancelTime"
           prop="cancelTime"
           class-name="cancelTime"
@@ -103,28 +103,28 @@
           min-width="110"
         />
         <el-table-column
-          v-if="[6].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.Cancelled)"
           key="cancelReason"
           prop="cancelReason"
           label="取消原因"
           class-name="cancelReason"
-          :min-width="[6].includes(orderStatus) ? 80 : 'auto'"
+          :min-width="isOrderStatus(orderStatus, OrderStatus.Cancelled) ? 80 : 'auto'"
         />
         <el-table-column
-          v-if="[5].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.Completed)"
           key="deliveryTime"
           prop="deliveryTime"
           label="送达时间"
         />
         <el-table-column
-          v-if="[2, 3, 4].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.ToBeConfirmed, OrderStatus.Confirmed, OrderStatus.DeliveryInProgress)"
           key="estimatedDeliveryTime"
           prop="estimatedDeliveryTime"
           label="预计送达时间"
           min-width="110"
         />
         <el-table-column
-          v-if="[0, 2, 5].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.All, OrderStatus.ToBeConfirmed, OrderStatus.Completed)"
           key="amount"
           prop="amount"
           label="实收金额"
@@ -135,14 +135,14 @@
           </template>
         </el-table-column>
         <el-table-column
-          v-if="[2, 3, 4, 5].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.ToBeConfirmed, OrderStatus.Confirmed, OrderStatus.DeliveryInProgress, OrderStatus.Completed)"
           key="remark"
           prop="remark"
           label="备注"
           align="center"
         />
         <el-table-column
-          v-if="[2, 3, 4].includes(orderStatus)"
+          v-if="isOrderStatus(orderStatus, OrderStatus.ToBeConfirmed, OrderStatus.Confirmed, OrderStatus.DeliveryInProgress)"
           key="tablewareNumber"
           prop="tablewareNumber"
           label="餐具数量"
@@ -153,11 +153,11 @@
           prop="btn"
           label="操作"
           align="center"
-          :class-name="orderStatus === 0 ? 'operate' : 'otherOperate'"
+          :class-name="orderStatus === OrderStatus.All ? 'operate' : 'otherOperate'"
           :min-width="
-            [2, 3, 4].includes(orderStatus)
+            isOrderStatus(orderStatus, OrderStatus.ToBeConfirmed, OrderStatus.Confirmed, OrderStatus.DeliveryInProgress)
               ? 130
-              : [0].includes(orderStatus)
+              : isOrderStatus(orderStatus, OrderStatus.All)
               ? 140
               : 'auto'
           "
@@ -165,7 +165,7 @@
           <template #default="{ row }">
             <div class="before">
               <el-button
-                v-if="row.status === 2"
+                v-if="row.status === OrderStatus.ToBeConfirmed"
                 link
                 class="blueBug"
                 @click="orderAccept(row), (isTableOperateBtn = true)"
@@ -173,7 +173,7 @@
                 接单
               </el-button>
               <el-button
-                v-if="row.status === 3"
+                v-if="row.status === OrderStatus.Confirmed"
                 link
                 class="blueBug"
                 @click="cancelOrDeliveryOrComplete(3, row.id)"
@@ -181,7 +181,7 @@
                 派送
               </el-button>
               <el-button
-                v-if="row.status === 4"
+                v-if="row.status === OrderStatus.DeliveryInProgress"
                 link
                 class="blueBug"
                 @click="cancelOrDeliveryOrComplete(4, row.id)"
@@ -191,7 +191,7 @@
             </div>
             <div class="middle">
               <el-button
-                v-if="row.status === 2"
+                v-if="row.status === OrderStatus.ToBeConfirmed"
                 link
                 class="delBut"
                 @click="orderReject(row), (isTableOperateBtn = true)"
@@ -278,10 +278,10 @@
                 class="user-getTime"
               >
                 <label>{{
-                  dialogOrderStatus === 5 ? '送达时间：' : '预计送达时间：'
+                  dialogOrderStatus === OrderStatus.Completed ? '送达时间：' : '预计送达时间：'
                 }}</label>
                 <span>{{
-                  dialogOrderStatus === 5
+                  dialogOrderStatus === OrderStatus.Completed
                     ? diaForm.deliveryTime
                     : diaForm.estimatedDeliveryTime
                 }}</span>
@@ -293,11 +293,11 @@
             </div>
             <div
               class="user-remark"
-              :class="{ orderCancel: dialogOrderStatus === 6 }"
+              :class="{ orderCancel: dialogOrderStatus === OrderStatus.Cancelled }"
             >
-              <div>{{ dialogOrderStatus === 6 ? '取消原因' : '备注' }}</div>
+              <div>{{ dialogOrderStatus === OrderStatus.Cancelled ? '取消原因' : '备注' }}</div>
               <span>{{
-                dialogOrderStatus === 6
+                dialogOrderStatus === OrderStatus.Cancelled
                   ? diaForm.cancelReason || diaForm.rejectionReason
                   : diaForm.remark
               }}</span>
@@ -382,19 +382,19 @@
           </div>
         </div>
       </el-scrollbar>
-      <template #footer><span v-if="dialogOrderStatus !== 6" class="dialog-footer">
+      <template #footer><span v-if="dialogOrderStatus !== OrderStatus.Cancelled" class="dialog-footer">
         <el-checkbox
-          v-if="dialogOrderStatus === 2 && orderStatus === 2"
+          v-if="dialogOrderStatus === OrderStatus.ToBeConfirmed && orderStatus === OrderStatus.ToBeConfirmed"
           v-model="isAutoNext"
           >处理完自动跳转下一条</el-checkbox
         >
         <el-button
-          v-if="dialogOrderStatus === 2"
+          v-if="dialogOrderStatus === OrderStatus.ToBeConfirmed"
           @click="orderReject(row), (isTableOperateBtn = false)"
           >拒 单</el-button
         >
         <el-button
-          v-if="dialogOrderStatus === 2"
+          v-if="dialogOrderStatus === OrderStatus.ToBeConfirmed"
           type="primary"
           @click="orderAccept(row), (isTableOperateBtn = false)"
           >接 单</el-button
@@ -406,13 +406,13 @@
           >返 回</el-button
         >
         <el-button
-          v-if="dialogOrderStatus === 3"
+          v-if="dialogOrderStatus === OrderStatus.Confirmed"
           type="primary"
           @click="cancelOrDeliveryOrComplete(3, row.id)"
           >派 送</el-button
         >
         <el-button
-          v-if="dialogOrderStatus === 4"
+          v-if="dialogOrderStatus === OrderStatus.DeliveryInProgress"
           type="primary"
           @click="cancelOrDeliveryOrComplete(4, row.id)"
           >完 成</el-button
@@ -483,12 +483,18 @@ import {
   orderAccept as orderAcceptApi,
   getOrderListBy,
 } from '@/api/order'
-import type { OrderStatisticsVO, OrderVO } from '@/api/types'
+import {
+  OrderStatus,
+  ORDER_STATUS_TEXT,
+  isOrderStatus,
+  type OrderStatisticsVO,
+  type OrderVO
+} from '@/api/types'
 
 const route = useRoute()
 const router = useRouter()
 
-const defaultActivity = ref<string | number>(0)
+const defaultActivity = ref<string | number>(OrderStatus.All)
 const orderStatics = ref<OrderStatisticsVO>()
 const row = ref<OrderVO>({} as OrderVO)
 const isAutoNext = ref(true)
@@ -509,8 +515,8 @@ const pageSize = ref(10)
 const tableData = ref<OrderVO[]>([])
 const diaForm = ref<Partial<OrderVO>>({})
 const isSearch = ref(false)
-const orderStatus = ref(0) //列表字段展示所需订单状态,用于分页请求数据
-const dialogOrderStatus = ref(0) //弹窗所需订单状态，用于详情展示字段
+const orderStatus = ref<number>(OrderStatus.All) //列表字段展示所需订单状态,用于分页请求数据
+const dialogOrderStatus = ref<number>(OrderStatus.All) //弹窗所需订单状态，用于详情展示字段
 const cancelOrderReasonList = ref([
   {
     value: 1,
@@ -554,32 +560,32 @@ const cancelrReasonList = ref([
 ])
 const orderList = ref([
   {
-    label: '全部订单',
-    value: 0,
+    label: ORDER_STATUS_TEXT[OrderStatus.All],
+    value: OrderStatus.All,
   },
   {
-    label: '待付款',
-    value: 1,
+    label: ORDER_STATUS_TEXT[OrderStatus.PendingPayment],
+    value: OrderStatus.PendingPayment,
   },
   {
-    label: '待接单',
-    value: 2,
+    label: ORDER_STATUS_TEXT[OrderStatus.ToBeConfirmed],
+    value: OrderStatus.ToBeConfirmed,
   },
   {
-    label: '待派送',
-    value: 3,
+    label: ORDER_STATUS_TEXT[OrderStatus.Confirmed],
+    value: OrderStatus.Confirmed,
   },
   {
-    label: '派送中',
-    value: 4,
+    label: ORDER_STATUS_TEXT[OrderStatus.DeliveryInProgress],
+    value: OrderStatus.DeliveryInProgress,
   },
   {
-    label: '已完成',
-    value: 5,
+    label: ORDER_STATUS_TEXT[OrderStatus.Completed],
+    value: OrderStatus.Completed,
   },
   {
-    label: '已取消',
-    value: 6,
+    label: ORDER_STATUS_TEXT[OrderStatus.Cancelled],
+    value: OrderStatus.Cancelled,
   },
 ])
 
@@ -594,7 +600,7 @@ function change(activeIndex: number) {
   input.value = ''
   phone.value = ''
   valueTime.value = []
-  dialogOrderStatus.value = 0
+  dialogOrderStatus.value = OrderStatus.All
   router.push('/order')
 }
 
@@ -630,8 +636,8 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
       counts.value = Number(res.total)
       getOrderListBy3Status()
       if (
-        dialogOrderStatus.value === 2 &&
-        orderStatus.value === 2 &&
+        dialogOrderStatus.value === OrderStatus.ToBeConfirmed &&
+        orderStatus.value === OrderStatus.ToBeConfirmed &&
         isAutoNext.value &&
         !isTableOperateBtn.value &&
         res.records.length > 1
@@ -645,17 +651,17 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
 }
 
 function getOrderType(row: OrderVO) {
-  if (row.status === 1) {
+  if (row.status === OrderStatus.PendingPayment) {
     return '待付款'
-  } else if (row.status === 2) {
+  } else if (row.status === OrderStatus.ToBeConfirmed) {
     return '待接单'
-  } else if (row.status === 3) {
+  } else if (row.status === OrderStatus.Confirmed) {
     return '待派送'
-  } else if (row.status === 4) {
+  } else if (row.status === OrderStatus.DeliveryInProgress) {
     return '派送中'
-  } else if (row.status === 5) {
+  } else if (row.status === OrderStatus.Completed) {
     return '已完成'
-  } else if (row.status === 6) {
+  } else if (row.status === OrderStatus.Cancelled) {
     return '已取消'
   } else {
     return '退款'
@@ -743,7 +749,7 @@ function confirmCancel() {
 
 // 派送，完成
 function cancelOrDeliveryOrComplete(status: number, id: number) {
-  ;(status === 3 ? deliveryOrder : completeOrder)(id)
+  ;(status === OrderStatus.Confirmed ? deliveryOrder : completeOrder)(id)
     .then(() => {
       ElMessage.success('操作成功')
       orderId.value = undefined
@@ -766,7 +772,7 @@ function handleCurrentChange(val: number) {
   init(orderStatus.value)
 }
 
-init(Number(route.query.status) || 0)
+init(Number(route.query.status) || OrderStatus.All)
 
 onMounted(() => {
   //如果有值说明是消息通知点击进来的

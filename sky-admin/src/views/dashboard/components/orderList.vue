@@ -14,7 +14,7 @@
               class="item"
               :class="item.num >= 10 ? 'badgeW' : ''"
               :value="item.num > 99 ? '99+' : item.num"
-              :hidden="!([2, 3].includes(item.value) && item.num)"
+              :hidden="!(isOrderStatus(item.value, OrderStatus.ToBeConfirmed, OrderStatus.Confirmed) && item.num)"
               >{{ item.label }}</el-badge
             >
           </li>
@@ -47,7 +47,7 @@
             </el-table-column>
             <el-table-column
               label="地址"
-              :class-name="dialogOrderStatus === 2 ? 'address' : ''"
+              :class-name="dialogOrderStatus === OrderStatus.ToBeConfirmed ? 'address' : ''"
             >
               <template #default="scope">
                 <div class="ellipsisHidden">
@@ -93,13 +93,13 @@
               label="餐具数量"
               min-width="80"
               align="center"
-              v-if="status === 3"
+              v-if="status === OrderStatus.Confirmed"
             >
             </el-table-column>
             <el-table-column
               label="操作"
               align="center"
-              :class-name="dialogOrderStatus === 0 ? 'operate' : 'otherOperate'"
+              :class-name="dialogOrderStatus === OrderStatus.All ? 'operate' : 'otherOperate'"
               :min-width="
                 [2, 3].includes(dialogOrderStatus)
                   ? 130
@@ -111,7 +111,7 @@
               <template #default="{ row }">
                 <div class="before">
                   <el-button
-                    v-if="row.status === 2"
+                    v-if="row.status === OrderStatus.ToBeConfirmed"
                     link
                     class="blueBug"
                     @click="
@@ -121,7 +121,7 @@
                     接单
                   </el-button>
                   <el-button
-                    v-if="row.status === 3"
+                    v-if="row.status === OrderStatus.Confirmed"
                     link
                     class="blueBug"
                     @click="cancelOrDeliveryOrComplete(3, row.id, $event)"
@@ -131,7 +131,7 @@
                 </div>
                 <div class="middle">
                   <el-button
-                    v-if="row.status === 2"
+                    v-if="row.status === OrderStatus.ToBeConfirmed"
                     link
                     class="delBut"
                     @click="
@@ -222,10 +222,10 @@
                 class="user-getTime"
               >
                 <label>{{
-                  dialogOrderStatus === 5 ? '送达时间：' : '预计送达时间：'
+                  dialogOrderStatus === OrderStatus.Completed ? '送达时间：' : '预计送达时间：'
                 }}</label>
                 <span>{{
-                  dialogOrderStatus === 5
+                  dialogOrderStatus === OrderStatus.Completed
                     ? diaForm.deliveryTime
                     : diaForm.estimatedDeliveryTime
                 }}</span>
@@ -237,11 +237,11 @@
             </div>
             <div
               class="user-remark"
-              :class="{ orderCancel: dialogOrderStatus === 6 }"
+              :class="{ orderCancel: dialogOrderStatus === OrderStatus.Cancelled }"
             >
-              <div>{{ dialogOrderStatus === 6 ? '取消原因' : '备注' }}</div>
+              <div>{{ dialogOrderStatus === OrderStatus.Cancelled ? '取消原因' : '备注' }}</div>
               <span>{{
-                dialogOrderStatus === 6
+                dialogOrderStatus === OrderStatus.Cancelled
                   ? diaForm.cancelReason || diaForm.rejectionReason
                   : diaForm.remark
               }}</span>
@@ -328,19 +328,19 @@
           </div>
         </div>
       </el-scrollbar>
-      <template v-if="dialogOrderStatus !== 6" #footer class="dialog-footer">
+      <template v-if="dialogOrderStatus !== OrderStatus.Cancelled" #footer class="dialog-footer">
         <el-checkbox
-          v-if="dialogOrderStatus === 2 && status === 2"
+          v-if="dialogOrderStatus === OrderStatus.ToBeConfirmed && status === OrderStatus.ToBeConfirmed"
           v-model="isAutoNext"
           >处理完自动跳转下一条</el-checkbox
         >
         <el-button
-          v-if="dialogOrderStatus === 2"
+          v-if="dialogOrderStatus === OrderStatus.ToBeConfirmed"
           @click="orderReject(row, $event), (isTableOperateBtn = false)"
           >拒 单</el-button
         >
         <el-button
-          v-if="dialogOrderStatus === 2"
+          v-if="dialogOrderStatus === OrderStatus.ToBeConfirmed"
           type="primary"
           @click="orderAccept(row, $event), (isTableOperateBtn = false)"
           >接 单</el-button
@@ -352,13 +352,13 @@
           >返 回</el-button
         >
         <el-button
-          v-if="dialogOrderStatus === 3"
+          v-if="dialogOrderStatus === OrderStatus.Confirmed"
           type="primary"
           @click="cancelOrDeliveryOrComplete(3, row.id, $event)"
           >派 送</el-button
         >
         <el-button
-          v-if="dialogOrderStatus === 4"
+          v-if="dialogOrderStatus === OrderStatus.DeliveryInProgress"
           type="primary"
           @click="cancelOrDeliveryOrComplete(4, row.id, $event)"
           >完 成</el-button
@@ -429,7 +429,12 @@ import {
   orderReject as apiOrderReject,
   orderAccept as apiOrderAccept,
 } from '@/api/order'
-import type { OrderVO } from '@/api/types'
+import {
+  OrderStatus,
+  ORDER_STATUS_TEXT,
+  isOrderStatus,
+  type OrderVO
+} from '@/api/types'
 
 const props = defineProps({
   orderStatics: {
@@ -440,7 +445,7 @@ const props = defineProps({
 const emit = defineEmits(['getOrderListBy3Status'])
 
 const orderId = ref<number>() //订单号
-const dialogOrderStatus = ref(0) //弹窗所需订单状态，用于详情展示字段
+const dialogOrderStatus = ref<number>(OrderStatus.All) //弹窗所需订单状态，用于详情展示字段
 const activeIndex = ref(0)
 
 const dialogVisible = ref(false) //详情弹窗
@@ -455,7 +460,7 @@ const isSearch = ref(false)
 const counts = ref(0)
 const page = ref<number>(1)
 const pageSize = ref<number>(10)
-const status = ref(2)
+const status = ref<OrderStatus>(OrderStatus.ToBeConfirmed)
 const orderData = ref<OrderVO[]>([])
 const isTableOperateBtn = ref(true)
 const cancelOrderReasonList = [
@@ -501,43 +506,43 @@ const cancelrReasonList = [
 ]
 const orderList = [
   {
-    label: '全部订单',
-    value: 0,
+    label: ORDER_STATUS_TEXT[OrderStatus.All],
+    value: OrderStatus.All,
   },
   {
-    label: '待付款',
-    value: 1,
+    label: ORDER_STATUS_TEXT[OrderStatus.PendingPayment],
+    value: OrderStatus.PendingPayment,
   },
   {
-    label: '待接单',
-    value: 2,
+    label: ORDER_STATUS_TEXT[OrderStatus.ToBeConfirmed],
+    value: OrderStatus.ToBeConfirmed,
   },
   {
-    label: '待派送',
-    value: 3,
+    label: ORDER_STATUS_TEXT[OrderStatus.Confirmed],
+    value: OrderStatus.Confirmed,
   },
   {
-    label: '派送中',
-    value: 4,
+    label: ORDER_STATUS_TEXT[OrderStatus.DeliveryInProgress],
+    value: OrderStatus.DeliveryInProgress,
   },
   {
-    label: '已完成',
-    value: 5,
+    label: ORDER_STATUS_TEXT[OrderStatus.Completed],
+    value: OrderStatus.Completed,
   },
   {
-    label: '已取消',
-    value: 6,
+    label: ORDER_STATUS_TEXT[OrderStatus.Cancelled],
+    value: OrderStatus.Cancelled,
   },
 ]
 const tabList = computed(() => [
   {
-    label: '待接单',
-    value: 2,
+    label: ORDER_STATUS_TEXT[OrderStatus.ToBeConfirmed],
+    value: OrderStatus.ToBeConfirmed,
     num: props.orderStatics.toBeConfirmed,
   },
   {
-    label: '待派送',
-    value: 3,
+    label: ORDER_STATUS_TEXT[OrderStatus.Confirmed],
+    value: OrderStatus.Confirmed,
     num: props.orderStatics.confirmed,
   },
 ])
@@ -555,8 +560,8 @@ async function getOrderListData(val: number) {
   counts.value = data.total
   emit('getOrderListBy3Status')
   if (
-    dialogOrderStatus.value === 2 &&
-    status.value === 2 &&
+    dialogOrderStatus.value === OrderStatus.ToBeConfirmed &&
+    status.value === OrderStatus.ToBeConfirmed &&
     isAutoNext.value &&
     !isTableOperateBtn.value &&
     data.records.length > 1
@@ -634,7 +639,7 @@ function confirmCancel() {
 // 派送，完成
 function cancelOrDeliveryOrComplete(status: number, id: number, event: Event) {
   event.stopPropagation()
-  ;(status === 3 ? deliveryOrder : completeOrder)(id)
+  ;(status === OrderStatus.Confirmed ? deliveryOrder : completeOrder)(id)
     .then(() => {
       ElMessage.success('操作成功')
       orderId.value = undefined
@@ -660,11 +665,11 @@ function handleClose() {
 function handleClass(index: number) {
   activeIndex.value = index
   if (index === 0) {
-    status.value = 2
-    getOrderListData(2)
+    status.value = OrderStatus.ToBeConfirmed
+    getOrderListData(OrderStatus.ToBeConfirmed)
   } else {
-    status.value = 3
-    getOrderListData(3)
+    status.value = OrderStatus.Confirmed
+    getOrderListData(OrderStatus.Confirmed)
   }
 }
 // 触发table某一行

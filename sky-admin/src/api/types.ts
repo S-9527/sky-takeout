@@ -196,6 +196,34 @@ export interface SetmealVO extends SetmealDTO {
 
 // ========== 订单 ==========
 
+// 订单状态(取值与后端 com.sky.order.enumeration.OrderStatus 一致)
+export const OrderStatus = {
+  All: 0,
+  PendingPayment: 1,
+  ToBeConfirmed: 2,
+  Confirmed: 3,
+  DeliveryInProgress: 4,
+  Completed: 5,
+  Cancelled: 6
+} as const
+
+export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus]
+
+// 前端展示文案(后端 3 为"已接单",本端页面文案沿用"待派送")
+export const ORDER_STATUS_TEXT = {
+  [OrderStatus.All]: '全部订单',
+  [OrderStatus.PendingPayment]: '待付款',
+  [OrderStatus.ToBeConfirmed]: '待接单',
+  [OrderStatus.Confirmed]: '待派送',
+  [OrderStatus.DeliveryInProgress]: '派送中',
+  [OrderStatus.Completed]: '已完成',
+  [OrderStatus.Cancelled]: '已取消'
+} as const
+
+// 判断订单状态是否属于给定状态之一(列表页按状态显示列时用)
+export const isOrderStatus = (status: number, ...allowed: number[]) =>
+  allowed.includes(status)
+
 // 订单明细
 export interface OrderDetail {
   id?: number

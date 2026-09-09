@@ -9,7 +9,7 @@
       <el-badge :class="{'special-item':item.num<10}"
                 class="item"
                 :value="item.num > 99 ? '99+' : item.num"
-                :hidden="!([2, 3, 4].includes(item.value) && item.num)">
+                :hidden="!(isOrderStatus(item.value, OrderStatus.ToBeConfirmed, OrderStatus.Confirmed, OrderStatus.DeliveryInProgress) && item.num)">
         {{ item.label }}
       </el-badge>
     </div>
@@ -18,6 +18,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { OrderStatus, ORDER_STATUS_TEXT, isOrderStatus } from '@/api/types'
 
 const props = defineProps({
   orderStatics: { type: Object, default: '' },
@@ -25,7 +26,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['tabChange'])
 
-const activeIndex = ref<number>(Number(props.defaultActivity) || 0)
+const activeIndex = ref<number>(Number(props.defaultActivity) || OrderStatus.All)
 
 watch(
   () => props.defaultActivity,
@@ -37,31 +38,31 @@ watch(
 const changedOrderList = computed(() => {
   return [
     {
-      label: '全部订单',
-      value: 0
+      label: ORDER_STATUS_TEXT[OrderStatus.All],
+      value: OrderStatus.All
     },
     {
-      label: '待接单',
-      value: 2,
+      label: ORDER_STATUS_TEXT[OrderStatus.ToBeConfirmed],
+      value: OrderStatus.ToBeConfirmed,
       num: props.orderStatics.toBeConfirmed
     },
     {
-      label: '待派送',
-      value: 3,
+      label: ORDER_STATUS_TEXT[OrderStatus.Confirmed],
+      value: OrderStatus.Confirmed,
       num: props.orderStatics.confirmed
     },
     {
-      label: '派送中',
-      value: 4,
+      label: ORDER_STATUS_TEXT[OrderStatus.DeliveryInProgress],
+      value: OrderStatus.DeliveryInProgress,
       num: props.orderStatics.deliveryInProgress
     },
     {
-      label: '已完成',
-      value: 5
+      label: ORDER_STATUS_TEXT[OrderStatus.Completed],
+      value: OrderStatus.Completed
     },
     {
-      label: '已取消',
-      value: 6
+      label: ORDER_STATUS_TEXT[OrderStatus.Cancelled],
+      value: OrderStatus.Cancelled
     }
   ]
 })

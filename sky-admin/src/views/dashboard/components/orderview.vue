@@ -11,7 +11,7 @@
             ><i class="iconfont icon-waiting"></i>待接单</span
           >
           <span class="num tip"
-            ><router-link to="/order?status=2">{{
+            ><router-link :to="`/order?status=${OrderStatus.ToBeConfirmed}`">{{
               orderviewData.waitingOrders
             }}</router-link></span
           >
@@ -21,7 +21,7 @@
             ><i class="iconfont icon-staySway"></i>待派送</span
           >
           <span class="num tip"
-            ><router-link to="/order?status=3">{{
+            ><router-link :to="`/order?status=${OrderStatus.Confirmed}`">{{
               orderviewData.deliveredOrders
             }}</router-link></span
           >
@@ -31,7 +31,7 @@
             ><i class="iconfont icon-complete"></i>已完成</span
           >
           <span class="num"
-            ><router-link to="/order?status=5">{{
+            ><router-link :to="`/order?status=${OrderStatus.Completed}`">{{
               orderviewData.completedOrders
             }}</router-link></span
           >
@@ -39,7 +39,7 @@
         <li>
           <span class="status"><i class="iconfont icon-cancel"></i>已取消</span>
           <span class="num"
-            ><router-link to="/order?status=6">{{
+            ><router-link :to="`/order?status=${OrderStatus.Cancelled}`">{{
               orderviewData.cancelledOrders
             }}</router-link></span
           >
@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { OrderStatus } from '@/api/types'
 import { getday } from '@/utils/formValidate'
 const props = defineProps({
   orderviewData: {

@@ -109,24 +109,12 @@ const beforeAvatarUpload: UploadProps['beforeUpload'] = (file) => {
   background-size: 20px;
 }
 
-.el-upload-list__item-actions:hover .upload-icon {
-  display: inline-block;
-}
-.el-icon-zoom-in:before {
-  content: '\E626';
-}
-.el-icon-delete:before {
-  content: '\E612';
-}
 .el-upload-list__item-actions:hover {
   opacity: 1;
 }
 .upload-item {
   display: flex;
   align-items: center;
-  .el-form-item__content {
-    width: 500px !important;
-  }
 }
 .upload-tips {
   font-size: 12px;
@@ -153,19 +141,8 @@ const beforeAvatarUpload: UploadProps['beforeUpload'] = (file) => {
   align-items: center;
   flex-direction: column;
 }
-.avatar-uploader .el-upload {
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
 .avatar-uploader {
   display: inline-block;
-}
-
-.avatar-uploader .el-upload:hover {
-  border-color: #ffc200;
 }
 .el-upload-span {
   width: 100px;

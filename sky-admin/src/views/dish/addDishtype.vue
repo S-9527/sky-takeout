@@ -363,11 +363,6 @@ const imageChange = (value: string) => {
         text-align: center;
         border-top: solid 1px $gray-5;
       }
-      .upload-item {
-        .el-form-item__error {
-          top: 90%;
-        }
-      }
     }
   }
 }
@@ -378,11 +373,10 @@ const imageChange = (value: string) => {
   .addBut {
     background: #ffc200;
     display: inline-block;
-    padding: 0px 20px;
-    border-radius: 3px;
+    padding: 0 20px;
+    border-radius: 4px;
     line-height: 40px;
     cursor: pointer;
-    border-radius: 4px;
     color: #333333;
     font-weight: 500;
   }
@@ -411,9 +405,6 @@ const imageChange = (value: string) => {
 
           input {
             width: 100%;
-            // line-height: 40px;
-            // border-radius: 3px;
-            // padding: 0 10px;
           }
         }
 

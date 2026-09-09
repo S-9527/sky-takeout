@@ -363,24 +363,7 @@ if (actionType.value === 'edit') {
   init()
 }
 </script>
-<style>
-.avatar-uploader .el-icon-plus:after {
-  position: absolute;
-  display: inline-block;
-  content: ' ' !important;
-  left: calc(50% - 20px);
-  top: calc(50% - 40px);
-  width: 40px;
-  height: 40px;
-  background: url('./../../assets/icons/icon_upload@2x.png') center center
-    no-repeat;
-  background-size: 20px;
-}
-</style>
 <style lang="scss">
-// .el-form-item__error {
-//   top: 90%;
-// }
 .addBrand-container {
   .avatar-uploader .el-upload {
     border: 1px dashed #d9d9d9;
@@ -409,10 +392,6 @@ if (actionType.value === 'edit') {
     display: block;
   }
 
-  // .el-form--inline .el-form-item__content {
-  //   width: 293px;
-  // }
-
   .el-input {
     width: 293px;
   }
@@ -434,10 +413,7 @@ if (actionType.value === 'edit') {
   }
 
   .addDish {
-    .el-input {
-      width: 130px;
-    }
-
+    .el-input,
     .el-input-number {
       width: 130px;
     }
@@ -537,11 +513,10 @@ if (actionType.value === 'edit') {
         .addBut {
           background: #ffc200;
           display: inline-block;
-          padding: 0px 20px;
-          border-radius: 3px;
+          padding: 0 20px;
+          border-radius: 4px;
           line-height: 40px;
           cursor: pointer;
-          border-radius: 4px;
           color: #333333;
           font-weight: 500;
         }

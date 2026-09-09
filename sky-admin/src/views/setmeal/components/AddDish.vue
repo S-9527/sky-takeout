@@ -221,7 +221,6 @@ init()
       span {
         display: block;
         text-align: center;
-        // border-right: solid 2px #f4f4f4;
         cursor: pointer;
         position: relative;
       }
@@ -246,7 +245,6 @@ init()
       overflow-y: scroll;
       .table {
         border: solid 1px #f4f4f4;
-        border-bottom: solid 1px #f4f4f4;
         .items {
           border-bottom: solid 1px #f4f4f4;
           padding: 0 10px;

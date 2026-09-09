@@ -443,10 +443,3 @@ const handleCurrentChange = (val: number) => {
   }
 }
 </style>
-<style lang='scss'>
-// .customClass {
-//   .el-button--primary {
-//     background-color: #ffc200 !important ;
-//   }
-// }
-</style>

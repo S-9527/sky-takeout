@@ -22,7 +22,6 @@ defineProps({
   text-align: center;
   margin: 120px 0;
   img {
-    margin: 0 atuo;
     width: 238px;
     height: 184px;
     margin-top: 156px;
@@ -32,5 +31,4 @@ defineProps({
     color: #818693;
   }
 }
-/* @import url(); 引入css类 */
 </style>

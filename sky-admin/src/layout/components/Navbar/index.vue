@@ -404,15 +404,10 @@ const handlePwdClose = () => {
       background-size: contain;
     }
   }
-  // .el-badge__content.is-fixed {
-  //   top: 20px;
-  //   right: 6px;
-  // }
 }
 </style>
 <style lang="scss">
 .el-notification {
-  // background: rgba(255, 255, 255, 0.71);
   width: 419px !important;
   .el-notification__title {
     margin-bottom: 14px;

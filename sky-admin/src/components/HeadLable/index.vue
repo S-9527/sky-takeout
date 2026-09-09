@@ -8,10 +8,7 @@
       src="@/assets/icons/btn_back@2x.png"
       alt=""
     > 返回</span>
-    <span v-if="!butList">{{ title }}</span>
-    <div v-if="butList">
-      <slot />
-    </div>
+    <span>{{ title }}</span>
   </div>
 </template>
 
@@ -20,8 +17,7 @@ import { useRouter } from 'vue-router'
 
 defineProps({
   goback: { type: Boolean, default: false },
-  butList: { type: Boolean, default: false },
-  title: { type: String, default: '集团管理' }
+  title: { type: String, default: '' }
 })
 
 const router = useRouter()

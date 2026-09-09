@@ -15,7 +15,6 @@ export const useAppStore = defineStore('app', () => {
     opened: true,
     withoutAnimation: false
   })
-  const statusNumber = ref(0)
 
   function ToggleSideBar(withoutAnimation: boolean) {
     sidebar.value.opened = !sidebar.value.opened
@@ -37,17 +36,11 @@ export const useAppStore = defineStore('app', () => {
     device.value = type
   }
 
-  function StatusNumber(val: number) {
-    statusNumber.value = val
-  }
-
   return {
     device,
     sidebar,
-    statusNumber,
     ToggleSideBar,
     CloseSideBar,
-    ToggleDevice,
-    StatusNumber
+    ToggleDevice
   }
 })

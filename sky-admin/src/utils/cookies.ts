@@ -9,13 +9,20 @@ const storeId = 'storeId';
 export const getStoreId = () => Cookies.get(storeId);
 export const setStoreId = (id: string) => Cookies.set(storeId, id);
 
-// User
+// Token
 const tokenKey = 'token';
 export const getToken = () => Cookies.get(tokenKey);
 export const setToken = (token: string) => Cookies.set(tokenKey, token);
 export const removeToken = () => Cookies.remove(tokenKey);
 
-// userInfo
-const userInfoKey = 'userInfo';
+// 记住的登录账号
+const usernameKey = 'username';
+export const getUsername = () => Cookies.get(usernameKey);
+export const setUsername = (username: string) => Cookies.set(usernameKey, username);
+export const removeUsername = () => Cookies.remove(usernameKey);
+
+// 登录用户信息
+const userInfoKey = 'user_info';
 export const getUserInfo = () => Cookies.get(userInfoKey);
+export const setUserInfo = (userInfo: string) => Cookies.set(userInfoKey, userInfo);
 export const removeUserInfo = () => Cookies.remove(userInfoKey);

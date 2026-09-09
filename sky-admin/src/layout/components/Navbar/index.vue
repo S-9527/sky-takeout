@@ -84,7 +84,7 @@ import { useAppStore } from '@/store/modules/app'
 import { useUserStore } from '@/store/modules/user'
 import Hamburger from '@/components/Hamburger/index.vue'
 import { getStatus as getApiStatus, setStatus as setApiStatus } from '@/api/users'
-import Cookies from 'js-cookie'
+import { getUserInfo } from '@/utils/cookies'
 import Password from '../components/password.vue'
 
 const router = useRouter()
@@ -103,7 +103,7 @@ const dialogFormVisible = ref(false)
 const sidebar = computed(() => appStore.sidebar)
 
 const name = computed(() => {
-  const user_info = Cookies.get('user_info')
+  const user_info = getUserInfo()
   return userStore.userInfo.name
     ? userStore.userInfo.name
     : user_info

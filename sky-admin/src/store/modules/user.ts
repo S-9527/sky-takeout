@@ -7,10 +7,13 @@ import {
   removeToken,
   getStoreId,
   setStoreId,
+  getUsername,
+  setUsername,
+  removeUsername,
   getUserInfo,
+  setUserInfo,
   removeUserInfo
 } from '@/utils/cookies'
-import Cookies from 'js-cookie'
 import type { EmployeeLoginVO } from '@/api/types'
 
 interface StoreUserInfo extends EmployeeLoginVO {
@@ -29,25 +32,33 @@ export const useUserStore = defineStore('user', () => {
   const introduction = ref('')
   const userInfo = ref<Partial<StoreUserInfo>>({})
   const roles = ref<string[]>([])
-  const username = ref<string>(Cookies.get('username') || '')
+  const username = ref<string>(getUsername() || '')
 
   async function Login(params: { username: string; password: string }) {
     let { username: uname, password } = params
     uname = uname.trim()
     username.value = uname
-    Cookies.set('username', uname)
+    setUsername(uname)
     // 拦截器已剥离 Result 外壳并统一处理失败，成功时 data 即业务数据
     const data = await login({ username: uname, password })
     token.value = data.token
     setToken(data.token)
     userInfo.value = { ...data }
-    Cookies.set('user_info', JSON.stringify(data))
+    setUserInfo(JSON.stringify(data))
     return data
   }
 
+  // 清空登录态:cookie 与内存状态一起清
   function ResetToken() {
     removeToken()
+    removeUserInfo()
+    removeUsername()
     token.value = ''
+    username.value = ''
+    userInfo.value = {}
+    name.value = ''
+    avatar.value = ''
+    introduction.value = ''
     roles.value = []
   }
 
@@ -89,12 +100,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function LogOut() {
     await userLogout()
-    removeToken()
-    token.value = ''
-    roles.value = []
-    Cookies.remove('username')
-    Cookies.remove('user_info')
-    removeUserInfo()
+    ResetToken()
   }
 
   return {

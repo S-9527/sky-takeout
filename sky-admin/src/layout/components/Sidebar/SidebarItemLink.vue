@@ -8,7 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { isExternal } from '@/utils/validate'
+import { isExternal } from './validate'
 
 defineProps({
   to: { type: String, required: true }

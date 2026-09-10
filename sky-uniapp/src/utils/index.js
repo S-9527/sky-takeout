@@ -161,7 +161,7 @@ export const presentFormat = () => {
 	var minute = date.getMinutes();
 	//秒 getSeconds()：(0 ~ 59)
 	var second = date.getSeconds()
-	var time = year + '-' + addZero(month) + '-' + addZero(day) + ' ' + addZero(hour) + ':' + addZero(minute);
+	var time = year + '-' + addZero(month) + '-' + addZero(day) + ' ' + addZero(hour) + ':' + addZero(minute) + ':' + addZero(second);
 	return time;
 }
 function addZero(s) {
@@ -191,6 +191,6 @@ export const dateFormat = (b, time) => {
 	}
 	// 有其他格式化字符需求可以继续添加，必须转化成字符串
 
-	ret = y + '-' + m + '-' + d + ' ' + time
+	ret = y + '-' + m + '-' + d + ' ' + (time.length === 5 ? time + ':00' : time)
 	return ret;
 }

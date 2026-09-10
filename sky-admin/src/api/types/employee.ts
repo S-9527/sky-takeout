@@ -12,7 +12,8 @@ export interface EmployeeLoginVO {
   id: number
   userName: string
   name: string
-  token: string
+  accessToken: string
+  refreshToken: string
 }
 
 // 新增/编辑员工

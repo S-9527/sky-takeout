@@ -27,6 +27,44 @@ interface Result<T = unknown> {
   data: T
 }
 
+// 单次刷新锁：多个并发 401 只触发一次 refresh
+let refreshPromise: Promise<string | null> | null = null
+
+/**
+ * 尝试使用 refreshToken 换取新的令牌对，成功返回 accessToken
+ * 同一时间只发起一次 refresh 请求
+ */
+async function tryRefresh(): Promise<string | null> {
+  const userStore = useUserStore(pinia)
+  if (!userStore.refreshToken) {
+    return null
+  }
+  refreshPromise = (async () => {
+    try {
+      // 响应拦截器已剥离 Result 外壳，实际返回业务数据（非 AxiosResponse）
+      const res = await service.post(
+        '/employee/refresh',
+        { refreshToken: userStore.refreshToken },
+        { headers: { 'X-Silent': 'true' } }
+      ) as unknown as { accessToken: string; refreshToken: string }
+      userStore.setTokens(res.accessToken, res.refreshToken)
+      return res.accessToken
+    } catch {
+      return null
+    } finally {
+      refreshPromise = null
+    }
+  })()
+  return refreshPromise
+}
+
+/**
+ * 判断是否为刷新请求本身，避免自动刷新陷入无限循环
+ */
+function isRefreshRequest(config?: InternalAxiosRequestConfig): boolean {
+  return !!config?.url?.includes('/employee/refresh')
+}
+
 // Request interceptors
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
@@ -73,10 +111,12 @@ service.interceptors.response.use(
     if (body && typeof body === 'object' && isResult(body)) {
       const result = body as Result
       if (result.code !== 200) {
-        const message = result.msg || '操作失败'
-        ElMessage.error(message)
-        // 归一化为 Error，视图里的 err.message 才拿得到后端 msg
-        return Promise.reject(new Error(message))
+        // silent 模式下不弹 toast（用于刷新请求等内部调用）
+        if (!(res.config as InternalAxiosRequestConfig).headers?.get('X-Silent')) {
+          const message = result.msg || '操作失败'
+          ElMessage.error(message)
+        }
+        return Promise.reject(new Error(result.msg || '操作失败'))
       }
       // 业务成功：剥离 Result 外壳，直接返回业务数据
       return result.data as unknown as AxiosResponse
@@ -84,14 +124,32 @@ service.interceptors.response.use(
     // 非 Result 结构原样返回
     return body as unknown as AxiosResponse
   },
-  (error: AxiosError): Promise<AxiosError> => {
+  async (error: AxiosError): Promise<AxiosResponse> => {
     if (error.response) {
-      switch (error.response.status) {
-        case 401:
-          // token 已失效:先清掉本地登录态,否则下次导航仍会带着旧 token 被弹回登录页
-          useUserStore(pinia).ResetToken()
-          router.push('/login')
-          break
+      const status = error.response.status
+      const userStore = useUserStore(pinia)
+
+      if (status === 401 && !isRefreshRequest(error.config)) {
+        // 尝试刷新令牌（single-flight）
+        const newToken = await tryRefresh()
+        if (newToken) {
+          // 刷新成功：重放原请求
+          return service(error.config!)
+        }
+        // 刷新失败：清空登录态并跳转登录页
+        userStore.ResetToken()
+        router.push('/login')
+        return Promise.reject(error) as any
+      }
+
+      if (status === 401 && isRefreshRequest(error.config)) {
+        // 刷新请求本身也失败（refresh token 已过期）→ 强制登出
+        userStore.ResetToken()
+        router.push('/login')
+        return Promise.reject(error) as any
+      }
+
+      switch (status) {
         case 405:
           error.message = '请求错误'
       }

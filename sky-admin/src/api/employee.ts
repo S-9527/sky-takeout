@@ -15,8 +15,12 @@ import type {
 // 登录
 export const login = (data: EmployeeLoginDTO) =>
   request.post<EmployeeLoginVO>('/employee/login', data)
+// 令牌刷新
+export const refreshToken = (refreshToken: string) =>
+  request.post<{ accessToken: string; refreshToken: string }>('/employee/refresh', { refreshToken })
 // 退出
-export const userLogout = () => request.post<string>('/employee/logout')
+export const userLogout = (data?: { refreshToken?: string }) =>
+  request.post<string>('/employee/logout', data)
 
 // 员工分页查询
 export const getEmployeeList = (params: EmployeePageQueryDTO) =>

@@ -5,6 +5,9 @@ import {
   getToken,
   setToken,
   removeToken,
+  getRefreshToken,
+  setRefreshToken,
+  removeRefreshToken,
   getStoreId,
   setStoreId,
   getUserInfo,
@@ -34,6 +37,7 @@ function loadUserInfo(): Partial<StoreUserInfo> {
 
 export const useUserStore = defineStore('user', () => {
   const token = ref<string>(getToken() || '')
+  const refreshTokenValue = ref<string>(getRefreshToken() || '')
   const storeId = ref<string>(getStoreId() || '')
   const userInfo = ref<Partial<StoreUserInfo>>(loadUserInfo())
   const roles = ref<string[]>([])
@@ -58,19 +62,28 @@ export const useUserStore = defineStore('user', () => {
     username.value = uname
     // 拦截器已剥离 Result 外壳并统一处理失败，成功时 data 即业务数据
     const data = await login({ username: uname, password })
-    token.value = data.token
-    setToken(data.token)
+    setTokens(data.accessToken, data.refreshToken)
     userInfo.value = { ...data }
     syncFromUserInfo()
     setUserInfo(JSON.stringify(data))
     return data
   }
 
+  // 设置令牌对(token + refreshToken)
+  function setTokens(access: string, refresh: string) {
+    token.value = access
+    refreshTokenValue.value = refresh
+    setToken(access)
+    setRefreshToken(refresh)
+  }
+
   // 清空登录态:cookie 与内存状态一起清
   function ResetToken() {
     removeToken()
+    removeRefreshToken()
     removeUserInfo()
     token.value = ''
+    refreshTokenValue.value = ''
     username.value = ''
     userInfo.value = {}
     syncFromUserInfo()
@@ -84,12 +97,14 @@ export const useUserStore = defineStore('user', () => {
   }
 
   async function LogOut() {
-    await userLogout()
+    const refresh = refreshTokenValue.value
+    await userLogout({ refreshToken: refresh || undefined })
     ResetToken()
   }
 
   return {
     token,
+    refreshToken: refreshTokenValue,
     name,
     avatar,
     storeId,
@@ -98,6 +113,7 @@ export const useUserStore = defineStore('user', () => {
     roles,
     username,
     Login,
+    setTokens,
     ResetToken,
     changeStore,
     LogOut

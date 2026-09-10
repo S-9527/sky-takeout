@@ -4,6 +4,7 @@ allowBuilds:
   core-js-pure: true
   esbuild: true
   vue-demi: true
+nodeLinker: hoisted
 onlyBuiltDependencies:
   - esbuild
   - vue-demi

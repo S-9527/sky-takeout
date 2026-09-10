@@ -1,4 +1,4 @@
-<!--选择多规格弹层-->
+<!--餐品/套餐详情弹层-->
 <template>
   <!-- 餐品详情 -->
   <view class="dish_detail_pop" v-if="dishDetailes.type == 1">
@@ -12,7 +12,7 @@
     <view class="but_item">
       <view class="price">
         <text class="ico">￥</text>
-        {{ dishDetailes.price.toFixed(2) }}
+        {{ Number(dishDetailes.price).toFixed(2) }}
       </view>
       <view
         class="active"
@@ -115,42 +115,36 @@
   </view>
   <!-- end -->
 </template>
-<script>
-export default {
-  // 获取父级传的数据
-  props: {
-    dishDetailes: {
-      type: Object,
-      default: () => ({}),
-    },
-    openDetailPop: {
-      type: Boolean,
-      default: false,
-    },
-    dishMealData: {
-      type: Array,
-      default: () => [],
-    },
-  },
-  methods: {
-    // 加入购物车
-    addDishAction(obj, item) {
-      console.log(obj, item);
-      this.$emit("addDishAction", { obj: obj, item: item });
-    },
-    redDishAction(obj, item) {
-      this.$emit("redDishAction", { obj: obj, item: item });
-    },
-    // 选择规格
-    moreNormDataesHandle(obj) {
-      this.$emit("moreNormDataesHandle", obj);
-    },
-    // 关闭菜单详情
-    dishClose() {
-      this.$emit("dishClose");
-    },
-  },
-};
+
+<script setup lang="ts">
+// 获取父级传的数据
+defineProps<{
+  dishDetailes?: any
+  openDetailPop?: boolean
+  dishMealData?: any[]
+}>()
+const emit = defineEmits<{
+  (e: 'addDishAction', val: { obj: any; item: string }): void
+  (e: 'redDishAction', val: { obj: any; item: string }): void
+  (e: 'moreNormDataesHandle', obj: any): void
+  (e: 'dishClose'): void
+}>()
+
+// 加入购物车
+function addDishAction(obj: any, item: string) {
+  emit('addDishAction', { obj, item })
+}
+function redDishAction(obj: any, item: string) {
+  emit('redDishAction', { obj, item })
+}
+// 选择规格
+function moreNormDataesHandle(obj: any) {
+  emit('moreNormDataesHandle', obj)
+}
+// 关闭菜单详情
+function dishClose() {
+  emit('dishClose')
+}
 </script>
 <style lang="scss" scoped>
 .dish_detail_pop {

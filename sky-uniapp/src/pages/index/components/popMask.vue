@@ -40,37 +40,29 @@
     ></view>
   </view>
 </template>
-<script>
-export default {
-  // 获取父级传的数据
-  props: {
-    // 空页面提示
-    moreNormDishdata: {
-      type: Object,
-      default: () => ({}),
-    },
-    moreNormdata: {
-      type: Array,
-      default: () => [],
-    },
-    flavorDataes: {
-      type: Array,
-      default: () => [],
-    },
-  },
-  methods: {
-    checkMoreNormPop(obj, item) {
-      this.$emit("checkMoreNormPop", { obj: obj, item: item });
-    },
-    addShop(obj) {
-      console.log(obj);
-      this.$emit("addShop", obj);
-    },
-    closeMoreNorm(obj) {
-      this.$emit("closeMoreNorm", obj);
-    },
-  },
-};
+
+<script setup lang="ts">
+// 获取父级传的数据
+const props = defineProps<{
+  moreNormDishdata?: any
+  moreNormdata?: any[]
+  flavorDataes?: string[]
+}>()
+const emit = defineEmits<{
+  (e: 'checkMoreNormPop', val: { obj: string[]; item: string }): void
+  (e: 'addShop', obj: any): void
+  (e: 'closeMoreNorm', obj: any): void
+}>()
+
+function checkMoreNormPop(obj: string[], item: string) {
+  emit('checkMoreNormPop', { obj, item })
+}
+function addShop(obj: any) {
+  emit('addShop', obj)
+}
+function closeMoreNorm(obj: any) {
+  emit('closeMoreNorm', obj)
+}
 </script>
 <style lang="scss" scoped>
 .more_norm_pop {

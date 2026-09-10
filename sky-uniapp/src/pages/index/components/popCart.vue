@@ -64,32 +64,29 @@
     </scroll-view>
   </view>
 </template>
-<script>
-export default {
-  // 获取父级传的数据
-  props: {
-    orderAndUserInfo: {
-      type: Array,
-      default: () => [],
-    },
-    openOrderCartList: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  methods: {
-    clearCardOrder() {
-      this.$emit("clearCardOrder");
-    },
-    // 加入购物车
-    addDishAction(obj, item) {
-      this.$emit("addDishAction", { obj: obj, item: item });
-    },
-    redDishAction(obj, item) {
-      this.$emit("redDishAction", { obj: obj, item: item });
-    },
-  },
-};
+
+<script setup lang="ts">
+// 获取父级传的数据
+defineProps<{
+  orderAndUserInfo?: any[]
+  openOrderCartList?: boolean
+}>()
+const emit = defineEmits<{
+  (e: 'clearCardOrder'): void
+  (e: 'addDishAction', val: { obj: any; item: string }): void
+  (e: 'redDishAction', val: { obj: any; item: string }): void
+}>()
+
+function clearCardOrder() {
+  emit('clearCardOrder')
+}
+// 加入购物车
+function addDishAction(obj: any, item: string) {
+  emit('addDishAction', { obj, item })
+}
+function redDishAction(obj: any, item: string) {
+  emit('redDishAction', { obj, item })
+}
 </script>
 <style lang="scss" scoped>
 .cart_pop {

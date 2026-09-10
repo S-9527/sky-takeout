@@ -45,9 +45,9 @@ import { useUserStore } from '@/store/modules/user'
 import Hamburger from '@/components/Hamburger/index.vue'
 import { useNotifications } from '@/composables/useNotifications'
 import { getStatus as getApiStatus } from '@/api/users'
-import BusinessStatus from '../components/BusinessStatus.vue'
-import UserDropdown from '../components/UserDropdown.vue'
-import Password from '../components/password.vue'
+import BusinessStatus from './BusinessStatus.vue'
+import UserDropdown from './UserDropdown.vue'
+import Password from './password.vue'
 
 const router = useRouter()
 const appStore = useAppStore()

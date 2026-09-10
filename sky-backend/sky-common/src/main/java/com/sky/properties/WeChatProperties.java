@@ -19,5 +19,6 @@ public class WeChatProperties {
     private String weChatPayCertFilePath; //平台证书
     private String notifyUrl; //支付成功的回调地址
     private String refundNotifyUrl; //退款成功的回调地址
+    private String login = "mock"; //登录方式: mock 本地开发用 jsCode 直接映射 openid / wechat 线上走真实 jscode2session
 
 }

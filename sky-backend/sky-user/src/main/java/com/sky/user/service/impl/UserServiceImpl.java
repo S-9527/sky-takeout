@@ -126,6 +126,10 @@ public class UserServiceImpl implements UserService {
      * @return
      */
     private String getOpenid(String code){
+        // mock 模式：不调用微信接口，用 jsCode 直接映射 openid，便于本地开发和小程序工具调试
+        if ("mock".equals(weChatProperties.getLogin())){
+            return "dev-" + code;
+        }
         //调用微信接口服务，获得当前微信用户的openid
         Map<String, String> params = new HashMap<>();
         params.put("appid",weChatProperties.getAppid());

@@ -7,6 +7,7 @@ import com.sky.employee.dto.PasswordEditDTO;
 import com.sky.employee.entity.Employee;
 import com.sky.employee.vo.EmployeeLoginVO;
 import com.sky.result.PageResult;
+import com.sky.token.TokenPair;
 
 public interface EmployeeService {
 
@@ -57,8 +58,16 @@ public interface EmployeeService {
     void editPassword(PasswordEditDTO passwordEditDTO);
 
     /**
-     * 退出登录：撤销当前令牌，使其立即失效
-     * @param token 待撤销的 jwt 令牌
+     * 退出登录：撤销访问令牌与刷新令牌，使其立即失效
+     * @param accessToken  待撤销的访问令牌
+     * @param refreshToken 待撤销的刷新令牌(可为空)
      */
-    void logout(String token);
+    void logout(String accessToken, String refreshToken);
+
+    /**
+     * 刷新令牌对：校验并轮换刷新令牌，返回新的访问+刷新令牌
+     * @param refreshToken 刷新令牌
+     * @return 新的令牌对
+     */
+    TokenPair refresh(String refreshToken);
 }

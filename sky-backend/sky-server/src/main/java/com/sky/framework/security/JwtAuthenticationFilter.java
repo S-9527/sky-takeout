@@ -3,6 +3,7 @@ package com.sky.framework.security;
 import com.sky.context.BaseContext;
 import com.sky.token.JwtTokenBlacklistService;
 import com.sky.token.JwtTokenService;
+import com.sky.token.TokenPurpose;
 import com.sky.token.TokenType;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
@@ -76,6 +77,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private void authenticate(Claims claims, String token, TokenType type, HttpServletRequest request) {
+        // 仅接受访问令牌：刷新令牌不能作为 Bearer 使用(无 token_type 声明的旧令牌同样失效)
+        if (!TokenPurpose.ACCESS.matches(claims.get(TokenPurpose.CLAIM_KEY))) {
+            log.warn("非访问令牌被拒: jti={}, type={}", claims.getId(), claims.get(TokenPurpose.CLAIM_KEY));
+            return;
+        }
+
         // 黑名单校验：已撤销的令牌视为未认证
         if (blacklistService.isRevoked(claims.getId())) {
             log.warn("JWT 已被撤销: jti={}", claims.getId());

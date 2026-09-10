@@ -5,10 +5,12 @@ import com.sky.employee.dto.EmployeeLoginDTO;
 import com.sky.employee.dto.EmployeePageQueryDTO;
 import com.sky.employee.dto.PasswordEditDTO;
 import com.sky.employee.entity.Employee;
+import com.sky.dto.RefreshTokenDTO;
 import com.sky.result.PageResult;
 import com.sky.result.Result;
 import com.sky.employee.service.EmployeeService;
 import com.sky.employee.vo.EmployeeLoginVO;
+import com.sky.token.TokenPair;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
@@ -48,11 +50,27 @@ public class EmployeeController {
      */
     @PostMapping("/logout")
     @Operation(summary = "员工退出")
-    public Result<String> logout(@RequestHeader(name = "Authorization", required = false) String authorization) {
+    public Result<String> logout(@RequestHeader(name = "Authorization", required = false) String authorization,
+                                 @RequestBody(required = false) RefreshTokenDTO refreshTokenDTO) {
+        String accessToken = null;
         if (authorization != null && authorization.startsWith("Bearer ")) {
-            employeeService.logout(authorization.substring("Bearer ".length()));
+            accessToken = authorization.substring("Bearer ".length());
         }
+        employeeService.logout(accessToken,
+                refreshTokenDTO != null ? refreshTokenDTO.getRefreshToken() : null);
         return Result.success();
+    }
+
+    /**
+     * 刷新令牌对
+     *
+     * @return
+     */
+    @PostMapping("/refresh")
+    @Operation(summary = "员工令牌刷新")
+    public Result<TokenPair> refresh(@RequestBody RefreshTokenDTO refreshTokenDTO) {
+        log.info("员工令牌刷新");
+        return Result.success(employeeService.refresh(refreshTokenDTO.getRefreshToken()));
     }
 
     /**

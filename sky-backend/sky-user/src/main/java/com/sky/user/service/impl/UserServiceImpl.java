@@ -11,6 +11,8 @@ import com.sky.properties.WeChatProperties;
 import com.sky.user.service.UserService;
 import com.sky.user.vo.UserLoginVO;
 import com.sky.token.JwtTokenService;
+import com.sky.token.TokenPair;
+import com.sky.token.TokenType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -61,12 +63,38 @@ public class UserServiceImpl implements UserService {
         }
 
         //签发jwt令牌并返回登录结果
-        String token = jwtTokenService.createUserToken(user.getId());
+        TokenPair tokenPair = jwtTokenService.createTokenPair(TokenType.USER, user.getId());
         return UserLoginVO.builder()
                 .id(user.getId())
                 .openid(user.getOpenid())
-                .token(token)
+                .accessToken(tokenPair.getAccessToken())
+                .refreshToken(tokenPair.getRefreshToken())
                 .build();
+    }
+
+    /**
+     * 刷新令牌对：校验并轮换刷新令牌，返回新的访问+刷新令牌
+     *
+     * @param refreshToken 刷新令牌
+     * @return 新的令牌对
+     */
+    public TokenPair refresh(String refreshToken) {
+        return jwtTokenService.refresh(TokenType.USER, refreshToken);
+    }
+
+    /**
+     * 退出登录：同时撤销访问令牌与刷新令牌
+     *
+     * @param accessToken  访问令牌
+     * @param refreshToken 刷新令牌(可为空)
+     */
+    public void logout(String accessToken, String refreshToken) {
+        if (accessToken != null && !accessToken.isEmpty()) {
+            jwtTokenService.revokeToken(accessToken, TokenType.USER);
+        }
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            jwtTokenService.revokeToken(refreshToken, TokenType.USER);
+        }
     }
 
     /**

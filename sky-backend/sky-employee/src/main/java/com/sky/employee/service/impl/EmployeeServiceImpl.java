@@ -18,6 +18,7 @@ import com.sky.result.PageResult;
 import com.sky.employee.service.EmployeeService;
 import com.sky.employee.vo.EmployeeLoginVO;
 import com.sky.token.JwtTokenService;
+import com.sky.token.TokenPair;
 import com.sky.token.TokenType;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -81,13 +82,24 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
 
         //3、登录成功，签发JWT令牌并组装登录结果
-        String token = jwtTokenService.createAdminToken(employee.getId());
+        TokenPair tokenPair = jwtTokenService.createTokenPair(TokenType.ADMIN, employee.getId());
         return EmployeeLoginVO.builder()
                 .id(employee.getId())
                 .userName(employee.getUsername())
                 .name(employee.getName())
-                .token(token)
+                .accessToken(tokenPair.getAccessToken())
+                .refreshToken(tokenPair.getRefreshToken())
                 .build();
+    }
+
+    /**
+     * 刷新令牌对：校验并轮换刷新令牌，返回新的访问+刷新令牌
+     *
+     * @param refreshToken 刷新令牌
+     * @return 新的令牌对
+     */
+    public TokenPair refresh(String refreshToken) {
+        return jwtTokenService.refresh(TokenType.ADMIN, refreshToken);
     }
 
     /**
@@ -197,11 +209,17 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     /**
-     * 退出登录
+     * 退出登录：同时撤销访问令牌与刷新令牌
      *
-     * @param token
+     * @param accessToken  访问令牌
+     * @param refreshToken 刷新令牌(可为空)
      */
-    public void logout(String token) {
-        jwtTokenService.revokeToken(token, TokenType.ADMIN);
+    public void logout(String accessToken, String refreshToken) {
+        if (accessToken != null && !accessToken.isEmpty()) {
+            jwtTokenService.revokeToken(accessToken, TokenType.ADMIN);
+        }
+        if (refreshToken != null && !refreshToken.isEmpty()) {
+            jwtTokenService.revokeToken(refreshToken, TokenType.ADMIN);
+        }
     }
 }

@@ -5,7 +5,7 @@ import com.sky.result.Result;
 import com.sky.user.service.UserService;
 import com.sky.user.vo.UserLoginVO;
 import com.sky.dto.RefreshTokenDTO;
-import com.sky.token.TokenPair;
+import com.sky.auth.token.TokenPair;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;

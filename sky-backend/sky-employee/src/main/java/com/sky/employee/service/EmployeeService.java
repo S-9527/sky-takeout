@@ -7,7 +7,7 @@ import com.sky.employee.dto.PasswordEditDTO;
 import com.sky.employee.entity.Employee;
 import com.sky.employee.vo.EmployeeLoginVO;
 import com.sky.result.PageResult;
-import com.sky.token.TokenPair;
+import com.sky.auth.token.TokenPair;
 
 public interface EmployeeService {
 

@@ -10,9 +10,9 @@ import com.sky.user.mapper.UserMapper;
 import com.sky.properties.WeChatProperties;
 import com.sky.user.service.UserService;
 import com.sky.user.vo.UserLoginVO;
-import com.sky.token.JwtTokenService;
-import com.sky.token.TokenPair;
-import com.sky.token.TokenType;
+import com.sky.auth.token.JwtTokenService;
+import com.sky.auth.token.TokenPair;
+import com.sky.auth.token.TokenType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 

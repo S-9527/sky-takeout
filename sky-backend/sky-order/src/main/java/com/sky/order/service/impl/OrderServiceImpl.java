@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
-import com.sky.context.BaseContext;
+import com.sky.utils.SecurityUtils;
 import com.sky.order.dto.OrdersCancelDTO;
 import com.sky.order.dto.OrdersConfirmDTO;
 import com.sky.order.dto.OrdersPageQueryDTO;
@@ -94,7 +94,7 @@ public class OrderServiceImpl implements OrderService {
         //checkOutOfRange(addressBook.getCityName() + addressBook.getDistrictName() + addressBook.getDetail());
 
         //查询当前用户的购物车数据
-        Long userId = BaseContext.getCurrentId();
+        Long userId = SecurityUtils.getCurrentUserId();
 
         ShoppingCart shoppingCart = new ShoppingCart();
         shoppingCart.setUserId(userId);
@@ -237,7 +237,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderPaymentVO payment(OrdersPaymentDTO ordersPaymentDTO) throws Exception {
         // 当前登录用户id
-        Long userId = BaseContext.getCurrentId();
+        Long userId = SecurityUtils.getCurrentUserId();
         User user = userService.getById(userId);
 
         //调用支付网关生成预支付交易单
@@ -271,7 +271,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public void paySuccess(String outTradeNo) {
         // 当前登录用户id
-        Long userId = BaseContext.getCurrentId();
+        Long userId = SecurityUtils.getCurrentUserId();
 
         // 根据订单号查询当前用户的订单
         Orders ordersDB = orderMapper.selectOne(new LambdaQueryWrapper<Orders>()
@@ -300,7 +300,7 @@ public class OrderServiceImpl implements OrderService {
      */
     public PageResult<OrderVO> pageQuery4User(int pageNum, int pageSize, Integer status) {
         OrdersPageQueryDTO ordersPageQueryDTO = new OrdersPageQueryDTO();
-        ordersPageQueryDTO.setUserId(BaseContext.getCurrentId());
+        ordersPageQueryDTO.setUserId(SecurityUtils.getCurrentUserId());
         ordersPageQueryDTO.setStatus(status);
 
         // 分页条件查询
@@ -393,7 +393,7 @@ public class OrderServiceImpl implements OrderService {
      */
     public void repetition(Long id) {
         // 查询当前用户id
-        Long userId = BaseContext.getCurrentId();
+        Long userId = SecurityUtils.getCurrentUserId();
 
         // 根据订单id查询当前订单详情
         List<OrderDetail> orderDetailList = orderDetailMapper.selectList(

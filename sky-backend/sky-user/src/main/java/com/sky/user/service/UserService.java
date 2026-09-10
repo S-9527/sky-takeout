@@ -3,7 +3,7 @@ package com.sky.user.service;
 import com.sky.user.dto.UserLoginDTO;
 import com.sky.user.entity.User;
 import com.sky.user.vo.UserLoginVO;
-import com.sky.token.TokenPair;
+import com.sky.auth.token.TokenPair;
 
 import java.util.Map;
 

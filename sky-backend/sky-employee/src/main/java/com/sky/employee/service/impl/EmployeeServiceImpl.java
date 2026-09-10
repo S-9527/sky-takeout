@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.sky.constant.MessageConstant;
-import com.sky.context.BaseContext;
+import com.sky.utils.SecurityUtils;
 import com.sky.employee.enumeration.AccountStatus;
 import com.sky.employee.dto.EmployeeDTO;
 import com.sky.employee.dto.EmployeeLoginDTO;
@@ -17,9 +17,9 @@ import com.sky.employee.mapper.EmployeeMapper;
 import com.sky.result.PageResult;
 import com.sky.employee.service.EmployeeService;
 import com.sky.employee.vo.EmployeeLoginVO;
-import com.sky.token.JwtTokenService;
-import com.sky.token.TokenPair;
-import com.sky.token.TokenType;
+import com.sky.auth.token.JwtTokenService;
+import com.sky.auth.token.TokenPair;
+import com.sky.auth.token.TokenType;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -192,7 +192,7 @@ public class EmployeeServiceImpl implements EmployeeService {
      */
     public void editPassword(PasswordEditDTO passwordEditDTO) {
         //当前登录员工
-        Long empId = BaseContext.getCurrentId();
+        Long empId = SecurityUtils.getCurrentUserId();
         Employee employee = employeeMapper.selectById(empId);
         if (employee == null) {
             throw new UsernameNotFoundException(MessageConstant.ACCOUNT_NOT_FOUND);

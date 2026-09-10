@@ -1,7 +1,7 @@
 package com.sky.user.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.sky.context.BaseContext;
+import com.sky.utils.SecurityUtils;
 import com.sky.user.dto.ShoppingCartDTO;
 import com.sky.menu.entity.Dish;
 import com.sky.menu.entity.Setmeal;
@@ -36,7 +36,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         //判断当前加入到购物车中的商品是否已经存在了
         ShoppingCart shoppingCart = new ShoppingCart();
         BeanUtils.copyProperties(shoppingCartDTO,shoppingCart);
-        Long userId = BaseContext.getCurrentId();
+        Long userId = SecurityUtils.getCurrentUserId();
         shoppingCart.setUserId(userId);
 
         List<ShoppingCart> list = shoppingCartMapper.selectList(buildQueryWrapper(shoppingCart));
@@ -76,7 +76,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
      */
     public List<ShoppingCart> showShoppingCart() {
         //获取到当前微信用户的id
-        Long userId = BaseContext.getCurrentId();
+        Long userId = SecurityUtils.getCurrentUserId();
         ShoppingCart shoppingCart = ShoppingCart.builder()
                 .userId(userId)
                 .build();
@@ -88,7 +88,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
      */
     public void cleanShoppingCart() {
         //获取到当前微信用户的id
-        Long userId = BaseContext.getCurrentId();
+        Long userId = SecurityUtils.getCurrentUserId();
         shoppingCartMapper.delete(new LambdaQueryWrapper<ShoppingCart>().eq(ShoppingCart::getUserId, userId));
     }
 
@@ -128,7 +128,7 @@ public class ShoppingCartServiceImpl implements ShoppingCartService {
         ShoppingCart shoppingCart = new ShoppingCart();
         BeanUtils.copyProperties(shoppingCartDTO,shoppingCart);
         //设置查询条件，查询当前登录用户的购物车数据
-        shoppingCart.setUserId(BaseContext.getCurrentId());
+        shoppingCart.setUserId(SecurityUtils.getCurrentUserId());
 
         List<ShoppingCart> list = shoppingCartMapper.selectList(buildQueryWrapper(shoppingCart));
 

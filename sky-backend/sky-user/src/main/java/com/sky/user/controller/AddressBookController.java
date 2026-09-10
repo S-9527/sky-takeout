@@ -1,6 +1,6 @@
 package com.sky.user.controller;
 
-import com.sky.context.BaseContext;
+import com.sky.utils.SecurityUtils;
 import com.sky.user.entity.AddressBook;
 import com.sky.result.Result;
 import com.sky.user.service.AddressBookService;
@@ -27,7 +27,7 @@ public class AddressBookController {
     @Operation(summary = "查询当前登录用户的所有地址信息")
     public Result<List<AddressBook>> list() {
         AddressBook addressBook = new AddressBook();
-        addressBook.setUserId(BaseContext.getCurrentId());
+        addressBook.setUserId(SecurityUtils.getCurrentUserId());
         List<AddressBook> list = addressBookService.list(addressBook);
         return Result.success(list);
     }
@@ -100,7 +100,7 @@ public class AddressBookController {
         //SQL:select * from address_book where user_id = ? and is_default = 1
         AddressBook addressBook = new AddressBook();
         addressBook.setIsDefault(1);
-        addressBook.setUserId(BaseContext.getCurrentId());
+        addressBook.setUserId(SecurityUtils.getCurrentUserId());
         List<AddressBook> list = addressBookService.list(addressBook);
 
         if (list != null && list.size() == 1) {

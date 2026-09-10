@@ -2,7 +2,7 @@ package com.sky.user.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import com.sky.context.BaseContext;
+import com.sky.utils.SecurityUtils;
 import com.sky.user.entity.AddressBook;
 import com.sky.user.mapper.AddressBookMapper;
 import com.sky.user.service.AddressBookService;
@@ -37,7 +37,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @param addressBook
      */
     public void save(AddressBook addressBook) {
-        addressBook.setUserId(BaseContext.getCurrentId());
+        addressBook.setUserId(SecurityUtils.getCurrentUserId());
         addressBook.setIsDefault(0);
         addressBookMapper.insert(addressBook);
     }
@@ -71,7 +71,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     public void setDefault(AddressBook addressBook) {
         //1、将当前用户的所有地址修改为非默认地址 update address_book set is_default = 0 where user_id = ?
         addressBookMapper.update(null, new LambdaUpdateWrapper<AddressBook>()
-                .eq(AddressBook::getUserId, BaseContext.getCurrentId())
+                .eq(AddressBook::getUserId, SecurityUtils.getCurrentUserId())
                 .set(AddressBook::getIsDefault, 0));
 
         //2、将当前地址改为默认地址 update address_book set is_default = 1 where id = ?

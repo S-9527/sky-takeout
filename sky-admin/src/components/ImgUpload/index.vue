@@ -49,7 +49,7 @@ const emit = defineEmits(['imageChange'])
 const userStore = useUserStore()
 
 const headers = {
-  token: userStore.token
+  Authorization: `Bearer ${userStore.token}`
 }
 // 与 axios 的 baseURL 共用同一个环境变量,避免硬编码 /api
 const uploadAction = `${import.meta.env.VITE_BASE_API}/common/upload`

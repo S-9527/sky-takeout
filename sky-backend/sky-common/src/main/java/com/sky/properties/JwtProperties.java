@@ -22,6 +22,7 @@ public class JwtProperties {
      */
     private String adminIssuer;
     private long adminTtl;
+    private long adminRefreshTtl;
     private List<JwtKeyConfig> adminKeys = new ArrayList<>();
 
     /**
@@ -29,6 +30,7 @@ public class JwtProperties {
      */
     private String userIssuer;
     private long userTtl;
+    private long userRefreshTtl;
     private List<JwtKeyConfig> userKeys = new ArrayList<>();
 
 }

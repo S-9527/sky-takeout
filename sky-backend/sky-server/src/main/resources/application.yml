@@ -46,14 +46,16 @@ sky:
     audience: sky-takeout
     # 管理端
     admin-issuer: sky-admin
-    admin-ttl: 7200000
+    admin-ttl: 1800000
+    admin-refresh-ttl: 604800000
     admin-keys:
       - kid: admin-2026
         # 建议通过环境变量注入,勿在源码仓库暴露生产密钥
         secret: ${SKY_JWT_ADMIN_SECRET:itcast-sky-takeout-admin-2026-32bytes!!}
     # 用户端
     user-issuer: sky-user
-    user-ttl: 7200000
+    user-ttl: 1800000
+    user-refresh-ttl: 604800000
     user-keys:
       - kid: user-2026
         secret: ${SKY_JWT_USER_SECRET:itheima-sky-takeout-user-2026-32bytes!!}

@@ -227,27 +227,22 @@ export default {
 					_this.doLogin({ code: "h5-dev-user" })
 					return
 					// #endif
-					let jsCode = ""
+					// 静默登录:wx.login 拿 code 直接换令牌,不经过 getUserProfile 授权弹窗
+					// (getUserProfile 自 2022-10-25 起对新发布的小程序不再弹窗,回调会直接进 fail,登录链整体中断)
 					uni.login({
 						provider: "weixin",
 						success: (loginRes) => {
-							if (loginRes.errMsg === "login:ok") {
-								jsCode = loginRes.code
+							if (loginRes.errMsg !== "login:ok") {
+								uni.showToast({ title: "登录失败", icon: "none" })
+								return
 							}
-						},
-					})
-					// 授权
-					uni.getUserProfile({
-						desc: "登录",
-						success: function (userInfo) {
-							_this.setBaseUserInfo(userInfo.userInfo)
 							const params = {
-								code: jsCode,
-								// 传递地理位置信息
+								code: loginRes.code,
 							}
-							// 获取定位信息
+							// 定位失败不阻塞登录
 							uni.getLocation({
-								type: 'gcj02', isHighAccuracy: true
+								type: "gcj02",
+								isHighAccuracy: true
 							}).then(([err, result]) => {
 								if (err) {
 									uni.showToast({
@@ -255,16 +250,15 @@ export default {
 										icon: "none"
 									})
 								} else {
-									if (process.env.NODE_ENV === '"development"') {
-										params.location = `116.481488,39.990464`//	先写死在北京
-									} else {
-										params.location = `${result.longitude},${result.latitude}`
-									}
+									params.location = `${result.longitude},${result.latitude}`
 								}
+							}).finally(() => {
 								_this.doLogin(params)
 							})
 						},
-						fail: function (err) { },
+						fail: () => {
+							uni.showToast({ title: "登录失败", icon: "none" })
+						}
 					})
 				},
 				})

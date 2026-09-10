@@ -209,60 +209,53 @@ export default {
 		},
 		// 获取用户信息
 		getData() {
-			let _this = this
 			// 获取店铺状态
 			this.getShopInfo()
+			// 无令牌则直接静默登录,不再弹提示窗
 			if (this.token() === "") {
-				uni.showModal({
-					title: "温馨提示",
-				content: "亲，登录后才能点餐！",
-				showCancel: false,
-				success(res) {
-					if (!res.confirm) {
+				this.silentLogin()
+			}
+		},
+		// 静默登录:wx.login 拿 code 直接换令牌,全程不弹授权窗
+		// (getUserProfile 自 2022-10-25 起对新发布的小程序不再弹窗,回调会直接进 fail,登录链整体中断)
+		silentLogin() {
+			// #ifdef H5
+			// H5 没有微信授权环境，直接以固定体验账号登录
+			this.setBaseUserInfo({ nickName: "体验用户", avatarUrl: "" })
+			this.doLogin({ code: "h5-dev-user" })
+			return
+			// #endif
+			uni.login({
+				provider: "weixin",
+				success: (loginRes) => {
+					if (loginRes.errMsg !== "login:ok") {
+						uni.showToast({ title: "登录失败", icon: "none" })
 						return
 					}
-					// #ifdef H5
-					// H5 没有微信授权环境，直接以固定体验账号登录
-					_this.setBaseUserInfo({ nickName: "体验用户", avatarUrl: "" })
-					_this.doLogin({ code: "h5-dev-user" })
-					return
-					// #endif
-					// 静默登录:wx.login 拿 code 直接换令牌,不经过 getUserProfile 授权弹窗
-					// (getUserProfile 自 2022-10-25 起对新发布的小程序不再弹窗,回调会直接进 fail,登录链整体中断)
-					uni.login({
-						provider: "weixin",
-						success: (loginRes) => {
-							if (loginRes.errMsg !== "login:ok") {
-								uni.showToast({ title: "登录失败", icon: "none" })
-								return
-							}
-							const params = {
-								code: loginRes.code,
-							}
-							// 定位失败不阻塞登录
-							uni.getLocation({
-								type: "gcj02",
-								isHighAccuracy: true
-							}).then(([err, result]) => {
-								if (err) {
-									uni.showToast({
-										title: "获取地理位置失败",
-										icon: "none"
-									})
-								} else {
-									params.location = `${result.longitude},${result.latitude}`
-								}
-							}).finally(() => {
-								_this.doLogin(params)
+					const params = {
+						code: loginRes.code,
+					}
+					// 定位失败不阻塞登录
+					uni.getLocation({
+						type: "gcj02",
+						isHighAccuracy: true
+					}).then(([err, result]) => {
+						if (err) {
+							uni.showToast({
+								title: "获取地理位置失败",
+								icon: "none"
 							})
-						},
-						fail: () => {
-							uni.showToast({ title: "登录失败", icon: "none" })
+						} else {
+							params.location = `${result.longitude},${result.latitude}`
 						}
+					}).finally(() => {
+						this.doLogin(params)
 					})
 				},
-				})
-			}
+				fail: () => {
+					uni.showToast({ title: "登录失败", icon: "none" })
+				}
+			})
 		},
 
 		async init() {

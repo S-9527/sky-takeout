@@ -1,0 +1,47 @@
+{
+  "name": "sky-uniapp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "苍穹外卖用户端小程序(uni-app),对接 sky-backend 的 /user 接口",
+  "scripts": {
+    "dev:h5": "cross-env NODE_ENV=development UNI_PLATFORM=h5 vue-cli-service uni-serve",
+    "build:h5": "cross-env NODE_ENV=production UNI_PLATFORM=h5 vue-cli-service build",
+    "dev:mp-weixin": "cross-env NODE_ENV=development UNI_PLATFORM=mp-weixin NODE_OPTIONS=--require=./scripts/node-polyfill.cjs vue-cli-service uni-build --watch",
+    "build:mp-weixin": "cross-env NODE_ENV=production UNI_PLATFORM=mp-weixin NODE_OPTIONS=--require=./scripts/node-polyfill.cjs vue-cli-service uni-build"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "^2.0.2-5020420260813001",
+    "@dcloudio/uni-h5": "^2.0.2-5020420260813001",
+    "@dcloudio/uni-i18n": "^2.0.2-5020420260813001",
+    "@dcloudio/uni-mp-vue": "^2.0.2-5020420260813001",
+    "@dcloudio/uni-mp-weixin": "^2.0.2-5020420260813001",
+    "@dcloudio/uni-stacktracey": "^2.0.2-5020420260813001",
+    "@dcloudio/uni-ui": "^1.5.12",
+    "@vue/shared": "^3.0.0",
+    "vue": "^2.6.14",
+    "vuex": "^3.6.2"
+  },
+  "devDependencies": {
+    "@dcloudio/uni-cli-i18n": "^2.0.2-5020420260813001",
+    "@dcloudio/uni-cli-shared": "^2.0.2-5020420260813001",
+    "@dcloudio/uni-migration": "^2.0.2-5020420260813001",
+    "@dcloudio/uni-template-compiler": "^2.0.2-5020420260813001",
+    "@dcloudio/vue-cli-plugin-hbuilderx": "^2.0.2-5020420260813001",
+    "@dcloudio/vue-cli-plugin-uni": "^2.0.2-5020420260813001",
+    "@dcloudio/vue-cli-plugin-uni-optimize": "^2.0.2-5020420260813001",
+    "@dcloudio/webpack-uni-mp-loader": "^2.0.2-5020420260813001",
+    "@dcloudio/webpack-uni-pages-loader": "^2.0.2-5020420260813001",
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "babel-plugin-import": "^1.11.0",
+    "cross-env": "^7.0.3",
+    "regenerator-runtime": "^0.12.1",
+    "regenerator-transform": "^0.14.5",
+    "sass": "^1.104.0",
+    "vue-template-compiler": "^2.6.14"
+  },
+  "browserslist": [
+    "Android >= 4.4",
+    "ios >= 9"
+  ]
+}

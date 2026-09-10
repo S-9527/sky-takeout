@@ -1,5 +1,4 @@
 -- 苍穹外卖演示数据
-USE sky_take_out;
 
 -- 分类
 INSERT INTO category (id, type, name, sort, status, create_time, update_time, create_user, update_user) VALUES
@@ -28,13 +27,13 @@ INSERT INTO dish (id, name, category_id, price, image, description, status, crea
 
 -- 菜品口味
 INSERT INTO dish_flavor (id, dish_id, name, value) VALUES
-(1, 1, '辣度', '[\"不辣\",\"微辣\",\"中辣\",\"特辣\"]'),
-(2, 2, '口感', '[\"正常\",\"偏软\",\"偏硬\"]'),
-(3, 3, '辣度', '[\"微辣\",\"中辣\",\"特辣\"]'),
-(4, 4, '口味', '[\"偏甜\",\"偏咸\",\"正常\"]'),
-(5, 8, '份量', '[\"大份\",\"小份\"]'),
-(6, 9, '份量', '[\"大份\",\"小份\"]'),
-(7, 10, '辣度', '[\"不辣\",\"微辣\",\"中辣\",\"特辣\"]');
+(1, 1, '辣度', '["不辣","微辣","中辣","特辣"]'),
+(2, 2, '口感', '["正常","偏软","偏硬"]'),
+(3, 3, '辣度', '["微辣","中辣","特辣"]'),
+(4, 4, '口味', '["偏甜","偏咸","正常"]'),
+(5, 8, '份量', '["大份","小份"]'),
+(6, 9, '份量', '["大份","小份"]'),
+(7, 10, '辣度', '["不辣","微辣","中辣","特辣"]');
 
 -- 套餐
 INSERT INTO setmeal (id, category_id, name, price, status, description, image, create_time, update_time, create_user, update_user) VALUES

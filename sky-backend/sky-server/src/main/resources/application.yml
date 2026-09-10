@@ -5,11 +5,19 @@ spring:
   profiles:
     active: dev
   datasource:
+    driver-class-name: ${sky.datasource.driver-class-name}
+    url: jdbc:mysql://${sky.datasource.host}:${sky.datasource.port}/${sky.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${sky.datasource.username}
+    password: ${sky.datasource.password}
     druid:
       driver-class-name: ${sky.datasource.driver-class-name}
       url: jdbc:mysql://${sky.datasource.host}:${sky.datasource.port}/${sky.datasource.database}?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
       username: ${sky.datasource.username}
       password: ${sky.datasource.password}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
   data:
     redis:
       host: ${sky.redis.host}

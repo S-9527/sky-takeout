@@ -1,6 +1,4 @@
 -- 苍穹外卖数据库初始化脚本
-CREATE DATABASE IF NOT EXISTS sky_take_out DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE sky_take_out;
 
 -- 员工信息表
 CREATE TABLE IF NOT EXISTS employee (
@@ -184,7 +182,3 @@ CREATE TABLE IF NOT EXISTS order_detail (
     PRIMARY KEY (id),
     KEY idx_order_id (order_id)
 ) ENGINE = InnoDB AUTO_INCREMENT = 100 DEFAULT CHARSET = utf8mb4 COMMENT = '订单明细';
-
--- 初始化数据：管理员账号 admin / 123456（BCrypt加密存储）
-INSERT INTO employee (id, name, username, password, phone, sex, id_number, status, create_time, update_time, create_user, update_user)
-VALUES (1, '管理员', 'admin', '$2a$10$e./WtpvCl/1fClkIb1vGM.cY87zKJ0IS.ZVwbQFxUGwpiMKomEq6y', '13812345678', '1', '110101199003077118', 1, '2022-02-15 15:51:20', '2022-02-17 09:16:20', 10, 1);

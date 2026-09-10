@@ -82,20 +82,17 @@ const loginRules: FormRules = {
 const loading = ref(false)
 
 // 登录
-const handleLogin = () => {
-  loginFormRef.value?.validate(async (valid: boolean) => {
-    if (valid) {
-      loading.value = true
-      await userStore
-        .Login(loginForm.value)
-        .then(() => {
-          router.push('/')
-        })
-        .catch(() => {
-          loading.value = false
-        })
-    }
-  })
+const handleLogin = async () => {
+  try {
+    const valid = await loginFormRef.value?.validate()
+    if (!valid) return
+
+    loading.value = true
+    await userStore.Login(loginForm.value)
+    router.push('/')
+  } catch {
+    loading.value = false
+  }
 }
 </script>
 

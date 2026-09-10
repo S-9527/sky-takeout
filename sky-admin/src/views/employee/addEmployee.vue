@@ -130,48 +130,39 @@ const rules: FormRules = {
 const init = async () => {
   const id = parseQueryNumber(route.query.id)
   if (id === undefined) return
-  queryEmployeeById(id).then((res) => {
-    ruleForm.value = res
-    ruleForm.value.sex = res.sex === '0' ? '女' : '男'
-  })
+  const res = await queryEmployeeById(id)
+  ruleForm.value = res
+  ruleForm.value.sex = res.sex === '0' ? '女' : '男'
 }
 
-const submitForm = (_formName: string, st: boolean) => {
-  ruleFormRef.value?.validate((valid) => {
-    if (valid) {
-      if (actionType.value === 'add') {
-        const params = {
-          ...ruleForm.value,
-          sex: ruleForm.value.sex === '女' ? '0' : '1'
-        }
-        addEmployee(params)
-          .then(() => {
-            ElMessage.success('员工添加成功！')
-            if (!st) {
-              router.push({ path: '/employee' })
-            } else {
-              ruleForm.value = {
-                username: '',
-                name: '',
-                phone: '',
-                sex: '男',
-                idNumber: ''
-              }
-            }
-          })
+const submitForm = async (_formName: string, st: boolean) => {
+  try {
+    const valid = await ruleFormRef.value?.validate()
+    if (!valid) return
+
+    const sex = ruleForm.value.sex === '女' ? '0' : '1'
+    if (actionType.value === 'add') {
+      await addEmployee({ ...ruleForm.value, sex })
+      ElMessage.success('员工添加成功！')
+      if (!st) {
+        router.push({ path: '/employee' })
       } else {
-        const params = {
-          ...ruleForm.value,
-          sex: ruleForm.value.sex === '女' ? '0' : '1'
+        ruleForm.value = {
+          username: '',
+          name: '',
+          phone: '',
+          sex: '男',
+          idNumber: ''
         }
-        editEmployee(params)
-          .then(() => {
-            ElMessage.success('员工信息修改成功！')
-            router.push({ path: '/employee' })
-          })
       }
+    } else {
+      await editEmployee({ ...ruleForm.value, sex })
+      ElMessage.success('员工信息修改成功！')
+      router.push({ path: '/employee' })
     }
-  })
+  } catch {
+    // 校验失败或请求失败
+  }
 }
 
 actionType.value = route.query.id ? 'edit' : 'add'

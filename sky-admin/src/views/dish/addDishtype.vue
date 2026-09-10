@@ -214,26 +214,24 @@ const selectHandle = (val: string, key: number, _ind: number) => {
 async function init() {
   const id = parseQueryNumber(route.query.id)
   if (id === undefined) return
-  queryDishById(id).then(res => {
-    ruleForm.value = {
-      name: res.name,
-      id: String(res.id ?? ''),
-      price: String(res.price),
-      code: res.code ?? '',
-      image: res.image,
-      description: res.description ?? '',
-      status: res.status === 1,
-      categoryId: String(res.categoryId)
-    }
-    dishFlavors.value =
-      res.flavors &&
-      res.flavors.map(obj => ({
-        ...obj,
-        value: JSON.parse(obj.value) as string[]
-      }))
-    getLeftDishFlavors()
-    imageUrl.value = res.image
-  })
+  const res = await queryDishById(id)
+  ruleForm.value = {
+    name: res.name,
+    id: String(res.id ?? ''),
+    price: String(res.price),
+    code: res.code ?? '',
+    image: res.image,
+    description: res.description ?? '',
+    status: res.status === 1,
+    categoryId: String(res.categoryId)
+  }
+  dishFlavors.value =
+    res.flavors && res.flavors.map(obj => ({
+      ...obj,
+      value: JSON.parse(obj.value) as string[]
+    }))
+  getLeftDishFlavors()
+  imageUrl.value = res.image
 }
 
 // 按钮 - 添加口味
@@ -253,10 +251,9 @@ const delFlavorLabel = (index2: number, ind: number) => {
 }
 
 // 获取菜品分类
-function getDishList() {
-  getCategoryList({ type: 1 }).then(res => {
-    dishList.value = res
-  })
+async function getDishList() {
+  const res = await getCategoryList({ type: 1 })
+  dishList.value = res
 }
 
 // 获取口味列表
@@ -270,58 +267,57 @@ function getFlavorListHand() {
   ]
 }
 
-const submitForm = (_formName: string, st?: string) => {
-  ruleFormRef.value?.validate((valid) => {
-    if (valid) {
-      if (!ruleForm.value.image) {
-        ElMessage.error('菜品图片不能为空')
-        return
-      }
-      const params: DishDTO = {
-        name: ruleForm.value.name,
-        price: Number(ruleForm.value.price),
-        code: ruleForm.value.code,
-        image: ruleForm.value.image,
-        description: ruleForm.value.description,
-        status: actionType.value === 'add' ? 0 : ruleForm.value.status ? 1 : 0,
-        categoryId: Number(ruleForm.value.categoryId),
-        flavors: dishFlavors.value.map(obj => ({
-          name: obj.name,
-          value: JSON.stringify(obj.value)
-        }))
-      }
-      if (actionType.value === 'add') {
-        addDish(params)
-          .then(() => {
-            ElMessage.success('菜品添加成功！')
-            if (!st) {
-              router.push({ path: '/dish' })
-            } else {
-              dishFlavors.value = []
-              // this.dishFlavorsData = []
-              imageUrl.value = ''
-              ruleForm.value = {
-                name: '',
-                id: '',
-                price: '',
-                code: '',
-                image: '',
-                description: '',
-                status: true,
-                categoryId: ''
-              }
-              restKey.value++
-            }
-          })
-      } else {
-        editDish({ ...params, id: Number(ruleForm.value.id) })
-          .then(() => {
-            router.push({ path: '/dish' })
-            ElMessage.success('菜品修改成功！')
-          })
-      }
+const submitForm = async (_formName: string, st?: string) => {
+  try {
+    const valid = await ruleFormRef.value?.validate()
+    if (!valid) return
+
+    if (!ruleForm.value.image) {
+      ElMessage.error('菜品图片不能为空')
+      return
     }
-  })
+    const params: DishDTO = {
+      name: ruleForm.value.name,
+      price: Number(ruleForm.value.price),
+      code: ruleForm.value.code,
+      image: ruleForm.value.image,
+      description: ruleForm.value.description,
+      status: actionType.value === 'add' ? 0 : ruleForm.value.status ? 1 : 0,
+      categoryId: Number(ruleForm.value.categoryId),
+      flavors: dishFlavors.value.map(obj => ({
+        name: obj.name,
+        value: JSON.stringify(obj.value)
+      }))
+    }
+    if (actionType.value === 'add') {
+      await addDish(params)
+      ElMessage.success('菜品添加成功！')
+      if (!st) {
+        router.push({ path: '/dish' })
+      } else {
+        dishFlavors.value = []
+        // this.dishFlavorsData = []
+        imageUrl.value = ''
+        ruleForm.value = {
+          name: '',
+          id: '',
+          price: '',
+          code: '',
+          image: '',
+          description: '',
+          status: true,
+          categoryId: ''
+        }
+        restKey.value++
+      }
+    } else {
+      await editDish({ ...params, id: Number(ruleForm.value.id) })
+      router.push({ path: '/dish' })
+      ElMessage.success('菜品修改成功！')
+    }
+  } catch {
+    // 校验失败或请求失败
+  }
 }
 
 const imageChange = (value: string) => {

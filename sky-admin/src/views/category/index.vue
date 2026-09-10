@@ -212,16 +212,14 @@ init()
 // 初始化信息
 async function init(searchValue?: boolean) {
   isSearch.value = searchValue ?? false
-  await getCategoryPage({
+  const res = await getCategoryPage({
     page: page.value,
     pageSize: pageSize.value,
     name: name.value ? name.value : undefined,
     type: categoryType.value ? categoryType.value : undefined
   })
-    .then(res => {
-      tableData.value = res.records
-      counts.value = res.total
-    })
+  tableData.value = res.records
+  counts.value = res.total
 }
 
 // 添加
@@ -259,73 +257,70 @@ const handleClose = (_st: string) => {
 }
 
 //状态修改
-const statusHandle = (row: Category) => {
-  ElMessageBox.confirm('确认调整该分类的状态?', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-    customClass: 'customClass'
-  }).then(() => {
-    enableOrDisableCategory({ id: row.id, status: row.status === 1 ? 0 : 1 })
-      .then(() => {
-        ElMessage.success('分类状态更改成功！')
-        init()
-      })
-  })
+const statusHandle = async (row: Category) => {
+  try {
+    await ElMessageBox.confirm('确认调整该分类的状态?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+      customClass: 'customClass'
+    })
+    await enableOrDisableCategory({ id: row.id, status: row.status === 1 ? 0 : 1 })
+    ElMessage.success('分类状态更改成功！')
+    init()
+  } catch {
+    // 用户取消操作
+  }
 }
 
 //删除
-const deleteHandle = (id: number) => {
-  ElMessageBox.confirm('此操作将永久删除该分类，是否继续？', '确定删除', {
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    deleCategory(id)
-      .then(() => {
-        ElMessage.success('删除成功！')
-        init()
-      })
-  })
+const deleteHandle = async (id: number) => {
+  try {
+    await ElMessageBox.confirm('此操作将永久删除该分类，是否继续？', '确定删除', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await deleCategory(id)
+    ElMessage.success('删除成功！')
+    init()
+  } catch {
+    // 用户取消操作
+  }
 }
 
 //数据提交
-const submitForm = (st?: string) => {
-  if (action.value === 'add') {
-    classDataRef.value?.validate((value: boolean) => {
-      if (value) {
-        addCategory({
-          name: classData.name,
-          type: type.value,
-          sort: Number(classData.sort)
-        })
-          .then(() => {
-            ElMessage.success('分类添加成功！')
-            classDataRef.value?.resetFields()
-            if (!st) {
-              classData.dialogVisible = false
-            }
-            init()
-          })
+const submitForm = async (st?: string) => {
+  try {
+    const valid = await classDataRef.value?.validate()
+    if (!valid) return
+
+    if (action.value === 'add') {
+      await addCategory({
+        name: classData.name,
+        type: type.value,
+        sort: Number(classData.sort)
+      })
+      ElMessage.success('分类添加成功！')
+      classDataRef.value?.resetFields()
+      if (!st) {
+        classData.dialogVisible = false
       }
-    })
-  } else {
-    classDataRef.value?.validate((value: boolean) => {
-      if (value) {
-        editCategory({
-          id: Number(classData.id),
-          name: classData.name,
-          type: type.value,
-          sort: Number(classData.sort)
-        })
-          .then(() => {
-            ElMessage.success('分类修改成功！')
-            classData.dialogVisible = false
-            classDataRef.value?.resetFields()
-            init()
-          })
-      }
-    })
+      init()
+    } else {
+      await editCategory({
+        id: Number(classData.id),
+        name: classData.name,
+        type: type.value,
+        sort: Number(classData.sort)
+      })
+      ElMessage.success('分类修改成功！')
+      classData.dialogVisible = false
+      classDataRef.value?.resetFields()
+      init()
+    }
+  } catch {
+    // 验证失败或请求失败
   }
 }
 </script>

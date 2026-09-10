@@ -255,14 +255,13 @@ async function getOrderListData(val: number) {
 }
 
 // 各状态订单数量,用于 tab 角标
-function refreshStatistics() {
-  getOrderListBy()
-    .then((res) => {
-      orderStatistics.value = res
-    })
-    .catch(() => {
-      // 拦截器已统一提示,角标保留上一次的值
-    })
+async function refreshStatistics() {
+  try {
+    const res = await getOrderListBy()
+    orderStatistics.value = res
+  } catch {
+    // 拦截器已统一提示,角标保留上一次的值
+  }
 }
 
 // 查看详情

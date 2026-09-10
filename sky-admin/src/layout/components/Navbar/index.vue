@@ -115,9 +115,8 @@ const toggleSideBar = () => {
 }
 // 退出
 const logout = async () => {
-  userStore.LogOut().then(() => {
-    router.replace({ path: '/login' })
-  })
+  await userStore.LogOut()
+  router.replace({ path: '/login' })
 }
 // 营业状态
 const getStatus = async () => {

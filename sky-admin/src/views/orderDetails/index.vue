@@ -301,14 +301,12 @@ function change(activeIndex: number) {
 }
 
 //获取待处理，待派送，派送中数量
-function getOrderListBy3Status() {
-  getOrderListBy()
-    .then((res) => {
-      orderStatics.value = res
-    })
+async function getOrderListBy3Status() {
+  const res = await getOrderListBy()
+  orderStatics.value = res
 }
 
-function init(activeIndex: number = 0, isSearchVal?: boolean) {
+async function init(activeIndex: number = 0, isSearchVal?: boolean) {
   isSearch.value = isSearchVal ?? false
   const params = {
     page: page.value,
@@ -326,23 +324,21 @@ function init(activeIndex: number = 0, isSearchVal?: boolean) {
     // 不能写 activeIndex || undefined:全部订单的 All 就是 0,靠 falsy 巧合才没出错
     status: activeIndex === OrderStatus.All ? undefined : activeIndex,
   }
-  getOrderDetailPage({ ...params })
-    .then((res) => {
-      tableData.value = res.records
-      orderStatus.value = activeIndex
-      counts.value = res.total
-      getOrderListBy3Status()
-      if (
-        actions.state.detailStatus === OrderStatus.ToBeConfirmed &&
-        orderStatus.value === OrderStatus.ToBeConfirmed &&
-        actions.state.autoNext &&
-        !actions.state.tableOperated &&
-        res.records.length > 1
-      ) {
-        const firstRow = res.records[0]
-        goDetail(firstRow.id, firstRow.status, firstRow)
-      }
-    })
+  const res = await getOrderDetailPage({ ...params })
+  tableData.value = res.records
+  orderStatus.value = activeIndex
+  counts.value = res.total
+  getOrderListBy3Status()
+  if (
+    actions.state.detailStatus === OrderStatus.ToBeConfirmed &&
+    orderStatus.value === OrderStatus.ToBeConfirmed &&
+    actions.state.autoNext &&
+    !actions.state.tableOperated &&
+    res.records.length > 1
+  ) {
+    const firstRow = res.records[0]
+    goDetail(firstRow.id, firstRow.status, firstRow)
+  }
 }
 
 function getOrderType(row: OrderVO) {

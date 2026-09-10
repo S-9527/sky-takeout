@@ -231,21 +231,20 @@ const rules: FormRules = {
 const init = async () => {
   const id = parseQueryNumber(route.query.id)
   if (id === undefined) return
-  querySetmealById(id).then(res => {
-    ruleForm.value = {
-      name: res.name,
-      categoryId: String(res.categoryId),
-      price: String(res.price),
-      code: '',
-      image: res.image,
-      description: res.description ?? '',
-      status: res.status === 1,
-      idType: res.categoryId
-    }
-    imageUrl.value = res.image
-    checkList.value = res.setmealDishes
-    dishTable.value = res.setmealDishes.slice().reverse()
-  })
+  const res = await querySetmealById(id)
+  ruleForm.value = {
+    name: res.name,
+    categoryId: String(res.categoryId),
+    price: String(res.price),
+    code: '',
+    image: res.image,
+    description: res.description ?? '',
+    status: res.status === 1,
+    idType: res.categoryId
+  }
+  imageUrl.value = res.image
+  checkList.value = res.setmealDishes
+  dishTable.value = res.setmealDishes.slice().reverse()
 }
 
 const seachHandle = () => {
@@ -253,13 +252,12 @@ const seachHandle = () => {
 }
 
 // 获取套餐分类
-const getDishTypeList = () => {
-  getCategoryList({ type: 2 }).then(res => {
-    setMealList.value = res.map(obj => ({
-      ...obj,
-      idType: obj.id
-    }))
-  })
+const getDishTypeList = async () => {
+  const res = await getCategoryList({ type: 2 })
+  setMealList.value = res.map(obj => ({
+    ...obj,
+    idType: obj.id
+  }))
 }
 
 // 删除套餐菜品
@@ -294,63 +292,62 @@ const addTableList = () => {
   dialogVisible.value = false
 }
 
-const submitForm = (_formName: string, st: boolean) => {
-  ruleFormRef.value?.validate((valid) => {
-    if (valid) {
-      if (dishTable.value.length === 0) {
-        ElMessage.error('套餐下菜品不能为空')
-        return
-      }
-      if (!ruleForm.value.image) {
-        ElMessage.error('套餐图片不能为空')
-        return
-      }
-      const prams: SetmealDTO = {
-        name: ruleForm.value.name,
-        categoryId: ruleForm.value.idType as number,
-        price: Number(ruleForm.value.price),
-        image: ruleForm.value.image,
-        description: ruleForm.value.description,
-        status: actionType.value === 'add' ? 0 : ruleForm.value.status ? 1 : 0,
-        setmealDishes: dishTable.value.map(obj => ({
-          dishId: obj.dishId,
-          name: obj.name,
-          price: obj.price,
-          copies: obj.copies
-        }))
-      }
-      if (actionType.value === 'add') {
-        addSetmeal(prams)
-          .then(() => {
-            ElMessage.success('套餐添加成功！')
-            if (!st) {
-              router.push({ path: '/setmeal' })
-            } else {
-              ruleFormRef.value?.resetFields()
-              dishList.value = []
-              dishTable.value = []
-              ruleForm.value = {
-                name: '',
-                categoryId: '',
-                price: '',
-                code: '',
-                image: '',
-                description: '',
-                status: true,
-                idType: ''
-              }
-              imageUrl.value = ''
-            }
-          })
-      } else {
-        editSetmeal({ ...prams, id: parseQueryNumber(route.query.id) })
-          .then(() => {
-            ElMessage.success('套餐修改成功！')
-            router.push({ path: '/setmeal' })
-          })
-      }
+const submitForm = async (_formName: string, st: boolean) => {
+  try {
+    const valid = await ruleFormRef.value?.validate()
+    if (!valid) return
+
+    if (dishTable.value.length === 0) {
+      ElMessage.error('套餐下菜品不能为空')
+      return
     }
-  })
+    if (!ruleForm.value.image) {
+      ElMessage.error('套餐图片不能为空')
+      return
+    }
+    const prams: SetmealDTO = {
+      name: ruleForm.value.name,
+      categoryId: ruleForm.value.idType as number,
+      price: Number(ruleForm.value.price),
+      image: ruleForm.value.image,
+      description: ruleForm.value.description,
+      status: actionType.value === 'add' ? 0 : ruleForm.value.status ? 1 : 0,
+      setmealDishes: dishTable.value.map(obj => ({
+        dishId: obj.dishId,
+        name: obj.name,
+        price: obj.price,
+        copies: obj.copies
+      }))
+    }
+    if (actionType.value === 'add') {
+      await addSetmeal(prams)
+      ElMessage.success('套餐添加成功！')
+      if (!st) {
+        router.push({ path: '/setmeal' })
+      } else {
+        ruleFormRef.value?.resetFields()
+        dishList.value = []
+        dishTable.value = []
+        ruleForm.value = {
+          name: '',
+          categoryId: '',
+          price: '',
+          code: '',
+          image: '',
+          description: '',
+          status: true,
+          idType: ''
+        }
+        imageUrl.value = ''
+      }
+    } else {
+      await editSetmeal({ ...prams, id: parseQueryNumber(route.query.id) })
+      ElMessage.success('套餐修改成功！')
+      router.push({ path: '/setmeal' })
+    }
+  } catch {
+    // 校验失败或请求失败
+  }
 }
 
 const imageChange = (value: string) => {

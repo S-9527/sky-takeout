@@ -111,11 +111,9 @@ async function init(isSearchVal?: boolean) {
     pageSize: pageSize.value,
     name: input.value ? input.value : undefined,
   }
-  await getEmployeeList(params)
-    .then((res) => {
-      tableData.value = res.records
-      counts.value = res.total
-    })
+  const res = await getEmployeeList(params)
+  tableData.value = res.records
+  counts.value = res.total
 }
 
 // 添加
@@ -131,21 +129,22 @@ const addEmployeeHandle = (st: string | number, username?: string) => {
 }
 
 //状态修改
-const statusHandle = (row: Employee) => {
+const statusHandle = async (row: Employee) => {
   if (row.username === 'admin') {
     return
   }
-  ElMessageBox.confirm('确认调整该账号的状态?', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(() => {
-    enableOrDisableEmployee({ id: row.id, status: row.status === 1 ? 0 : 1 })
-      .then(() => {
-        ElMessage.success('账号状态更改成功！')
-        init()
-      })
-  })
+  try {
+    await ElMessageBox.confirm('确认调整该账号的状态?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    })
+    await enableOrDisableEmployee({ id: row.id, status: row.status === 1 ? 0 : 1 })
+    ElMessage.success('账号状态更改成功！')
+    init()
+  } catch {
+    // 用户取消操作
+  }
 }
 
 init()

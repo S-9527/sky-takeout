@@ -129,9 +129,8 @@ const handleSave = async () => {
     ElMessage.success('密码修改成功，请重新登录')
     resetFields()
     onVisibleChange(false)
-    userStore.LogOut().then(() => {
-      router.replace({ path: '/login' })
-    })
+    await userStore.LogOut()
+    router.replace({ path: '/login' })
   } catch {
     ElMessage.error('密码修改失败，请稍后重试')
   } finally {

@@ -174,7 +174,7 @@ const initFun = () => {
 
 async function init(isSearchVal?: boolean) {
   isSearch.value = isSearchVal ?? false
-  await getSetmealPage({
+  const res = await getSetmealPage({
     page: page.value,
     pageSize: pageSize.value,
     name: input.value || undefined,
@@ -182,10 +182,8 @@ async function init(isSearchVal?: boolean) {
     // status 不能写 || undefined:选"停售"(0)时 0 是 falsy,过滤条件会被整个丢掉
     status: dishStatus.value === '' ? undefined : dishStatus.value
   })
-    .then(res => {
-      tableData.value = res.records
-      counts.value = res.total
-    })
+  tableData.value = res.records
+  counts.value = res.total
 }
 
 // 添加更改
@@ -198,50 +196,50 @@ const addSetMeal = (st: string | number) => {
 }
 
 // 删除
-const deleteHandle = (type: string, id?: number) => {
+const deleteHandle = async (type: string, id?: number) => {
   if (type === '批量' && id === null) {
     if (checkList.value.length === 0) {
       return ElMessage.error('请选择删除对象')
     }
   }
-  ElMessageBox.confirm('确定删除该套餐?', '确定删除', {
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    deleteSetmeal(type === '批量' ? checkList.value.join(',') : id ?? 0)
-      .then(() => {
-        ElMessage.success('删除成功！')
-        init()
-      })
-  })
+  try {
+    await ElMessageBox.confirm('确定删除该套餐?', '确定删除', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await deleteSetmeal(type === '批量' ? checkList.value.join(',') : id ?? 0)
+    ElMessage.success('删除成功！')
+    init()
+  } catch {
+    // 用户取消操作
+  }
 }
 
 //状态更改
-const statusHandle = (row: SetmealVO) => {
-  ElMessageBox.confirm('确认更改该套餐状态?', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    setmealStatusByStatus({ status: row.status === 1 ? 0 : 1, ids: row.id ?? 0 })
-      .then(() => {
-        ElMessage.success('套餐状态已经更改成功！')
-        init()
-      })
-  })
+const statusHandle = async (row: SetmealVO) => {
+  try {
+    await ElMessageBox.confirm('确认更改该套餐状态?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await setmealStatusByStatus({ status: row.status === 1 ? 0 : 1, ids: row.id ?? 0 })
+    ElMessage.success('套餐状态已经更改成功！')
+    init()
+  } catch {
+    // 用户取消操作
+  }
 }
 
 //获取套餐分类下拉数据
-const getDishCategoryList = () => {
-  getDishCategoryListApi({
+async function getDishCategoryList() {
+  const res = await getDishCategoryListApi({
     type: 2
   })
-    .then(res => {
-      dishCategoryList.value = res.map((item: Category) => {
-        return { value: item.id, label: item.name }
-      })
-    })
+  dishCategoryList.value = res.map((item: Category) => {
+    return { value: item.id, label: item.name }
+  })
 }
 
 // 全部操作

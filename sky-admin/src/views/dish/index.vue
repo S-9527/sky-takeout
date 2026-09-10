@@ -175,7 +175,7 @@ const initFun = () => {
 
 async function init(searchValue?: boolean) {
   isSearch.value = searchValue ?? false
-  await getDishPage({
+  const res = await getDishPage({
     page: page.value,
     pageSize: pageSize.value,
     name: input.value || undefined,
@@ -183,10 +183,8 @@ async function init(searchValue?: boolean) {
     // status 不能写 || undefined:选"停售"(0)时 0 是 falsy,过滤条件会被整个丢掉
     status: dishStatus.value === '' ? undefined : dishStatus.value
   })
-    .then(res => {
-      tableData.value = res.records
-      counts.value = res.total
-    })
+  tableData.value = res.records
+  counts.value = res.total
 }
 
 // 添加
@@ -199,50 +197,50 @@ const addDishtype = (st: string | number) => {
 }
 
 // 删除
-const deleteHandle = (type: string, id?: number | string) => {
+const deleteHandle = async (type: string, id?: number | string) => {
   if (type === '批量' && id === null) {
     if (checkList.value.length === 0) {
       return ElMessage.error('请选择删除对象')
     }
   }
-  ElMessageBox.confirm('确认删除该菜品, 是否继续?', '确定删除', {
-    confirmButtonText: '删除',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    deleteDish(type === '批量' ? checkList.value.join(',') : id ?? 0)
-      .then(() => {
-        ElMessage.success('删除成功！')
-        init()
-      })
-  })
+  try {
+    await ElMessageBox.confirm('确认删除该菜品, 是否继续?', '确定删除', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await deleteDish(type === '批量' ? checkList.value.join(',') : id ?? 0)
+    ElMessage.success('删除成功！')
+    init()
+  } catch {
+    // 用户取消操作
+  }
 }
 //获取菜品分类下拉数据
-function getDishCategoryList() {
-  dishCategoryListApi({
+async function getDishCategoryList() {
+  const res = await dishCategoryListApi({
     type: 1
   })
-    .then(res => {
-      dishCategoryList.value = res.map((item) => {
-        return { value: item.id, label: item.name }
-      })
-    })
+  dishCategoryList.value = res.map((item) => {
+    return { value: item.id, label: item.name }
+  })
 }
 
 //状态更改
-const statusHandle = (row: DishVO) => {
-  ElMessageBox.confirm('确认更改该菜品状态?', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
+const statusHandle = async (row: DishVO) => {
+  try {
+    await ElMessageBox.confirm('确认更改该菜品状态?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
     // 起售停售---批量起售停售接口
-    dishStatusByStatus({ status: row.status === 1 ? 0 : 1, id: row.id ?? 0 })
-      .then(() => {
-        ElMessage.success('菜品状态已经更改成功！')
-        init()
-      })
-  })
+    await dishStatusByStatus({ status: row.status === 1 ? 0 : 1, id: row.id ?? 0 })
+    ElMessage.success('菜品状态已经更改成功！')
+    init()
+  } catch {
+    // 用户取消操作
+  }
 }
 
 // 全部操作

@@ -66,21 +66,23 @@ function toggleTabs(index: number) {
 }
 //  数据导出
 /** 导出按钮操作 */
-function handleExport() {
-  ElMessageBox.confirm('是否确认导出最近30天运营数据?', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  })
-    .then(async function () {
-      const data = await exportReport()
-      const url = window.URL.createObjectURL(data)
-      const a = document.createElement('a')
-      document.body.appendChild(a)
-      a.href = url
-      a.download = '运营数据统计报表.xlsx'
-      a.click()
-      window.URL.revokeObjectURL(url)
+async function handleExport() {
+  try {
+    await ElMessageBox.confirm('是否确认导出最近30天运营数据?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
     })
+    const data = await exportReport()
+    const url = window.URL.createObjectURL(data)
+    const a = document.createElement('a')
+    document.body.appendChild(a)
+    a.href = url
+    a.download = '运营数据统计报表.xlsx'
+    a.click()
+    window.URL.revokeObjectURL(url)
+  } catch {
+    // 用户取消操作
+  }
 }
 </script>

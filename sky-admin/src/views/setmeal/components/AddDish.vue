@@ -94,45 +94,42 @@ watch(
   }
 )
 
-const getDishType = () => {
-  getCategoryList({ type: 1 }).then(res => {
-    dishType.value = res
-    getDishList(res[0].id)
-  })
+const getDishType = async () => {
+  const res = await getCategoryList({ type: 1 })
+  dishType.value = res
+  getDishList(res[0].id)
 }
 
 // 通过分类ID获取菜品列表
-const getDishList = (id: number) => {
-  queryDishList({ categoryId: id }).then(res => {
-    if (res.length === 0) {
-      dishList.value = []
-      return
-    }
-    const newArr: PrintedDish[] = res.map(n => ({
-      ...n,
-      dishId: n.id,
-      copies: 1,
-      dishName: n.name
-    }))
-    dishList.value = newArr
-    if (!ids.value.has(id)) {
-      allDishList.value = [...allDishList.value, ...newArr]
-    }
-    ids.value.add(id)
-  })
+const getDishList = async (id: number) => {
+  const res = await queryDishList({ categoryId: id })
+  if (res.length === 0) {
+    dishList.value = []
+    return
+  }
+  const newArr: PrintedDish[] = res.map(n => ({
+    ...n,
+    dishId: n.id,
+    copies: 1,
+    dishName: n.name
+  }))
+  dishList.value = newArr
+  if (!ids.value.has(id)) {
+    allDishList.value = [...allDishList.value, ...newArr]
+  }
+  ids.value.add(id)
 }
 
 // 关键词搜索菜品列表
-const getDishForName = (name: string) => {
-  queryDishList({ name }).then(res => {
-    const newArr: PrintedDish[] = res.map(n => ({
-      ...n,
-      dishId: n.id,
-      copies: 1,
-      dishName: n.name
-    }))
-    dishList.value = newArr
-  })
+const getDishForName = async (name: string) => {
+  const res = await queryDishList({ name })
+  const newArr: PrintedDish[] = res.map(n => ({
+    ...n,
+    dishId: n.id,
+    copies: 1,
+    dishName: n.name
+  }))
+  dishList.value = newArr
 }
 
 // 点击分类

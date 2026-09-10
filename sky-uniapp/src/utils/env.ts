@@ -1,5 +1,5 @@
 // #ifdef H5
-// H5 走 vue.config.js 里的 devServer 代理，同源无需写死域名
+// H5 走 vite.config.ts 里的 devServer 代理，同源无需写死域名
 export const baseUrl = ''
 // #endif
 // #ifndef H5

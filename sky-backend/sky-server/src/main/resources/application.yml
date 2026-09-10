@@ -4,8 +4,6 @@ server:
 spring:
   profiles:
     active: dev
-  main:
-    allow-circular-references: true
   datasource:
     druid:
       driver-class-name: ${sky.datasource.driver-class-name}

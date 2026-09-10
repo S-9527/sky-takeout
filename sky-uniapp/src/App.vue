@@ -1,12 +1,12 @@
-<script>
-export default {
-  onLaunch: function () {
-  },
-  onShow: function () {
-  },
-  onHide: function () {
-  }
-}
+<script setup lang="ts">
+import { onLaunch, onShow, onHide } from '@dcloudio/uni-app'
+
+onLaunch(() => {
+})
+onShow(() => {
+})
+onHide(() => {
+})
 </script>
 
 <style>
@@ -82,27 +82,4 @@ page {
   color: #808080;
 }
 /* #endif*/
-
-/*checkbox 选项框大小  */
-/* uni-checkbox .uni-checkbox-input {
-		width: 30rpx !important;
-		height: 30rpx !important; 
-	} */
-/*checkbox选中后样式  */
-/* uni-checkbox .uni-checkbox-input.uni-checkbox-input-checked {
-		background: #3D7EFF;
-		border-color:#3D7EFF;
-	} */
-/*checkbox选中后图标样式  */
-/* uni-checkbox .uni-checkbox-input.uni-checkbox-input-checked::before {
-		width: 20rpx;
-		height: 20rpx;  
-		line-height: 20rpx;
-		text-align: center;
-		font-size: 18rpx;
-		color: #fff;
-		background: transparent;
-		transform: translate(-70%, -50%) scale(1);
-		-webkit-transform: translate(-70%, -50%) scale(1);
-	} */
 </style>

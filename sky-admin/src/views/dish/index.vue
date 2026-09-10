@@ -198,10 +198,8 @@ const addDishtype = (st: string | number) => {
 
 // 删除
 const deleteHandle = async (type: string, id?: number | string) => {
-  if (type === '批量' && id === null) {
-    if (checkList.value.length === 0) {
-      return ElMessage.error('请选择删除对象')
-    }
+  if (type === '批量' && checkList.value.length === 0) {
+    return ElMessage.error('请选择删除对象')
   }
   try {
     await ElMessageBox.confirm('确认删除该菜品, 是否继续?', '确定删除', {

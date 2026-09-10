@@ -50,11 +50,12 @@ export const getLableVal = (item) => {
 //   3: "派送中",
 // };
 // 状态
+// 订单状态：1待付款 2待接单 3已接单 4派送中 5已完成 6已取消
 export const statusWord = (status, time) => {
 	if (time) {
 		if (status === 1 && time > 0) {
 			return '待付款'
-		} else if (status === 6 || (time < 0 && status === 1)) {
+		} else if (status === 5 || (time < 0 && status === 1)) {
 			return '已完成'
 		}
 	}
@@ -64,14 +65,12 @@ export const statusWord = (status, time) => {
 		case 2:
 			return '等待商家接单'
 		case 3:
-			return '等待骑手接单'
+			return '商家已接单'
 		case 4:
 			return '派送中'
 		case 5:
-			return '派送中'
-		case 6:
 			return '已完成'
-		case 7:
+		case 6:
 			return '已取消'
 	}
 }

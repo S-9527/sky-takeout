@@ -21,8 +21,8 @@
             <view class="phoneIcon"></view>
             联系商家
           </button>
-          <!-- 4 派送中 5 派送中 -->
-          <button class="call-rider" v-if="[4, 5].includes(orderDetailsData.status)"
+          <!-- 4 派送中 -->
+          <button class="call-rider" v-if="orderDetailsData.status === 4"
             @click="handlePhone('bottom', orderDetailsData.courierTelephone)">
             <view class="phoneIcon"></view>
             联系骑手

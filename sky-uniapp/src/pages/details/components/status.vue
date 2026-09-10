@@ -20,7 +20,9 @@
         </view>
         <view class="againBtn">
           <button class="new_btn" type="default" @click="handleCancel('center', orderDetailsData)" v-if="(!timeout && orderDetailsData.status === 1) ||
-            orderDetailsData.status === 2
+            orderDetailsData.status === 2 ||
+            orderDetailsData.status === 3 ||
+            orderDetailsData.status === 4
             ">
             取消订单
           </button>
@@ -32,8 +34,7 @@
             v-if="orderDetailsData.status === 2">
             催单
           </button>
-          <button class="new_btn" type="default" @click="handleRefund('center')"
-            v-if="orderDetailsData.status === 6 && orderDetailsData.payStatus !== 2">
+          <button class="new_btn" type="default" @click="handleRefund('center')" v-if="orderDetailsData.status === 5">
             申请退款
           </button>
           <button class="new_btn" type="default" @click="oneMoreOrder(orderDetailsData.id)"

@@ -8,8 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.sky.catalog.domain.CatalogErrorCode;
 import com.sky.catalog.domain.Category;
@@ -75,6 +78,15 @@ public class CategoryService {
             throw new BusinessException(CatalogErrorCode.CATEGORY_NOT_FOUND);
         }
         return category;
+    }
+
+    /** 批量取分类名,供商品列表展示("联表返回 categoryName");不存在的 id 不会出现在结果里。 */
+    public Map<Long, String> namesByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Map.of();
+        }
+        return categoryMapper.selectBatchIds(ids).stream()
+                .collect(Collectors.toMap(Category::getId, Category::getName));
     }
 
     @Transactional

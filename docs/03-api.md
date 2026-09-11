@@ -245,7 +245,6 @@
 | `DISH_NOT_FOUND` | 404 | 菜品 id 不存在(含批量删除中的任一 id) | 菜品不存在 |
 | `DISH_NAME_TAKEN` | 409 | 同分类内菜品名重复 | 该分类下已存在同名菜品 |
 | `DISH_CATEGORY_TYPE_MISMATCH` | 422 | 菜品挂在 `type=SETMEAL` 的分类下 | 菜品只能归属于菜品分类 |
-| `DISH_IN_USE_BY_SETMEAL` | 422 | 菜品被套餐引用,不可删除 | 该菜品已被套餐引用,无法删除 |
 | `DISH_OFF_SALE` | 422 | 顾客加购/下单时菜品已停售 | 商品已下架,请重新选择 |
 
 #### `SETMEAL_*` — 套餐
@@ -428,7 +427,7 @@
 |---|---|---|---|---|
 | GET | `/api/v1/admin/dishes` | 菜品分页(按名称/分类/状态) | 员工 | `COMMON_SORT_FIELD_NOT_ALLOWED` |
 | POST | `/api/v1/admin/dishes` | 新增菜品(含口味配置) | 员工 | `DISH_NAME_TAKEN`、`DISH_CATEGORY_TYPE_MISMATCH`、`CATEGORY_DISABLED` |
-| DELETE | `/api/v1/admin/dishes?ids=1,2` | 删除菜品(批量) | 员工 | `DISH_NOT_FOUND`、`DISH_IN_USE_BY_SETMEAL` |
+| DELETE | `/api/v1/admin/dishes?ids=1,2` | 删除菜品(批量) | 员工 | `DISH_NOT_FOUND`、`SETMEAL_CONTAINS_DISH` |
 | PATCH | `/api/v1/admin/dishes/status` | 起售/停售(批量,连带停售含它的套餐) | 员工 | `DISH_NOT_FOUND` |
 | GET | `/api/v1/admin/dishes/{id}` | 按 id 查询菜品(含口味) | 员工 | `DISH_NOT_FOUND` |
 | PUT | `/api/v1/admin/dishes/{id}` | 编辑菜品(口味整体替换) | 员工 | `DISH_NAME_TAKEN` |

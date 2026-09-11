@@ -244,14 +244,12 @@ const orderAndUserInfo = computed(() => {
 })
 
 // 导航栏高度占位
+let ht = computed(() => navHeight.value)
 // #ifdef MP-WEIXIN
-const ht = computed(() => {
+ht = computed(() => {
   const res = uni.getMenuButtonBoundingClientRect()
   return res.top + res.height + 7
 })
-// #endif
-// #ifndef MP-WEIXIN
-const ht = computed(() => navHeight.value)
 // #endif
 
 onReady(() => {
@@ -336,7 +334,8 @@ function silentLogin() {
       // 定位失败不阻塞登录
       uni
         .getLocation({ type: 'gcj02', isHighAccuracy: true })
-        .then(([err, result]: [any, any]) => {
+        .then((res) => {
+          const [err, result] = res as unknown as [any, any]
           if (err) {
             uni.showToast({
               title: '获取地理位置失败',
@@ -391,7 +390,7 @@ async function swichMenu(params: any, index: number) {
 
 // 获取一个目标元素的高度
 function getElRect(elClass: string, dataVal: 'menuHeight' | 'menuItemHeight') {
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve) => {
     const query = uni.createSelectorQuery().in(instance?.proxy as any)
     query
       .select('.' + elClass)
@@ -534,7 +533,7 @@ function goOrder() {
 }
 
 // 加菜 - 添加菜品
-async function addDishAction(item: any, form: string) {
+async function addDishAction(item: any, form?: string) {
   // 规格
   if (openMoreNormPop.value && (!flavorDataes.value || flavorDataes.value.length <= 0)) {
     uni.showToast({
@@ -611,7 +610,7 @@ function addShop(item: any) {
 }
 
 // 减菜 - 添加菜品
-async function redDishAction(item: any, form: string) {
+async function redDishAction(item: any, form?: string) {
   // 实时更新obj.newCardNumber新添加的字段----加入购物车数量number
   tablewareNumber.value--
   dishDetailes.value.dishNumber--
@@ -794,7 +793,7 @@ function handlePhone(type: string) {
 }
 
 // 关闭电话弹层
-function closePopup(type: string) {
+function closePopup(type?: string) {
   phone.value?.popup?.close(type)
 }
 

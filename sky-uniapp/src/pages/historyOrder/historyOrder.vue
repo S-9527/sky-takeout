@@ -1,7 +1,7 @@
 <!--历史订单-->
 <template>
   <view class="history_order">
-    <uni-nav-bar @clickLeft="goBack" left-icon="back" leftIcon="arrowleft" title="历史订单" statusBar="true" fixed="true"
+    <uni-nav-bar @clickLeft="goBack" leftIcon="arrowleft" title="历史订单" statusBar="true" fixed="true"
       color="#ffffff" backgroundColor="#333333"></uni-nav-bar>
     <!-- 根据scrollinto和:id="'tab'+index"切换下方轮播 -->
     <scroll-view scroll-x class="scroll-row" :scroll-into-view="scrollinto" :scroll-with-animation="true" enable-flex>
@@ -78,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref } from 'vue'
 import { onLoad, onUnload, onReady, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
@@ -257,7 +258,7 @@ function handleReminder(type: string, id: number) {
   })
 }
 
-function closePopup(type: string) {
+function closePopup(type?: string) {
   commonPopup.value?.close(type)
 }
 

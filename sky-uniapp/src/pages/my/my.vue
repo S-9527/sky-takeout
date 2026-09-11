@@ -2,7 +2,7 @@
   <view>
     <uni-nav-bar
       @clickLeft="goBack"
-      left-icon="back"
+     
       leftIcon="arrowleft"
       title="地址管理"
       statusBar="true"
@@ -39,7 +39,6 @@
           @oneOrderFun="oneOrderFun"
           @getOvertime="getOvertime"
           @statusWord="statusWord"
-          @numes="numes"
           :loading="loading"
           :loadingText="loadingText"
           :recentOrdersList="recentOrdersList"
@@ -81,7 +80,7 @@ function getPhoneNum(str: string): string {
   return formatPhone(str)
 }
 
-function statusWord(obj: { status: number; time: number }): string {
+function statusWord(obj: { status: number; time?: number }): string {
   return statusWordUtil(obj.status, obj.time)
 }
 

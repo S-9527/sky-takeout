@@ -1,6 +1,6 @@
 <!--购物车弹层-->
 <template>
-  <view class="cart_pop" @click.stop="openOrderCartList = openOrderCartList">
+  <view class="cart_pop" @click.stop>
     <view class="top_title">
       <view class="tit">购物车</view>
       <view class="clear" @click.stop="clearCardOrder()">

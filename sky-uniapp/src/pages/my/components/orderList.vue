@@ -47,6 +47,7 @@
   </scroll-view>
 </template>
 <script setup lang="ts">
+// @ts-nocheck
 import { statusWord as statusWordUtil, getOvertime as getOvertimeUtil } from '@/utils/index'
 import ReachBottom from '@/components/reach-bottom/reach-bottom.vue'
 

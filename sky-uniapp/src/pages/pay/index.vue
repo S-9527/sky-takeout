@@ -56,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { onMounted, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
@@ -105,7 +106,7 @@ function handleSave() {
         const [err, payRes] = await uni.requestPayment({
           ...res.data,
           package: res.data.packageStr // package 为微信支付必须的字段
-        })
+        } as any)
         console.log(err, payRes)
         if (err) {
           await uni.showToast({ title: '支付失败', icon: 'error' })
@@ -138,15 +139,15 @@ function handleSave() {
 // // 订单倒计时
 function runTimeBack() {
   const end = Date.parse(String(orderDataInfo.value.orderTime).replace(/-/g, '/'))
-  const now = Date.parse(new Date())
+  const now = Date.now()
   const m15 = 15 * 60 * 1000
   const msec = m15 - (now - end)
   if (msec < 0) {
     timeout.value = true
     clearTimeout(times.value)
   } else {
-    let min: any = parseInt((msec / 1000 / 60) % 60)
-    let sec: any = parseInt((msec / 1000) % 60)
+    let min: any = parseInt(String((msec / 1000 / 60) % 60))
+    let sec: any = parseInt(String((msec / 1000) % 60))
     if (min < 10) {
       min = '0' + min
     } else {

@@ -39,7 +39,7 @@ withDefaults(
     // 姓名
     nickName?: string
     // 性别
-    gender?: string
+    gender?: string | number
     // 电话
     phoneNumber?: string
     // 电话(原 Vue2 父组件以过滤器函数传入,类型保持宽松)

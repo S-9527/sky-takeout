@@ -43,11 +43,18 @@
 
 <script setup lang="ts">
 // 获取父级传的数据
-const props = defineProps<{
-  moreNormDishdata?: any
-  moreNormdata?: any[]
-  flavorDataes?: string[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    moreNormDishdata?: any
+    moreNormdata?: any[]
+    flavorDataes?: string[]
+  }>(),
+  {
+    moreNormDishdata: null,
+    moreNormdata: () => [],
+    flavorDataes: () => []
+  }
+)
 const emit = defineEmits<{
   (e: 'checkMoreNormPop', val: { obj: string[]; item: string }): void
   (e: 'addShop', obj: any): void
@@ -57,7 +64,7 @@ const emit = defineEmits<{
 function checkMoreNormPop(obj: string[], item: string) {
   emit('checkMoreNormPop', { obj, item })
 }
-function addShop(obj: any) {
+function addShop(obj: any, form?: string) {
   emit('addShop', obj)
 }
 function closeMoreNorm(obj: any) {

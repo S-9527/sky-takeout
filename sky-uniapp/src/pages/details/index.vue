@@ -1,7 +1,7 @@
 <template>
   <view>
     <!-- 导航 -->
-    <uni-nav-bar @clickLeft="goBack" left-icon="back" leftIcon="arrowleft" title="订单详情" statusBar="true" fixed="true"
+    <uni-nav-bar @clickLeft="goBack" leftIcon="arrowleft" title="订单详情" statusBar="true" fixed="true"
       color="#ffffff" backgroundColor="#333333"></uni-nav-bar>
     <!-- end -->
     <view class="order_content orderDetail">
@@ -207,7 +207,7 @@ function statusWord(status: any) {
 function runTimeBack(time: any) {
   const end = Date.parse(String(time).replace(/-/g, '/'))
 
-  const now = Date.parse(new Date())
+  const now = Date.now()
   const m15 = 15 * 60 * 1000
   const msec = m15 - (now - end)
   if (msec < 0) {
@@ -215,8 +215,8 @@ function runTimeBack(time: any) {
     clearTimeout(times.value)
     cancel('center', orderDetailsData.value) //超时的时候取消订单
   } else {
-    let min: any = parseInt(msec / 1000 / 60 % 60)
-    let sec: any = parseInt(msec / 1000 % 60)
+    let min: any = parseInt(String(msec / 1000 / 60 % 60))
+    let sec: any = parseInt(String(msec / 1000 % 60))
     if (min < 10) {
       min = '0' + min
     } else {

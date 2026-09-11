@@ -1,5 +1,6 @@
-import { request, Result } from "../../utils/request"
-import {
+import { request } from "../../utils/request"
+import type { Result } from "../../utils/request"
+import type {
   AddressBook,
   Category,
   Dish,

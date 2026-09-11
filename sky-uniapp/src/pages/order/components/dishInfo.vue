@@ -110,7 +110,7 @@ const emit = defineEmits<{
   (e: 'change'): void
   (e: 'handlePiker'): void
   (e: 'changeCont', val: any): void
-  (e: 'handleRadio', e: any): void
+  (e: 'handleRadio', val: any): void
 }>()
 
 const popup = ref<any>(null)

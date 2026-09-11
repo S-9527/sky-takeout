@@ -178,7 +178,9 @@ function timeClick(val: any, i: number) {
 }
 
 // 取消时间选择
-function onsuer(type: any) {
+const scrollinto = ref('')
+
+function onsuer(type?: any) {
   timePopup.value?.close(type)
 }
 

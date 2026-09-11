@@ -2,7 +2,7 @@
   <view class="customer-box">
     <uni-nav-bar
       @clickLeft="goBack"
-      left-icon="back"
+     
       leftIcon="arrowleft"
       title="地址管理"
       statusBar="true"
@@ -96,8 +96,9 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, computed } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
 import { useAppStore } from '@/stores'
 import { queryAddressBookList, putAddressBookDefault } from '../api/api'
@@ -116,11 +117,15 @@ const statusBarHeight = computed(() => {
   return uni.getSystemInfoSync().statusBarHeight + 'px'
 })
 
-onShow((options: any) => {
+let pageOptions: any = null
+onLoad((options: any) => {
+  pageOptions = options || {}
+})
+onShow(() => {
   getAddressList()
-  if (options && options.form) {
+  if (pageOptions && pageOptions.form) {
     formRouter.value = ''
-    formRouter.value = options.form
+    formRouter.value = pageOptions.form
   }
 })
 

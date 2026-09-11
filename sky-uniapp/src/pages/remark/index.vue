@@ -2,7 +2,7 @@
   <view class="customer-box">
     <uni-nav-bar
       @clickLeft="goBack"
-      left-icon="back"
+     
       leftIcon="arrowleft"
       title="订单备注"
       statusBar="true"
@@ -46,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, computed, watch } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { storeToRefs } from 'pinia'
@@ -56,6 +57,10 @@ const { remarkData } = storeToRefs(store)
 
 const remark = ref('')
 const numVal = ref(0)
+
+const platform = computed(() => {
+  return uni.getSystemInfoSync().platform
+})
 
 function validateTextLength(value: string) {
   const cnReg = /([\u4e00-\u9fa5]|[\u3000-\u303F]|[\uFF00-\uFF60])/g

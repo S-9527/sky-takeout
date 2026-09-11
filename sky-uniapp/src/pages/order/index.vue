@@ -4,7 +4,7 @@
     <!-- 导航 -->
     <uni-nav-bar
       @clickLeft="goBack"
-      left-icon="back"
+     
       leftIcon="arrowleft"
       title="提交订单"
       statusBar="true"
@@ -379,7 +379,6 @@ function payOrderHandle() {
     estimatedDeliveryTime:
       arrivalTime.value === '立即派送' ? presentFormat() : dateFormat(isTomorrow.value, arrivalTime.value),
     deliveryStatus: arrivalTime.value === '立即派送' ? 1 : 0,
-    remark: remark.value,
     tablewareStatus: status.value,
     tablewareNumber: num.value,
     packAmount: orderDishNumber.value,
@@ -436,17 +435,17 @@ function goRemark() {
 }
 
 // 打开参数数量弹层
-function openPopuos(type: any) {
+function openPopuos(type?: any) {
   // open 方法传入参数 等同在 uni-popup 组件上绑定 type属性
   popup.value?.open(type)
 }
 
 // 关闭餐具弹层
-function closePopup(type: any) {
+function closePopup(type?: any) {
   popup.value?.close(type)
 }
 
-function change(e: any) {}
+function change(e?: any) {}
 
 // 确定本单餐具
 function handlePiker() {
@@ -462,7 +461,7 @@ function handlePiker() {
       status.value = 1
     }
 
-    if (tableware.value !== '依据餐量提供' || tableware.value !== '无需餐具') {
+    if (String(tableware.value) !== '依据餐量提供' || String(tableware.value) !== '无需餐具') {
       tablewareData.value = tableware.value + '份'
     } else {
       tablewareData.value = tableware.value

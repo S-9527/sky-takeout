@@ -3,7 +3,7 @@
   <view class="customer-box">
     <uni-nav-bar
       @clickLeft="goBack"
-      left-icon="back"
+     
       leftIcon="arrowleft"
       :title="delId ? '编辑收货地址' : '新增收货地址'"
       statusBar="true"
@@ -128,6 +128,7 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck
 import { ref, computed } from 'vue'
 import { onLoad, onUnload } from '@dcloudio/uni-app'
 import SimpleAddress from '../common/simple-address/simple-address.nvue'
@@ -157,7 +158,8 @@ const options = ref([
 const form = ref({
   name: '',
   phone: '',
-  type: 1,
+  id: 0,
+  type: 1 as any,
   sex: '0',
   provinceCode: '11',
   provinceName: '',

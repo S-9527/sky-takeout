@@ -124,8 +124,8 @@ defineProps<{
   dishMealData?: any[]
 }>()
 const emit = defineEmits<{
-  (e: 'addDishAction', val: { obj: any; item: string }): void
-  (e: 'redDishAction', val: { obj: any; item: string }): void
+  (e: 'addDishAction', val: any): void
+  (e: 'redDishAction', val: any): void
   (e: 'moreNormDataesHandle', obj: any): void
   (e: 'dishClose'): void
 }>()

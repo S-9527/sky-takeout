@@ -15,6 +15,9 @@ export interface UserLoginVO {
   openid: string
   accessToken: string
   refreshToken: string
+  shopName?: string
+  shopAddress?: string
+  shopId?: number
 }
 
 // 分类

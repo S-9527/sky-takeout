@@ -95,122 +95,114 @@
   </view>
 </template>
 
-<script>
-import { queryAddressBookList, putAddressBookDefault } from "../api/api.js";
-import { mapState, mapMutations } from "vuex";
-import uniNavBar from "@/components/uni-nav-bar/uni-nav-bar.vue";
-import Empty from "@/components/empty/empty";
-export default {
-  components: {
-    uniNavBar,
-    Empty,
-  },
-  data() {
-    return {
-      testValue: true,
-      addressList: [],
-      formRouter: "",
-      isActive: null,
-      isEmpty: false,
-    };
-  },
-  onShow(options) {
-    this.getAddressList();
-    if (options && options.form) {
-      this.formRouter = "";
-      this.formRouter = options.form;
-    }
-  },
-  computed: {
-    ...mapState(["addressBackUrl"]),
-    statusBarHeight() {
-      return uni.getSystemInfoSync().statusBarHeight + "px";
-    },
-  },
-  methods: {
-    ...mapMutations(["setAddress"]),
-    goBack() {
-      uni.redirectTo({
-        url: this.addressBackUrl,
-      });
-    },
-    getLableVal(item) {
-      switch (item) {
-        case "1":
-          return "公司";
-        case "2":
-          return "家";
-        case "3":
-          return "学校";
-        default:
-          return "其他";
-      }
-    },
-    getAddressList() {
-      this.testValue = false;
-      uni.showLoading({ title: "加载中", mask: true });
-      queryAddressBookList().then((res) => {
-        if (res.code === 200) {
-          setTimeout(function () {
-            uni.hideLoading();
-          }, 100);
-          this.testValue = true;
-          this.addressList = res.data;
-          this.isEmpty = true;
-          this.addressList.map((val, index) => {
-            if (val.isDefault === 1) {
-              this.isActive = index;
-            }
-          });
-        }
-      });
-    },
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '@/stores'
+import { queryAddressBookList, putAddressBookDefault } from '../api/api'
+import Empty from '@/components/empty/empty'
 
-    addOrEdit(type, item) {
-      // 编辑与新增
-      if (type === "新增") {
-        // TODO
-        uni.redirectTo({
-          url: "/pages/addOrEditAddress/addOrEditAddress",
-        });
-      } else {
-        // TODO
-        uni.redirectTo({
-          url:
-            "/pages/addOrEditAddress/addOrEditAddress?type=" +
-            "编辑" +
-            "&" +
-            "id=" +
-            item.id,
-        });
-      }
-    },
-    // 点击整体设置为默认地址并返填订单页面
-    choseAddress(e, item) {
-      if (this.addressBackUrl !== "/pages/order/index") {
-        return false;
-      }
-      uni.redirectTo({
-        url: "/pages/order/index?address=" + JSON.stringify(item),
-      });
-      this.setAddress(item);
-    },
-    getRadio(index, item) {
-      // // 提供默认接口
-      item.isDefault = 1;
-      this.isActive = index;
-      putAddressBookDefault({ id: item.id }).then((res) => {
-        if (res.code === 200) {
-          uni.showToast({
-            title: "默认地址设置成功",
-            duration: 2000,
-            icon: "none",
-          });
+const store = useAppStore()
+const { addressBackUrl } = storeToRefs(store)
+
+const testValue = ref(true)
+const addressList = ref<any[]>([])
+const formRouter = ref('')
+const isActive = ref<number | null>(null)
+const isEmpty = ref(false)
+
+const statusBarHeight = computed(() => {
+  return uni.getSystemInfoSync().statusBarHeight + 'px'
+})
+
+onShow((options: any) => {
+  getAddressList()
+  if (options && options.form) {
+    formRouter.value = ''
+    formRouter.value = options.form
+  }
+})
+
+function goBack() {
+  uni.redirectTo({
+    url: addressBackUrl.value
+  })
+}
+
+function getLableVal(item: string) {
+  switch (item) {
+    case '1':
+      return '公司'
+    case '2':
+      return '家'
+    case '3':
+      return '学校'
+    default:
+      return '其他'
+  }
+}
+
+function getAddressList() {
+  testValue.value = false
+  uni.showLoading({ title: '加载中', mask: true })
+  queryAddressBookList().then((res: any) => {
+    if (res.code === 200) {
+      setTimeout(function () {
+        uni.hideLoading()
+      }, 100)
+      testValue.value = true
+      addressList.value = res.data
+      isEmpty.value = true
+      addressList.value.map((val: any, index: number) => {
+        if (val.isDefault === 1) {
+          isActive.value = index
         }
-      });
-    },
-  },
-};
+      })
+    }
+  })
+}
+
+function addOrEdit(type: string, item?: any) {
+  if (type === '新增') {
+    uni.redirectTo({
+      url: '/pages/addOrEditAddress/addOrEditAddress'
+    })
+  } else {
+    uni.redirectTo({
+      url:
+        '/pages/addOrEditAddress/addOrEditAddress?type=' +
+        '编辑' +
+        '&' +
+        'id=' +
+        item.id
+    })
+  }
+}
+
+function choseAddress(e: number, item: any) {
+  if (addressBackUrl.value !== '/pages/order/index') {
+    return false
+  }
+  uni.redirectTo({
+    url: '/pages/order/index?address=' + JSON.stringify(item)
+  })
+  store.setAddress(item)
+}
+
+function getRadio(index: number, item: any) {
+  item.isDefault = 1
+  isActive.value = index
+  putAddressBookDefault({ id: item.id }).then((res: any) => {
+    if (res.code === 200) {
+      uni.showToast({
+        title: '默认地址设置成功',
+        duration: 2000,
+        icon: 'none'
+      })
+    }
+  })
+}
 </script>
 
 <style lang="scss" scoped>

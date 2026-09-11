@@ -23,42 +23,36 @@
           </view>
           <!-- 电话号 -->
           <view class="phone">
-            <text class="phone_text">{{ phoneNumber | getPhoneNum }}</text>
+            <text class="phone_text">{{ formatPhone(phoneNumber) }}</text>
           </view>
         </view>
       </view>
 </template>
-<script>
-export default {
-  // 获取父级传的数据
-  props: {
+<script setup lang="ts">
+import { formatPhone } from '@/utils/index'
+
+// 获取父级传的数据
+withDefaults(
+  defineProps<{
     // 头像
-    psersonUrl: {
-      type: String,
-      default: '',
-    },
+    psersonUrl?: string
     // 姓名
-    nickName: {
-      type: String,
-      default: '',
-    },
+    nickName?: string
     // 性别
-    gender: {
-      type: String,
-      default: '',
-    },
+    gender?: string
     // 电话
-    phoneNumber: {
-      type: String,
-      default: '',
-    },
-    // 电话
-    getPhoneNum: {
-      type: String,
-      default: '',
-    }
-  },
-};
+    phoneNumber?: string
+    // 电话(原 Vue2 父组件以过滤器函数传入,类型保持宽松)
+    getPhoneNum?: any
+  }>(),
+  {
+    psersonUrl: '',
+    nickName: '',
+    gender: '',
+    phoneNumber: '',
+    getPhoneNum: '',
+  }
+)
 </script>
 <style lang="scss" scoped>
 .my_info {

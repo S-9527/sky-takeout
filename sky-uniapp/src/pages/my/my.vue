@@ -49,153 +49,135 @@
   </view>
 </template>
 
-<script>
-import { getOrderPage, repetitionOrder, delShoppingCart } from "../api/api.js";
-import { mapMutations } from "vuex";
-import { statusWord, getOvertime } from "@/utils/index.js";
+<script setup lang="ts">
+import { ref } from 'vue'
+import { onLoad, onReady } from '@dcloudio/uni-app'
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '@/stores'
+import { formatPhone } from '@/utils/index'
+import { getOrderPage, repetitionOrder, delShoppingCart } from '../api/api'
+import { statusWord as statusWordUtil, getOvertime as getOvertimeUtil } from '@/utils/index'
 
-import HeadInfo from "./components/headInfo.vue"; //头部
-import OrderInfo from "./components/orderInfo.vue"; //地址
-import OrderList from "./components/orderList.vue"; //最近订单
-export default {
-  data() {
-    return {
-      psersonUrl: "../../static/btn_waiter_sel.png",
-      nickName: "",
-      gender: "0",
-      phoneNumber: "18500557668",
-      recentOrdersList: [],
-      sumOrder: {
-        amount: 0,
-        number: 0,
-      },
-      status: "",
-      scrollH: 0,
-      pageInfo: {
-        page: 1,
-        pageSize: 10,
-        total: 0,
-      },
-      loadingText: "",
-      loading: false,
-    };
-  },
-  components: {
-    HeadInfo,
-    OrderInfo,
-    OrderList,
-  },
-  filters: {
-    getPhoneNum(str) {
-      return str.replace(/\-/g, "");
-    },
-  },
-  onLoad() {
-    this.psersonUrl =
-      this.$store.state.baseUserInfo &&
-      this.$store.state.baseUserInfo.avatarUrl;
-    this.nickName =
-      this.$store.state.baseUserInfo && this.$store.state.baseUserInfo.nickName;
-    this.gender =
-      this.$store.state.baseUserInfo && this.$store.state.baseUserInfo.gender;
-    this.phoneNumber =
-      this.$store.state.shopPhone && this.$store.state.shopPhone;
-    this.getList();
-  },
-  created() {},
-  onReady() {
-    uni.getSystemInfo({
-      success: (res) => {
-        this.scrollH = res.windowHeight - uni.upx2px(100);
-      },
-    });
-  },
-  methods: {
-    ...mapMutations(["setAddressBackUrl"]),
-    statusWord(obj) {
-      return statusWord(obj.status, obj.time);
-    },
-    getOvertime(time) {
-      return getOvertime(time);
-    },
-    // 获取列表数据
-    getList() {
-      const params = {
-        pageSize: 10,
-        page: this.pageInfo.page,
-      };
-      getOrderPage(params).then((res) => {
-        if (res.code === 200) {
-          this.recentOrdersList = this.recentOrdersList.concat(
-            res.data.records
-          );
-          this.pageInfo.total = res.data.total;
-          this.loadingText = "";
-          this.loading = false;
-        }
-      });
-    },
-    // 去地址页面
-    goAddress() {
-      this.setAddressBackUrl("/pages/my/my");
-      // TODO
-      uni.redirectTo({
-        url: "/pages/address/address?form=" + "my",
-      });
-    },
-    // 去历史订单页面
-    goOrder() {
-      // TODO
-      uni.navigateTo({
-        url: "/pages/historyOrder/historyOrder",
-      });
-    },
-    async oneOrderFun(id) {
-      let pages = getCurrentPages();
-      let routeIndex = pages.findIndex(
-        (item) => item.route === "pages/index/index"
-      );
-      // 先清空购物车
-      await delShoppingCart();
-      repetitionOrder(id).then((res) => {
-        if (res.code === 200) {
-          uni.navigateBack({
-            delta: routeIndex > -1 ? pages.length - routeIndex : 1,
-          });
-        }
-      });
-    },
-    quitClick() {},
-    // 去详情页面
-    goDetail(id) {
-      this.setAddressBackUrl("/pages/my/my");
-      uni.redirectTo({
-        url: "/pages/details/index?orderId=" + id,
-      });
-    },
-    dataAdd() {
-      const pages = Math.ceil(this.pageInfo.total / 10); //计算总页数
-      if (this.pageInfo.page === pages) {
-        this.loadingText = "没有更多了";
-        this.loading = true;
-      } else {
-        this.pageInfo.page++;
-        this.getList();
-      }
-    },
+import HeadInfo from './components/headInfo.vue'
+import OrderInfo from './components/orderInfo.vue'
+import OrderList from './components/orderList.vue'
 
-    lower() {
-      this.loadingText = "数据加载中...";
-      this.loading = true;
-      this.dataAdd();
-    },
-    goBack() {
-      uni.redirectTo({
-        url: "/pages/index/index",
-      });
-    },
-  },
-};
+const store = useAppStore()
+const { baseUserInfo, shopPhone } = storeToRefs(store)
+
+const psersonUrl = ref('../../static/btn_waiter_sel.png')
+const nickName = ref('')
+const gender = ref('0')
+const phoneNumber = ref('18500557668')
+const recentOrdersList = ref<any[]>([])
+const sumOrder = ref({ amount: 0, number: 0 })
+const status = ref('')
+const scrollH = ref(0)
+const pageInfo = ref({ page: 1, pageSize: 10, total: 0 })
+const loadingText = ref('')
+const loading = ref(false)
+
+function getPhoneNum(str: string): string {
+  return formatPhone(str)
+}
+
+function statusWord(obj: { status: number; time: number }): string {
+  return statusWordUtil(obj.status, obj.time)
+}
+
+function getOvertime(time: string): number {
+  return getOvertimeUtil(time)
+}
+
+function getList() {
+  const params = {
+    pageSize: 10,
+    page: pageInfo.value.page
+  }
+  getOrderPage(params).then((res: any) => {
+    if (res.code === 200) {
+      recentOrdersList.value = recentOrdersList.value.concat(res.data.records)
+      pageInfo.value.total = res.data.total
+      loadingText.value = ''
+      loading.value = false
+    }
+  })
+}
+
+function goAddress() {
+  store.setAddressBackUrl('/pages/my/my')
+  uni.redirectTo({
+    url: '/pages/address/address?form=' + 'my'
+  })
+}
+
+function goOrder() {
+  uni.navigateTo({
+    url: '/pages/historyOrder/historyOrder'
+  })
+}
+
+async function oneOrderFun(id: number) {
+  const pages = getCurrentPages()
+  const routeIndex = pages.findIndex(
+    (item: any) => item.route === 'pages/index/index'
+  )
+  await delShoppingCart()
+  repetitionOrder(id).then((res: any) => {
+    if (res.code === 200) {
+      uni.navigateBack({
+        delta: routeIndex > -1 ? pages.length - routeIndex : 1
+      })
+    }
+  })
+}
+
+function goDetail(id: number) {
+  store.setAddressBackUrl('/pages/my/my')
+  uni.redirectTo({
+    url: '/pages/details/index?orderId=' + id
+  })
+}
+
+function dataAdd() {
+  const pages = Math.ceil(pageInfo.value.total / 10)
+  if (pageInfo.value.page === pages) {
+    loadingText.value = '没有更多了'
+    loading.value = true
+  } else {
+    pageInfo.value.page++
+    getList()
+  }
+}
+
+function lower() {
+  loadingText.value = '数据加载中...'
+  loading.value = true
+  dataAdd()
+}
+
+function goBack() {
+  uni.redirectTo({
+    url: '/pages/index/index'
+  })
+}
+
+onLoad(() => {
+  const info = baseUserInfo.value as any
+  psersonUrl.value = (info && info.avatarUrl) || '../../static/btn_waiter_sel.png'
+  nickName.value = (info && info.nickName) || ''
+  gender.value = (info && info.gender) || '0'
+  phoneNumber.value = (shopPhone.value as string) || '18500557668'
+  getList()
+})
+
+onReady(() => {
+  uni.getSystemInfo({
+    success: (res: any) => {
+      scrollH.value = res.windowHeight - uni.upx2px(100)
+    }
+  })
+})
 </script>
 <style lang="scss" scoped>
 .my-center {

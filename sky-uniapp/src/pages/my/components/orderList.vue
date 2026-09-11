@@ -46,67 +46,63 @@
     <reach-bottom v-if="loading" :loadingText="loadingText"></reach-bottom>
   </scroll-view>
 </template>
-<script>
-import ReachBottom from "@/components/reach-bottom/reach-bottom.vue";
-import { statusWord } from "@/utils/index";
-export default {
-  // 获取父级传的数据
-  props: {
-    // 头像
-    scrollH: {
-      type: Number,
-      default: 0,
-    },
-    //
-    loading: {
-      type: Boolean,
-      default: false,
-    },
-    loadingText: {
-      type: String,
-      default: "",
-    },
-    // 例表数据
-    recentOrdersList: {
-      type: Array,
-      default: () => [],
-    },
-  },
-  components: {
-    ReachBottom,
-  },
-  methods: {
-    lower() {
-      this.$emit("lower");
-    },
-    //订单详情
-    goDetail(id) {
-      this.$emit("goDetail", id);
-    },
-    //  1待付款 2待接单 3 已接单 4 派送中 5 已完成 6 已取消 7 退款 
-    numes(list) {
-      let count = 0;
-      let total = 0;
-      list.length > 0 &&
-        list.forEach((obj) => {
-          count += Number(obj.number);
-          total += Number(obj.number) * Number(obj.amount);
-        });
-      return { count: count, total: total };
-    },
-    // 再来一单
-    oneOrderFun(id) {
-      this.$emit("oneOrderFun", id);
-    },
-    //
-    getOvertime(time) {
-      this.$emit("getOvertime", time);
-    },
-    // 支付状态
-    statusWord(status, time) {
-      this.$emit("statusWord", { status: status, time: time });
-      return statusWord(status, time);
-    },
-  },
-};
+<script setup lang="ts">
+import { statusWord as statusWordUtil, getOvertime as getOvertimeUtil } from '@/utils/index'
+import ReachBottom from '@/components/reach-bottom/reach-bottom.vue'
+
+withDefaults(
+  defineProps<{
+    scrollH?: number
+    loading?: boolean
+    loadingText?: string
+    recentOrdersList?: any[]
+  }>(),
+  {
+    scrollH: 0,
+    loading: false,
+    loadingText: '',
+    recentOrdersList: () => []
+  }
+)
+
+const emit = defineEmits<{
+  (e: 'lower'): void
+  (e: 'goDetail', id: number): void
+  (e: 'oneOrderFun', id: number): void
+  (e: 'getOvertime', time: string): void
+  (e: 'statusWord', data: { status: number; time?: number }): void
+}>()
+
+function lower() {
+  emit('lower')
+}
+
+function goDetail(id: number) {
+  emit('goDetail', id)
+}
+
+function numes(list: any[]) {
+  let count = 0
+  let total = 0
+  list.length > 0 &&
+    list.forEach((obj: any) => {
+      count += Number(obj.number)
+      total += Number(obj.number) * Number(obj.amount)
+    })
+  return { count: count, total: total }
+}
+
+function oneOrderFun(id: number) {
+  emit('oneOrderFun', id)
+}
+
+function getOvertime(time: string) {
+  emit('getOvertime', time)
+  return getOvertimeUtil(time)
+}
+
+function statusWord(status: number, time?: number) {
+  emit('statusWord', { status: status, time: time })
+  return statusWordUtil(status, time)
+}
 </script>

@@ -45,63 +45,64 @@
   </view>
 </template>
 
-<script>
-import { mapState, mapMutations } from "vuex";
-export default {
-  data() {
-    return {
-      remark: "",
-      numVal: 0,
-    };
-  },
-  computed: {
-    getVal: function () {
-      let leng = this.validateTextLength(this.remark);
-      if (leng <= 50) {
-        this.numVal = Math.floor(leng);
-      } else {
-        this.remark = this.remark.substring(0, 50);
-      }
-    },
-  },
-  onLoad() {
-    console.log(this.remarkData());
-    if (this.getRemark === "") {
-      this.remark = this.remark;
-    } else {
-      this.remark = this.remarkData();
-      this.numVal = this.remark.length;
-    }
-  },
-  methods: {
-    ...mapMutations(["setRemark"]),
-    ...mapState(["remarkData"]),
-    goBack() {
-      uni.redirectTo({
-        url: "/pages/order/index",
-      });
-    },
-    // 保存返回订单页
-    handleSaveRemark() {
-      uni.redirectTo({
-        url: "/pages/order/index",
-      });
-      this.setRemark(this.remark);
-    },
-    validateTextLength(value) {
-      // 中文、中文标点、全角字符按1长度，英文、英文符号、数字按0.5长度计算
-      let cnReg = /([\u4e00-\u9fa5]|[\u3000-\u303F]|[\uFF00-\uFF60])/g;
-      let mat = value.match(cnReg);
-      let length;
-      if (mat) {
-        length = mat.length + (value.length - mat.length) * 0.5;
-        return length;
-      } else {
-        return value.length * 0.5;
-      }
-    },
-  },
-};
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '@/stores'
+
+const store = useAppStore()
+const { remarkData } = storeToRefs(store)
+
+const remark = ref('')
+const numVal = ref(0)
+
+function validateTextLength(value: string) {
+  const cnReg = /([\u4e00-\u9fa5]|[\u3000-\u303F]|[\uFF00-\uFF60])/g
+  const mat = value.match(cnReg)
+  let length: number
+  if (mat) {
+    length = mat.length + (value.length - mat.length) * 0.5
+    return length
+  } else {
+    return value.length * 0.5
+  }
+}
+
+watch(remark, (val) => {
+  const leng = validateTextLength(val)
+  if (leng <= 50) {
+    numVal.value = Math.floor(leng)
+  } else {
+    remark.value = val.substring(0, 50)
+  }
+}, { immediate: true })
+
+const getVal = computed(() => {
+  return numVal.value
+})
+
+onLoad(() => {
+  if (remarkData.value === '') {
+    remark.value = ''
+  } else {
+    remark.value = remarkData.value as string
+    numVal.value = remark.value.length
+  }
+})
+
+function goBack() {
+  uni.redirectTo({
+    url: '/pages/order/index'
+  })
+}
+
+function handleSaveRemark() {
+  uni.redirectTo({
+    url: '/pages/order/index'
+  })
+  store.setRemark(remark.value)
+}
 </script>
 
 <style src="./../common/Navbar/navbar.scss" lang="scss" scoped></style>

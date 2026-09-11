@@ -15,19 +15,20 @@
     </view>
   </view>
 </template>
-<script>
-export default {
-  methods: {
-    //去地址列表页
-    goAddress() {
-      this.$emit("goAddress");
-    },
-    //去历史订单页
-    goOrder() {
-      this.$emit("goOrder");
-    },
-  },
-};
+<script setup lang="ts">
+const emit = defineEmits<{
+  (e: 'goAddress'): void
+  (e: 'goOrder'): void
+}>()
+
+//去地址列表页
+function goAddress() {
+  emit('goAddress')
+}
+//去历史订单页
+function goOrder() {
+  emit('goOrder')
+}
 </script>
 <style lang="scss" scoped>
     // 地址及订单

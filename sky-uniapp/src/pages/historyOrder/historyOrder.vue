@@ -77,205 +77,195 @@
   </view>
 </template>
 
-<script>
+<script setup lang="ts">
+import { ref } from 'vue'
+import { onLoad, onUnload, onReady, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app'
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '@/stores'
 import {
   getOrderPage,
   repetitionOrder,
   reminderOrder,
   delShoppingCart
-} from "../api/api.js";
-import { mapMutations } from "vuex";
-import Empty from "@/components/empty/empty";
-import { statusWord, getOvertime } from "@/utils/index.js";
-export default {
-  components: {
-    Empty,
-  },
-  data() {
-    return {
-      recentOrdersList: [],
-      pageInfo: {
-        page: 1,
-        pageSize: 10,
-        total: 0,
-      },
-      status: "",
-      loadingType: 0,
-      showTitle: false,
-      scrollinto: "tab0",
-      scrollH: 0,
-      tabIndex: 0,
-      tabBars: ["全部订单", "待付款"],
-      // 状态对应的接口和参数
-      urlMap: {
-        0: {
-          fn: getOrderPage,
-          key: "status",
-        },
-        1: {
-          fn: getOrderPage,
-          key: "status",
-        },
-      },
-      textTip: "",
-      showConfirm: false,
-      isEmpty: false,
-    };
-  },
-  onLoad() {
-    this.getList();
-  },
-  onUnload() {
-    this.showTitle = false;
-  },
-  onReady() {
-    uni.getSystemInfo({
-      success: (res) => {
-        this.scrollH = res.windowHeight - uni.upx2px(100);
-      },
-    });
-  },
-  onPullDownRefresh() {
-    this.pageInfo.page = 1;
-    this.loadingType = 0;
-    this.recentOrdersList = [];
-    this.finished = false;
-    this.getList();
-    uni.stopPullDownRefresh();
-    this.showTitle = true;
-  },
-  onReachBottom() {
-    if (this.recentOrdersList.length < Number(this.pageInfo.total)) {
-      this.pageInfo.page++;
-      this.loadingStatus = "loading";
-      this.getList(this.status);
-      this.showTitle = true;
-    }
-  },
-  methods: {
-    ...mapMutations(["setAddressBackUrl"]),
-    numes(list) {
-      let count = 0;
-      let total = 0;
-      list.length > 0 &&
-        list.forEach((obj) => {
-          count += Number(obj.number);
-          total += Number(obj.number) * Number(obj.amount);
-        });
-      return { count: count, total: total };
-    },
-    statusWord(status) {
-      return statusWord(status);
-    },
-    getOvertime(time) {
-      return getOvertime(time);
-    },
-    // 获取历史订单列表
-    getList() {
-      const key = this.urlMap[this.tabIndex].key;
-      const fn = this.urlMap[this.tabIndex].fn;
-      const params = {
-        pageSize: 10,
-        page: this.pageInfo.page,
-      };
-      params[key] = this[key]
-      uni.showLoading({ title: "加载中", mask: true });
-      fn(params).then((res) => {
-        if (res.code === 200) {
-          setTimeout(function () {
-            uni.hideLoading();
-          }, 100);
-          this.recentOrdersList = this.recentOrdersList.concat(
-            res.data.records
-          );
-          this.pageInfo.total = res.data.total;
-          this.isEmpty = true;
-        }
-      });
-    },
-    // 再来一单
-    async oneMoreOrder(id) {
-      let pages = getCurrentPages();
-      let routeIndex = pages.findIndex(
-        (item) => item.route === "pages/index/index"
-      );
-      // 先清空购物车
-      await delShoppingCart();
-      repetitionOrder(id).then((res) => {
-        if (res.code === 200) {
-          uni.navigateBack({
-            delta: routeIndex > -1 ? pages.length - routeIndex : 1,
-          });
-        }
-      });
-    },
-    // tab选项卡切换轮播
-    changeTab(index) {
-      // 点击的还是当前数据的时候直接return
-      if (this.tabIndex == index) {
-        return;
-      }
-      this.tabIndex = index;
-      if (index === 1) {
-        // 待付款
-        this.status = 1;
-      } else {
-        // 全部
-        this.status = "";
-      }
-      this.pageInfo.page = 1;
-      this.recentOrdersList = [];
-      this.getList();
-      // 滑动
-      this.scrollinto = "tab" + index;
-    },
-    onChangeSwiperTab(e) {
-      this.changeTab(e.detail.current);
-    },
-    dataAdd() {
-      const pages = Math.ceil(this.pageInfo.total / 10); //计算总页数
-      if (this.pageInfo.page === pages) {
-        this.loadingText = "没有更多了";
-        this.loading = true;
-      } else {
-        this.pageInfo.page++;
-        this.getList();
-      }
-    },
+} from '../api/api'
+import Empty from '@/components/empty/empty'
+import { statusWord as statusWordUtil, getOvertime as getOvertimeUtil } from '@/utils/index'
 
-    lower() {
-      this.loadingText = "数据加载中...";
-      this.loading = true;
-      this.dataAdd();
-    },
-    // 去详情页面
-    goDetail(id) {
-      this.setAddressBackUrl("/pages/historyOrder/historyOrder");
-      uni.navigateTo({ url: "/pages/details/index?orderId=" + id });
-    },
-    // 催单
-    handleReminder(type, id) {
-      reminderOrder(id).then((res) => {
-        if (res.code === 200) {
-          this.showConfirm = true;
-          this.textTip = "您的催单信息已发出！";
-          this.$refs.commonPopup.open(type);
-          this.getList(this.status);
-        }
-      });
-    },
-    // 关闭弹层
-    closePopup(type) {
-      this.$refs.commonPopup.close(type);
-    },
-    // 返回我的
-    goBack() {
-      uni.redirectTo({
-        url: "/pages/my/my",
-      });
-    },
-  },
-};
+const store = useAppStore()
+const { setAddressBackUrl } = store
+
+const recentOrdersList = ref<any[]>([])
+const pageInfo = ref({ page: 1, pageSize: 10, total: 0 })
+const status = ref('')
+const loadingType = ref(0)
+const showTitle = ref(false)
+const scrollinto = ref('tab0')
+const scrollH = ref(0)
+const tabIndex = ref(0)
+const tabBars = ref(['全部订单', '待付款'])
+const urlMap: Record<number, { fn: any; key: string }> = {
+  0: { fn: getOrderPage, key: 'status' },
+  1: { fn: getOrderPage, key: 'status' }
+}
+const textTip = ref('')
+const showConfirm = ref(false)
+const isEmpty = ref(false)
+const loadingText = ref('')
+const loading = ref(false)
+
+const commonPopup = ref<any>(null)
+
+onLoad(() => {
+  getList()
+})
+
+onUnload(() => {
+  showTitle.value = false
+})
+
+onReady(() => {
+  uni.getSystemInfo({
+    success: (res: any) => {
+      scrollH.value = res.windowHeight - uni.upx2px(100)
+    }
+  })
+})
+
+onPullDownRefresh(() => {
+  pageInfo.value.page = 1
+  loadingType.value = 0
+  recentOrdersList.value = []
+  getList()
+  uni.stopPullDownRefresh()
+  showTitle.value = true
+})
+
+onReachBottom(() => {
+  if (recentOrdersList.value.length < Number(pageInfo.value.total)) {
+    pageInfo.value.page++
+    loading.value = true
+    getList()
+    showTitle.value = true
+  }
+})
+
+function numes(list: any[]) {
+  let count = 0
+  let total = 0
+  list.length > 0 &&
+    list.forEach((obj: any) => {
+      count += Number(obj.number)
+      total += Number(obj.number) * Number(obj.amount)
+    })
+  return { count: count, total: total }
+}
+
+function statusWord(status: number) {
+  return statusWordUtil(status)
+}
+
+function getOvertime(time: string) {
+  return getOvertimeUtil(time)
+}
+
+function getList() {
+  const key = urlMap[tabIndex.value].key
+  const fn = urlMap[tabIndex.value].fn
+  const params: any = {
+    pageSize: 10,
+    page: pageInfo.value.page
+  }
+  params[key] = status.value
+  uni.showLoading({ title: '加载中', mask: true })
+  fn(params).then((res: any) => {
+    if (res.code === 200) {
+      setTimeout(function () {
+        uni.hideLoading()
+      }, 100)
+      recentOrdersList.value = recentOrdersList.value.concat(res.data.records)
+      pageInfo.value.total = res.data.total
+      isEmpty.value = true
+    }
+  })
+}
+
+async function oneMoreOrder(id: number) {
+  const pages = getCurrentPages()
+  const routeIndex = pages.findIndex(
+    (item: any) => item.route === 'pages/index/index'
+  )
+  await delShoppingCart()
+  repetitionOrder(id).then((res: any) => {
+    if (res.code === 200) {
+      uni.navigateBack({
+        delta: routeIndex > -1 ? pages.length - routeIndex : 1
+      })
+    }
+  })
+}
+
+function changeTab(index: number) {
+  if (tabIndex.value == index) {
+    return
+  }
+  tabIndex.value = index
+  if (index === 1) {
+    status.value = '1'
+  } else {
+    status.value = ''
+  }
+  pageInfo.value.page = 1
+  recentOrdersList.value = []
+  getList()
+  scrollinto.value = 'tab' + index
+}
+
+function onChangeSwiperTab(e: any) {
+  changeTab(e.detail.current)
+}
+
+function dataAdd() {
+  const pages = Math.ceil(pageInfo.value.total / 10)
+  if (pageInfo.value.page === pages) {
+    loadingText.value = '没有更多了'
+    loading.value = true
+  } else {
+    pageInfo.value.page++
+    getList()
+  }
+}
+
+function lower() {
+  loadingText.value = '数据加载中...'
+  loading.value = true
+  dataAdd()
+}
+
+function goDetail(id: number) {
+  setAddressBackUrl('/pages/historyOrder/historyOrder')
+  uni.navigateTo({ url: '/pages/details/index?orderId=' + id })
+}
+
+function handleReminder(type: string, id: number) {
+  reminderOrder(id).then((res: any) => {
+    if (res.code === 200) {
+      showConfirm.value = true
+      textTip.value = '您的催单信息已发出！'
+      commonPopup.value?.open(type)
+      getList()
+    }
+  })
+}
+
+function closePopup(type: string) {
+  commonPopup.value?.close(type)
+}
+
+function goBack() {
+  uni.redirectTo({
+    url: '/pages/my/my'
+  })
+}
 </script>
 
 <style lang="scss" scoped>

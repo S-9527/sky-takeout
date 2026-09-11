@@ -349,12 +349,15 @@ describe('套餐', () => {
         items: [{ dishId: secondDishId, copies: 1 }],
       }),
     )
+    // 先登记再断言:断言失败时收尾仍然知道要删它
+    created.setmeals.push(setmeal.id)
     expect(setmeal.status).toBe(1)
 
     await expectOk(() => setmealApi.changeSetmealsStatus([setmeal.id], 0))
     expect((await expectOk(() => setmealApi.getSetmeal(setmeal.id))).status).toBe(0)
 
     await expectOk(() => setmealApi.deleteSetmeals([setmeal.id]))
+    created.setmeals = created.setmeals.filter((id) => id !== setmeal.id)
     await expectApiError(() => setmealApi.getSetmeal(setmeal.id), {
       status: 404,
       code: 'SETMEAL_NOT_FOUND',

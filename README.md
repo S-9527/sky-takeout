@@ -120,10 +120,12 @@ pnpm dev:mp-weixin  # 微信开发者工具
 ```bash
 node scripts/smoke-identity.mjs   # 身份:登录/令牌轮换/受众隔离/自我保护,19 项
 node scripts/smoke-shop.mjs       # 门店:营业状态读写/时间校验/顾客端视图,15 项
+node scripts/smoke-catalog.mjs    # 商品-分类:分页/唯一性/类型不可改/启停用可见性/外键删除保护,30 项
 ```
 
 脚本打的是 `http://localhost:8080`(可用 `SKY_BASE_URL` 覆盖),失败时以非零码退出,可直接串进 CI。
-`smoke-shop.mjs` 会临时改营业状态并在结束时还原。
+两个脚本会写库,但都自行还原:`smoke-shop.mjs` 结束时把营业状态写回原值,`smoke-catalog.mjs`
+只创建 / 删除自己造的 `smoke-` 分类,不碰种子数据。
 
 ## 本地开发配置
 

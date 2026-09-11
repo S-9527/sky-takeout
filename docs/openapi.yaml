@@ -779,8 +779,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/UnprocessableEntity'
 
   ##########################################################################
   # Catalog - Admin : Dishes
@@ -3110,7 +3108,9 @@ components:
 
     CategoryUpdateRequest:
       type: object
-      description: 类型不可修改(改了会让已引用的菜品落到错误类型分类下)
+      description: |
+        类型不可修改(改了会让已引用的菜品落到错误类型的分类下)。
+        `type` 可选:不传表示"不改类型";传了必须与当前类型一致,否则 422 `CATEGORY_TYPE_IMMUTABLE`。
       required: [name, sortOrder, status]
       properties:
         name:
@@ -3118,6 +3118,8 @@ components:
           minLength: 1
           maxLength: 32
           example: 川湘菜
+        type:
+          $ref: '#/components/schemas/CategoryType'
         sortOrder:
           type: integer
           example: 2

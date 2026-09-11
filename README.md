@@ -113,6 +113,18 @@ pnpm dev:h5         # H5 调试
 pnpm dev:mp-weixin  # 微信开发者工具
 ```
 
+### 5. 端到端冒烟(可选,后端已启动时)
+
+`mvn test` 是不依赖任何外部服务的单元测试 + 架构测试;跨真实 MySQL/Redis 的验证在脚本里:
+
+```bash
+node scripts/smoke-identity.mjs   # 身份:登录/令牌轮换/受众隔离/自我保护,19 项
+node scripts/smoke-shop.mjs       # 门店:营业状态读写/时间校验/顾客端视图,15 项
+```
+
+脚本打的是 `http://localhost:8080`(可用 `SKY_BASE_URL` 覆盖),失败时以非零码退出,可直接串进 CI。
+`smoke-shop.mjs` 会临时改营业状态并在结束时还原。
+
 ## 本地开发配置
 
 后端默认连本机 `localhost` 的 MySQL(root/root)与 Redis(123456,db 0),与小节 1 的 `docker-compose.yml` 一致,开箱即用。需要覆盖时用环境变量,不必改代码:

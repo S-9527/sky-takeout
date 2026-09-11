@@ -48,7 +48,7 @@ backend/
 |---|---|
 | L1 | `api` 只能依赖同上下文的 `service` 与 `domain`,**不得**依赖 `mapper`、`gateway` |
 | L2 | `service` 可以依赖同上下文的 `domain`、`mapper`、`gateway` |
-| L3 | `domain` 不得依赖 `api`、`service`、`mapper`、`gateway`,也不得依赖 Spring Web / MyBatis-Plus 之外的框架 |
+| L3 | `domain` 不得依赖 `api`、`service`、`mapper`、`gateway`,也不得依赖 Spring Web / MyBatis-Plus 之外的框架(例外:Jackson **注解**与 `org.apache.ibatis`,前者是实体上 `@JsonIgnore` 这类纯元数据,后者是 `@TableField` 成员类型所在包) |
 | L4 | 跨上下文调用**只能**经由对方 `service` 包中的类型;不得直接引用别人的 `domain`、`mapper`、`api` |
 | L5 | `common`、`security` 不得依赖任何业务上下文 |
 | L6 | 禁止字段注入(`@Autowired` 在字段上),统一构造器注入 |
@@ -128,14 +128,17 @@ backend/
 
 ## 5. 测试策略
 
-| 类型 | 范围 | 是否依赖外部服务 |
-|---|---|---|
-| 架构测试 | ArchUnit 校验 §3 的 L1~L7 | 否 |
-| 领域单元测试 | `OrderStateMachine` 全部合法/非法迁移、金额计算、口味归一化 | 否 |
-| 服务测试 | 应用服务 + Mock Mapper,覆盖 D1 关键规则(如 R5 金额重算、R3 事务) | 否 |
-| 接口测试 | `@SpringBootTest` + MockMvc,覆盖鉴权与错误码 | 需 MySQL/Redis(`docker compose up -d`) |
+| 类型 | 范围 | 位置 | 是否依赖外部服务 |
+|---|---|---|---|
+| 架构测试 | ArchUnit 校验 §3 的 L1~L7(上下文集合从字节码推导,新增上下文自动纳入) | `src/test/java/com/sky/ArchitectureTest.java` | 否 |
+| 领域/工具单元测试 | 分页钳制、排序白名单、时间与金额转换、启停用枚举 | `src/test/java/com/sky/common/**` | 否 |
+| 服务测试 | 应用服务 + Mock Mapper:登录与账号枚举防护、自我保护、令牌世代、营业时间校验 | `src/test/java/com/sky/*/service/**` | 否 |
+| 端到端冒烟 | 真实 HTTP + 真实 MySQL/Redis:鉴权与受众隔离、错误码、字段名、R1 等跨层约定 | `scripts/smoke-*.mjs` | 是(`docker compose up -d` + 后端已启动) |
 
-`mvn test` 必须能在只起了 `docker compose` 的机器上全绿;不引入 Testcontainers。
+- `mvn test` 只跑前三类,**不需要任何外部服务**;`mvn verify` 额外执行行覆盖率门禁(不低于 60%,当前约 92%)。
+- 端到端冒烟刻意不放进 Maven 生命周期:`@SpringBootTest` + MockMvc 只能覆盖"Spring 容器内的 HTTP",验不了真实 MySQL 的迁移、真实 Redis 的令牌撤销,也验不了 `OpenAPI` 里写死的字段名。脚本打的是真实例,跑法见 README。
+- 不引入 Testcontainers:`docker compose` 已经是本项目唯一的基础设施来源,再叠一层容器编排只会让本地启动更脆。
+- 覆盖率门禁必须**真的会失败**:`mvn verify -Dcoverage.minimum=0.99` 应当 BUILD FAILURE。没有测试类时 JaCoCo 会因缺少 `jacoco.exec` 直接跳过 check,门禁形同虚设——这正是本项目补测试前踩过的坑。
 
 ## 6. 与旧实现的差异
 

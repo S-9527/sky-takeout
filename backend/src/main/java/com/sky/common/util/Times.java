@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.ResolverStyle;
 
 /**
  * 时间转换的唯一入口。
@@ -27,11 +28,18 @@ public final class Times {
     /** {@code TIME} 列对外输出格式:{@code HH:mm:ss}。 */
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    /** 入参接受的营业时间格式:{@code HH:mm} 或 {@code HH:mm:ss},与 openapi 的 pattern 一致。 */
+    /**
+     * 入参接受的营业时间格式:{@code HH:mm} 或 {@code HH:mm:ss},与 openapi 的 pattern 一致。
+     *
+     * <p>必须用 {@link ResolverStyle#STRICT}:默认的 SMART 会把 {@code 24:00} 解析成
+     * {@code 00:00}(HOUR_OF_DAY=24 在 SMART 下合法),于是契约里被 pattern 排除的输入
+     * 会被静默纠正成另一个时间——营业时间这种"看起来对了"的偏差最难发现。
+     */
     private static final DateTimeFormatter TIME_INPUT = new DateTimeFormatterBuilder()
             .appendPattern("HH:mm")
             .optionalStart().appendLiteral(':').appendPattern("ss").optionalEnd()
-            .toFormatter();
+            .toFormatter()
+            .withResolverStyle(ResolverStyle.STRICT);
 
     private Times() {
     }

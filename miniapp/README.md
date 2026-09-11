@@ -93,6 +93,16 @@ uni-app 仓库有 `uni-app-vue3-dev-vite8` 分支(把 Vite / `@vitejs/plugin-vue
 - Tailwind 入口**必须是独立 CSS 文件**(`src/assets/tailwind.css`),不能写在 `App.vue` 的 `<style>` 里,
   否则小程序端会出现"类名在、样式没了"。
 
+### 已实跑验证
+
+`pnpm build:mp-weixin` 通过,产物 `dist/build/mp-weixin`(用微信开发者工具导入即可):
+
+- `weapp-tailwindcss` 识别到 Tailwind v4.3.3,并把原子类翻译进了 `assets/tailwind.wxss`(约 10KB);
+- 该插件在**生成模式**下会主动移除 `@tailwindcss/vite` 并打印提示
+  (`已移除该插件以避免 Tailwind CSS 重复生成`)—— 这是它的正常行为,不是配置错误:
+  小程序端由它自己跑 Tailwind 并按需翻译,重复挂 `@tailwindcss/vite` 会把样式生成两遍;
+- 注意 `app.wxss` 只是 `@import "./assets/tailwind.wxss"`,真正的原子类在那个文件里。
+
 ## 待办
 
 - `build:mp-weixin` 的产物人工过一遍 + 微信开发者工具真机预览(CI 里只能验构建成功);

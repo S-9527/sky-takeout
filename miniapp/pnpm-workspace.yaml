@@ -1,0 +1,9 @@
+packages:
+  - .
+
+# pnpm 11 默认拦构建脚本;这几个包的 postinstall 需要放行
+allowBuilds:
+  esbuild: true
+  core-js: true
+  core-js-pure: true
+  vue-demi: true

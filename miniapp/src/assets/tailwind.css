@@ -1,0 +1,14 @@
+/*
+ * Tailwind v4 入口。
+ *
+ * **必须独立成文件**,不能写进 `App.vue` 的 `<style>`:
+ * `weapp-tailwindcss` 需要把这个文件当输入去翻译原子类,写在 SFC 里它看不到,
+ * 小程序端就会出现"类名在、样式没了"。
+ */
+@import 'tailwindcss';
+
+/* 小程序不支持 page 选择器以外的通配,基础样式保持最小 */
+page,
+body {
+  background-color: #f7f8fa;
+}

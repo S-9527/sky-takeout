@@ -26,6 +26,7 @@ import com.sky.order.domain.OrderItem;
 import com.sky.order.domain.OrderStatus;
 import com.sky.order.domain.PayStatus;
 import com.sky.order.service.OrderService;
+import com.sky.payment.service.PaymentService;
 import com.sky.profile.service.DeliveryAddressView;
 import com.sky.security.Audience;
 import com.sky.security.CurrentPrincipal;
@@ -44,7 +45,8 @@ class OrderControllerTest {
     private static final long CUSTOMER = 7L;
 
     private final OrderService orderService = mock(OrderService.class);
-    private final OrderController controller = new OrderController(orderService);
+    private final PaymentService paymentService = mock(PaymentService.class);
+    private final OrderController controller = new OrderController(orderService, paymentService);
 
     @AfterEach
     void clearContext() {

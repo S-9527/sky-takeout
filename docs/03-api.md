@@ -691,14 +691,14 @@ OpenAPI 3.1 无法描述 WebSocket,故在此约定。**通知上下文没有持�
 **管理端(Vue3 + TypeScript)** —— 用 `openapi-typescript`(只生成类型,零运行时):
 
 ```bash
-# 仓库根目录
-pnpm dlx openapi-typescript docs/openapi.yaml -o apps/admin/src/types/api.d.ts
+# 仓库根目录(生成脚本写在各自的 package.json 里,版本由 lockfile 锁定,不用 dlx 现拉)
+pnpm -C admin gen:api       # → admin/src/types/api.d.ts
 ```
 
 **小程序(uni-app + TypeScript)** —— 同样用 `openapi-typescript`,输出到小程序侧:
 
 ```bash
-pnpm dlx openapi-typescript docs/openapi.yaml -o apps/miniapp/src/types/api.d.ts
+pnpm -C miniapp gen:api     # → miniapp/src/types/api.d.ts
 ```
 
 生成后按受众切分命名空间,避免把两套接口混在一个文件里:

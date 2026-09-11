@@ -22,11 +22,14 @@ import com.sky.order.api.dto.OrderDetailResponse;
 import com.sky.order.api.dto.OrderItemResponse;
 import com.sky.order.api.dto.OrderResponse;
 import com.sky.order.api.dto.OrderStatusCountsResponse;
+import com.sky.order.api.dto.PaymentSummaryResponse;
+import com.sky.order.api.dto.RefundSummaryResponse;
 import com.sky.order.api.dto.RejectOrderRequest;
 import com.sky.order.domain.Order;
 import com.sky.order.domain.OrderStatus;
 import com.sky.order.service.OrderCancellationService;
 import com.sky.order.service.OrderService;
+import com.sky.payment.service.PaymentService;
 
 /** 管理端订单:查询 / 统计 / 接单 / 拒单 / 派送 / 完成 / 取消。前缀由 SecurityConfig 限制为 ADMIN / STAFF。 */
 @RestController
@@ -35,10 +38,13 @@ public class AdminOrderController {
 
     private final OrderService orderService;
     private final OrderCancellationService orderCancellationService;
+    private final PaymentService paymentService;
 
-    public AdminOrderController(OrderService orderService, OrderCancellationService orderCancellationService) {
+    public AdminOrderController(OrderService orderService, OrderCancellationService orderCancellationService,
+                                PaymentService paymentService) {
         this.orderService = orderService;
         this.orderCancellationService = orderCancellationService;
+        this.paymentService = paymentService;
     }
 
     @GetMapping
@@ -66,8 +72,11 @@ public class AdminOrderController {
     @GetMapping("/{id}")
     public OrderDetailResponse getById(@PathVariable Long id) {
         Order order = orderService.requireById(id);
+        // 详情里带支付/退款记录:管理端要能直接看到退款单号与原因,不必再去退款列表里翻
         return OrderDetailResponse.from(order,
-                orderService.itemsOf(id).stream().map(OrderItemResponse::from).toList());
+                orderService.itemsOf(id).stream().map(OrderItemResponse::from).toList(),
+                paymentService.orderPaymentsOf(id).stream().map(PaymentSummaryResponse::from).toList(),
+                paymentService.orderRefundsOf(id).stream().map(RefundSummaryResponse::from).toList());
     }
 
     @PostMapping("/{id}/acceptance")

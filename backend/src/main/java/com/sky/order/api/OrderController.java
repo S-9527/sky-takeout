@@ -26,10 +26,13 @@ import com.sky.order.api.dto.OrderRemindRequest;
 import com.sky.order.api.dto.OrderResponse;
 import com.sky.order.api.dto.OrderSubmitRequest;
 import com.sky.order.api.dto.OrderSubmitResultResponse;
+import com.sky.order.api.dto.PaymentSummaryResponse;
+import com.sky.order.api.dto.RefundSummaryResponse;
 import com.sky.order.api.dto.ReorderResultResponse;
 import com.sky.order.domain.Order;
 import com.sky.order.domain.OrderStatus;
 import com.sky.order.service.OrderService;
+import com.sky.payment.service.PaymentService;
 import com.sky.security.CurrentPrincipal;
 
 /**
@@ -41,9 +44,11 @@ import com.sky.security.CurrentPrincipal;
 public class OrderController {
 
     private final OrderService orderService;
+    private final PaymentService paymentService;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, PaymentService paymentService) {
         this.orderService = orderService;
+        this.paymentService = paymentService;
     }
 
     /** 结算页试算:不落库、不清空购物车;打烊时返回 {@code shopOpen=false} 而不是报错。 */
@@ -79,8 +84,17 @@ public class OrderController {
     @GetMapping("/{id}")
     public OrderDetailResponse getById(@PathVariable Long id) {
         Order order = orderService.requireOwned(CurrentPrincipal.requireCustomerId(), id);
+        return detailOf(order);
+    }
+
+    /** 详情 = 订单 + 明细 + 支付/退款记录(契约 OrderDetail) */
+    private OrderDetailResponse detailOf(Order order) {
         return OrderDetailResponse.from(order,
-                orderService.itemsOf(id).stream().map(OrderItemResponse::from).toList());
+                orderService.itemsOf(order.getId()).stream().map(OrderItemResponse::from).toList(),
+                paymentService.orderPaymentsOf(order.getId()).stream()
+                        .map(PaymentSummaryResponse::from).toList(),
+                paymentService.orderRefundsOf(order.getId()).stream()
+                        .map(RefundSummaryResponse::from).toList());
     }
 
     @PostMapping("/{id}/cancellation")

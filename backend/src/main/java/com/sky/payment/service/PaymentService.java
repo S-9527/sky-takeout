@@ -96,6 +96,65 @@ public class PaymentService {
     public record RefundView(Refund refund, String orderNo) {
     }
 
+    /**
+     * 订单详情里展示用的支付/退款记录。
+     *
+     * <p>之所以另开一组 record,而不是直接把 {@code Payment}/{@code Refund} 实体交出去:
+     * order 上下文要按 openapi 的 {@code OrderDetail} 形状组装响应,若直接引用 payment 的
+     * domain 类型就跨了上下文的边界(L4 架构测试会拦)。这两个 record 是 payment 自己的
+     * 只读投影,字段与契约里的 {@code Payment}/{@code Refund} 一致。
+     */
+    public record OrderPayment(Long id, Long orderId, String orderNo, String channel, String status,
+                               long amountCents, String transactionId, String prepayId,
+                               LocalDateTime paidAt, LocalDateTime createdAt) {
+    }
+
+    public record OrderRefund(Long id, Long paymentId, Long orderId, String orderNo, String refundNo,
+                              long amountCents, String status, String reason, String reasonType,
+                              LocalDateTime refundedAt, LocalDateTime createdAt) {
+    }
+
+    /** 某订单的支付记录(订单详情用),按 id 升序 */
+    public List<OrderPayment> orderPaymentsOf(Long orderId) {
+        return paymentsOf(orderId).stream()
+                .map(payment -> new OrderPayment(
+                        payment.getId(),
+                        payment.getOrderId(),
+                        payment.getOrderNo(),
+                        payment.getChannel() == null ? null : payment.getChannel().name(),
+                        payment.getStatus() == null ? null : payment.getStatus().name(),
+                        payment.getAmountCents() == null ? 0L : payment.getAmountCents(),
+                        payment.getTransactionId(),
+                        payment.getPrepayId(),
+                        payment.getPaidAt(),
+                        payment.getCreatedAt()))
+                .toList();
+    }
+
+    /** 某订单的退款记录(订单详情用),按 id 升序 */
+    public List<OrderRefund> orderRefundsOf(Long orderId) {
+        List<Refund> refunds = refundsOf(orderId);
+        if (refunds.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, String> orderNos = orderService.orderNosByIds(
+                refunds.stream().map(Refund::getOrderId).distinct().toList());
+        return refunds.stream()
+                .map(refund -> new OrderRefund(
+                        refund.getId(),
+                        refund.getPaymentId(),
+                        refund.getOrderId(),
+                        orderNos.get(refund.getOrderId()),
+                        refund.getRefundNo(),
+                        refund.getAmountCents() == null ? 0L : refund.getAmountCents(),
+                        refund.getStatus() == null ? null : refund.getStatus().name(),
+                        refund.getReason(),
+                        refund.getReasonType() == null ? null : refund.getReasonType().name(),
+                        refund.getRefundedAt(),
+                        refund.getCreatedAt()))
+                .toList();
+    }
+
     // ---------------------------------------------------------------- 发起支付
 
     /**

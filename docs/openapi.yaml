@@ -2216,7 +2216,7 @@ paths:
       description: |
         日期区间统计,**含首含尾**。营业额口径 = `COMPLETED` 订单的 `payAmountCents` 之和。
         返回 `sum`(区间总计,单位分)与 `daily`(逐日明细,缺席日期补 0);`beginDate`/`endDate` 都省略时默认最近 7 天。
-        区间跨度上限 366 天,超出 400 `REPORT_DATE_RANGE_INVALID`。
+        区间跨度上限 366 天,超出 400 `REPORT_DATE_RANGE_TOO_LARGE`;起 > 止或只给一半 → 400 `REPORT_DATE_RANGE_INVALID`。
       parameters:
         - $ref: '#/components/parameters/BeginDate'
         - $ref: '#/components/parameters/EndDate'

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class PaymentServiceTest {
@@ -469,5 +471,52 @@ class PaymentServiceTest {
 
         assertThat(PaymentService.REFUND_SORT_WHITELIST)
                 .containsExactlyInAnyOrder("createdAt", "refundedAt", "amountCents");
+    }
+
+    @Test
+    void orderPaymentsAndRefundsAreProjectedForOrderDetail() {
+        Payment payment = new Payment();
+        payment.setId(6001L);
+        payment.setOrderId(ORDER_ID);
+        payment.setOrderNo(ORDER_NO);
+        payment.setChannel(PaymentChannel.MOCK);
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setAmountCents(5200L);
+        payment.setTransactionId("tx-1");
+        payment.setPaidAt(LocalDateTime.of(2025, 1, 1, 12, 1, 10));
+        when(paymentMapper.selectList(any())).thenReturn(List.of(payment));
+
+        Refund refund = new Refund();
+        refund.setId(7001L);
+        refund.setPaymentId(6001L);
+        refund.setOrderId(ORDER_ID);
+        refund.setRefundNo("RF1");
+        refund.setAmountCents(5200L);
+        refund.setStatus(RefundStatus.SUCCESS);
+        refund.setReason("商家拒单");
+        refund.setReasonType(RefundReasonType.MERCHANT_REJECT);
+        refund.setRefundedAt(LocalDateTime.of(2025, 1, 1, 12, 5));
+        when(refundMapper.selectList(any())).thenReturn(List.of(refund));
+        when(orderService.orderNosByIds(List.of(ORDER_ID))).thenReturn(Map.of(ORDER_ID, ORDER_NO));
+
+        List<PaymentService.OrderPayment> payments = paymentService.orderPaymentsOf(ORDER_ID);
+        assertThat(payments).hasSize(1);
+        assertThat(payments.get(0).channel()).isEqualTo("MOCK");
+        assertThat(payments.get(0).status()).isEqualTo("SUCCESS");
+        assertThat(payments.get(0).orderNo()).isEqualTo(ORDER_NO);
+
+        List<PaymentService.OrderRefund> refunds = paymentService.orderRefundsOf(ORDER_ID);
+        assertThat(refunds).hasSize(1);
+        assertThat(refunds.get(0).refundNo()).isEqualTo("RF1");
+        assertThat(refunds.get(0).reasonType()).isEqualTo("MERCHANT_REJECT");
+        assertThat(refunds.get(0).orderNo()).isEqualTo(ORDER_NO);
+    }
+
+    @Test
+    void orderRefundsReturnsEmptyWithoutTouchingOrderTable() {
+        when(refundMapper.selectList(any())).thenReturn(List.of());
+
+        assertThat(paymentService.orderRefundsOf(ORDER_ID)).isEmpty();
+        verifyNoInteractions(orderService);
     }
 }

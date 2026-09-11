@@ -43,10 +43,21 @@ public record OrderDetailResponse(
         OffsetDateTime cancelledAt,
         String cancelSide,
         String cancelReason,
-        List<OrderItemResponse> items
+        List<OrderItemResponse> items,
+        List<PaymentSummaryResponse> payments,
+        List<RefundSummaryResponse> refunds
 ) {
 
-    public static OrderDetailResponse from(Order order, List<OrderItemResponse> items) {
+    /**
+     * 组装详情。
+     *
+     * <p>契约(openapi {@code OrderDetail})要求详情里同时给出支付与退款记录:
+     * 顾客端要回答"我这单付了没、退了没",管理端要能一眼看到退款单号与原因,
+     * 再让它去退款列表里翻一遍是说不过去的。
+     */
+    public static OrderDetailResponse from(Order order, List<OrderItemResponse> items,
+                                           List<PaymentSummaryResponse> payments,
+                                           List<RefundSummaryResponse> refunds) {
         return new OrderDetailResponse(
                 order.getId(),
                 order.getOrderNo(),
@@ -77,6 +88,6 @@ public record OrderDetailResponse(
                 Times.toOffset(order.getCompletedAt()),
                 Times.toOffset(order.getCancelledAt()),
                 order.getCancelSide() == null ? null : order.getCancelSide().name(),
-                order.getCancelReason(), items);
+                order.getCancelReason(), items, payments, refunds);
     }
 }

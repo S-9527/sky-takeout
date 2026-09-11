@@ -2,6 +2,8 @@ package com.sky.order.api;
 
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDateTime;
+
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,7 @@ import com.sky.order.domain.OrderStatus;
 import com.sky.order.domain.PayStatus;
 import com.sky.order.service.OrderCancellationService;
 import com.sky.order.service.OrderService;
+import com.sky.payment.service.PaymentService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,7 +35,9 @@ class AdminOrderControllerTest {
 
     private final OrderService orderService = mock(OrderService.class);
     private final OrderCancellationService cancellationService = mock(OrderCancellationService.class);
-    private final AdminOrderController controller = new AdminOrderController(orderService, cancellationService);
+    private final PaymentService paymentService = mock(PaymentService.class);
+    private final AdminOrderController controller =
+            new AdminOrderController(orderService, cancellationService, paymentService);
 
     private static Order order(long id, OrderStatus status) {
         Order order = new Order();
@@ -86,6 +91,13 @@ class AdminOrderControllerTest {
         item.setAmountCents(4500L);
         item.setQuantity(1);
         when(orderService.itemsOf(4001L)).thenReturn(List.of(item));
+        when(paymentService.orderPaymentsOf(4001L)).thenReturn(List.of(
+                new PaymentService.OrderPayment(6001L, 4001L, "202501011200000001", "MOCK", "SUCCESS",
+                        5200L, "tx-1", null, LocalDateTime.of(2025, 1, 1, 12, 1, 10), null)));
+        when(paymentService.orderRefundsOf(4001L)).thenReturn(List.of(
+                new PaymentService.OrderRefund(7001L, 6001L, 4001L, "202501011200000001", "RF1", 5200L,
+                        "SUCCESS", "商家拒单", "MERCHANT_REJECT",
+                        LocalDateTime.of(2025, 1, 1, 12, 5), null)));
 
         var response = controller.getById(4001L);
 
@@ -93,6 +105,12 @@ class AdminOrderControllerTest {
         assertThat(response.status()).isEqualTo("ACCEPTED");
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().get(0).itemType()).isEqualTo("SETMEAL");
+        // 契约要求详情带支付/退款记录(前端订单详情页直接展示这两张表)
+        assertThat(response.payments()).hasSize(1);
+        assertThat(response.payments().get(0).amountCents()).isEqualTo(5200L);
+        assertThat(response.refunds()).hasSize(1);
+        assertThat(response.refunds().get(0).refundNo()).isEqualTo("RF1");
+        assertThat(response.refunds().get(0).reasonType()).isEqualTo("MERCHANT_REJECT");
     }
 
     @Test

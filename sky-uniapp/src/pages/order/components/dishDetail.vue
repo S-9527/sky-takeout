@@ -45,40 +45,34 @@
     </view>
   </view>
 </template>
-<script>
-import { mapState } from "vuex";
-export default {
-  // 获取父级传的数据
-  props: {
+<script setup lang="ts">
+import { ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '@/stores'
+
+const showDisplay = ref<boolean>(false)
+
+// 获取父级传的数据
+withDefaults(
+  defineProps<{
     // 菜品数据
-    orderDataes: {
-      type: Array,
-      default: () => [],
-    },
-    // 是否显示更多收起
-    showDisplay: {
-      type: Boolean,
-      default: false,
-    },
+    orderDataes?: any[]
     // 菜品数据
-    orderListDataes: {
-      type: Array,
-      default: () => [],
-    },
+    orderListDataes?: any[]
     // 打包费
-    orderDishNumber: {
-      type: Number,
-      default: 0,
-    },
+    orderDishNumber?: number
     // 合计总钱数
-    orderDishPrice: {
-      type: Number,
-      default: 0,
-    },
-  },
-  computed: {
-    ...mapState(["deliveryFee", "shopInfo"]),
-  },
-};
+    orderDishPrice?: number
+  }>(),
+  {
+    orderDataes: () => [],
+    orderListDataes: () => [],
+    orderDishNumber: 0,
+    orderDishPrice: 0
+  }
+)
+
+const store = useAppStore()
+const { deliveryFee, shopInfo } = storeToRefs(store)
 </script>
 <style src="./../style.scss" lang="scss" scoped></style>

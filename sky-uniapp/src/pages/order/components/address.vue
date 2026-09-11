@@ -93,109 +93,104 @@
     <!-- end -->
   </view>
 </template>
-<script>
-export default {
-  // 获取父级传的数据
-  props: {
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '@/stores'
+
+// 获取父级传的数据
+const props = withDefaults(
+  defineProps<{
     // 是公司还是家里样式
-    tagLabel: {
-      type: String,
-      default: "",
-    },
+    tagLabel?: string
     // 是公司还是家里
-    addressLabel: {
-      type: String,
-      default: "",
-    },
+    addressLabel?: string
     // 地址
-    address: {
-      type: String,
-      default: "",
-    },
+    address?: string
     // 名称
-    nickName: {
-      type: String,
-      default: "",
-    },
-    gender: {
-      type: Number,
-      default: -1,
-    },
+    nickName?: string
+    gender?: number
     // 电话
-    phoneNumber: {
-      type: String,
-      default: "",
-    },
+    phoneNumber?: string
     // 送达时间
-    arrivalTime: {
-      type: String,
-      default: "",
-    },
+    arrivalTime?: string
     // 当前选中
-    tabIndex: {
-      type: Number,
-      default: 0,
-    },
+    tabIndex?: number
     // 当前选中的时间样式
-    selectValue: {
-      type: Number,
-      default: 0,
-    },
+    selectValue?: number
     // 时间选中的左侧数据（今天、明天）
-    popleft: {
-      type: Array,
-      default: () => [],
-    },
+    popleft?: string[]
     // 周几
-    weeks: {
-      type: Array,
-      default: () => [],
-    },
+    weeks?: string[]
     // 时间段
-    newDateData: {
-      type: Array,
-      default: () => [],
-    },
-  },
-  methods: {
-    // 地址选择
-    goAddress() {
-      this.$emit("goAddress");
-    },
-    // 送达时间弹层
-    openTimePopuo(type) {
-      this.$refs.timePopup.open(type);
-    },
-    //
-    change() {
-      this.$emit("change");
-    },
-    // 星期几选择
-    dateChange(index) {
-      this.$emit("dateChange", index);
-    },
-    // 选中时间段
-    timeClick(val, i) {
-      this.$emit("timeClick", { val: val, i: i });
-      this.onsuer();
-    },
-    // 取消时间选择
-    onsuer(type) {
-      this.$refs.timePopup.close(type);
-    },
-  },
-  computed: {
-    // 万先生
-    cryptoName() {
-      if (this.$store.state.gender === 0) {
-        // 男
-        return this.nickName.charAt(0) + "先生";
-      } else {
-        // 女
-        return this.nickName.charAt(0) + "女士";
-      }
-    },
-  },
-};
+    newDateData?: string[]
+  }>(),
+  {
+    tagLabel: '',
+    addressLabel: '',
+    address: '',
+    nickName: '',
+    gender: -1,
+    phoneNumber: '',
+    arrivalTime: '',
+    tabIndex: 0,
+    selectValue: 0,
+    popleft: () => [],
+    weeks: () => [],
+    newDateData: () => []
+  }
+)
+const emit = defineEmits<{
+  (e: 'goAddress'): void
+  (e: 'change'): void
+  (e: 'dateChange', index: number): void
+  (e: 'timeClick', val: { val: any; i: number }): void
+}>()
+
+const store = useAppStore()
+const { gender: storeGender } = storeToRefs(store)
+
+const timePopup = ref<any>(null)
+
+// 地址选择
+function goAddress() {
+  emit('goAddress')
+}
+
+// 送达时间弹层
+function openTimePopuo(type: any) {
+  timePopup.value?.open(type)
+}
+
+function change() {
+  emit('change')
+}
+
+// 星期几选择
+function dateChange(index: number) {
+  emit('dateChange', index)
+}
+
+// 选中时间段
+function timeClick(val: any, i: number) {
+  emit('timeClick', { val: val, i: i })
+  onsuer()
+}
+
+// 取消时间选择
+function onsuer(type: any) {
+  timePopup.value?.close(type)
+}
+
+// 万先生
+const cryptoName = computed(() => {
+  if (storeGender.value === 0) {
+    // 男
+    return props.nickName.charAt(0) + '先生'
+  } else {
+    // 女
+    return props.nickName.charAt(0) + '女士'
+  }
+})
 </script>
 <style src="./../style.scss" lang="scss" scoped></style>

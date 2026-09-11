@@ -79,68 +79,78 @@
     </view>
   </view>
 </template>
-<script>
+<script setup lang="ts">
+import { ref } from 'vue'
 import Pikers from '@/components/uni-piker/index.vue'
-export default {
-  // 获取父级传的数据
-  props: {
+
+// 获取父级传的数据
+withDefaults(
+  defineProps<{
     // 进入备注页
-    remark: {
-      type: String,
-      default: '',
-    },
+    remark?: string
     // 选择的餐具信息
-    tablewareData: {
-      type: String,
-      default: '',
-    },
+    tablewareData?: string
     // 后续订单餐具设置
-    radioGroup: {
-      type: Array,
-      default: () => [],
-    },
+    radioGroup?: string[]
     // 当前选择的
-    activeRadio: {
-      type: String,
-      default: '',
-    },
+    activeRadio?: string
     // 本单餐具数据
-    baseData: {
-      type: Array,
-      default: () => [],
-    },
-  },
-  components: { Pikers },
-  methods: {
-    // 进入备注页面
-    goRemark () {
-      this.$emit("goRemark")
-    },
-    // 打开餐具数量弹出层
-    openPopuos (type) {
-      this.$refs.popup.open(type)
-    },
-    change () {
-      this.$emit("change")
-    },
-    // 取消本单餐具
-    closePopup (type) {
-      this.$refs.popup.close(type)
-    },
-    // 确定本单餐具
-    handlePiker () {
-      this.$emit('handlePiker')
-      this.closePopup()
-    },
-    // 触发本单餐具
-    changeCont (val) {
-      this.$emit("changeCont", val)
-    },
-    // 餐具数量的后续订单餐具设置
-    handleRadio (e) {
-      this.$emit("handleRadio", e)
-    },
-  },
-};
+    baseData?: string[]
+  }>(),
+  {
+    remark: '',
+    tablewareData: '',
+    radioGroup: () => [],
+    activeRadio: '',
+    baseData: () => []
+  }
+)
+const emit = defineEmits<{
+  (e: 'goRemark'): void
+  (e: 'change'): void
+  (e: 'handlePiker'): void
+  (e: 'changeCont', val: any): void
+  (e: 'handleRadio', e: any): void
+}>()
+
+const popup = ref<any>(null)
+const piker = ref<any>(null)
+
+// 进入备注页面
+function goRemark() {
+  emit('goRemark')
+}
+
+// 打开餐具数量弹出层
+function openPopuos(type: any) {
+  popup.value?.open(type)
+}
+
+function change() {
+  emit('change')
+}
+
+// 取消本单餐具
+function closePopup(type?: any) {
+  popup.value?.close(type)
+}
+
+// 确定本单餐具
+function handlePiker() {
+  emit('handlePiker')
+  closePopup()
+}
+
+// 触发本单餐具
+function changeCont(val: any) {
+  emit('changeCont', val)
+}
+
+// 餐具数量的后续订单餐具设置
+function handleRadio(e: any) {
+  emit('handleRadio', e)
+}
+
+defineExpose({ piker })
 </script>
 <style src="./../style.scss" lang="scss" scoped></style>

@@ -3,14 +3,16 @@ import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 
 import { ApiError } from '@/api/http'
+import { runtimeWechatLoginCode } from '@/api/runtime'
 import { useSessionStore } from '@/stores/session'
 
 /**
  * 登录页。
  *
- * 微信小程序里 `code` 只能由 `wx.login()` 现取(单次有效);
- * **H5 开发期没有微信环境**,后端在 mock 模式下接受任意 code,
- * 所以这里给一个稳定的开发用 code,方便本地把整条链路跑通。
+ * 取 code 交给 `api/runtime` 统一处理:微信小程序里 `uni.login()` 现取(单次有效),
+ * H5 开发期没有微信环境,后端在 mock 模式下接受任意 code,于是用固定开发 code
+ * 把整条链路跑通 —— 平台判断是 `uniPlatform`,不是"有没有 `wx.login`"
+ * (H5 里 `wx` 是空桩/uni 自身,`uni.login` 会直接失败)。
  */
 const session = useSessionStore()
 const submitting = ref(false)
@@ -18,33 +20,24 @@ const submitting = ref(false)
 async function loginWithWechat(): Promise<void> {
   submitting.value = true
   try {
-    const code = await resolveCode()
+    const code = await runtimeWechatLoginCode()
     await session.loginWithCode(code)
     uni.showToast({ title: '登录成功', icon: 'success' })
     const pages = getCurrentPages()
     if (pages.length > 1) uni.navigateBack()
     else uni.switchTab({ url: '/pages/menu/index' })
   } catch (error) {
-    const message = error instanceof ApiError ? error.message : '登录失败,请稍后重试'
+    // 把真实原因带出来:网络/后端错误有自己的文案,不要一律糊成"登录失败"
+    const message =
+      error instanceof ApiError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : '登录失败,请稍后重试'
     uni.showToast({ title: message, icon: 'none' })
   } finally {
     submitting.value = false
   }
-}
-
-function resolveCode(): Promise<string> {
-  const wxLogin = (globalThis as { wx?: { login?: (options: unknown) => void } }).wx?.login
-  if (!wxLogin) {
-    // H5 / 开发环境:后端 mock 换 openid,固定 code 即可复用同一个顾客
-    return Promise.resolve('dev-h5-customer')
-  }
-  return new Promise<string>((resolve, reject) => {
-    wxLogin({
-      success: (result: { code?: string }) =>
-        result.code ? resolve(result.code) : reject(new Error('微信未返回 code')),
-      fail: () => reject(new Error('微信登录取消或失败')),
-    })
-  })
 }
 
 onLoad(() => {
@@ -71,7 +64,7 @@ onLoad(() => {
 
     <view class="mt-6 text-center text-xs text-slate-400">
       H5 开发环境使用固定 code(mock 换 openid);
-      小程序端会调用 wx.login 取真实 code。
+      小程序端会调用 uni.login 取真实 code。
     </view>
   </view>
 </template>

@@ -16,7 +16,9 @@ pnpm dev:mp-weixin      # 产物在 dist/dev/mp-weixin,用微信开发者工具�
 
 **登录**:顾客端所有接口(含目录、门店状态)都要令牌 —— 契约的全局 `security` 是 `bearerAuth`,
 只有登录、刷新、支付回调例外。H5 开发环境没有微信,登录页用固定 code 走后端 mock 换 openid;
-小程序端会自动改用 `wx.login()` 取真实 code。
+小程序端用 `uni.login()` 现取真实 code。**平台判断用 `uni.getSystemInfoSync().uniPlatform`**,
+不能用"有没有 `wx.login`":H5 里 `window.wx` 是空桩(发行摇树)或 `uni` 自身(开发模式),
+而后者的 `uni.login` 是"当前平台不支持"的桩,一调就失败。
 
 **小程序端的接口地址**:小程序没有代理概念,`vite.config.ts` 里的 `server.proxy` 只对 H5 生效。
 真机/开发者工具里用 `VITE_API_BASE_URL` 指定完整地址(如 `http://localhost:8080`)。
@@ -26,6 +28,7 @@ pnpm dev:mp-weixin      # 产物在 dist/dev/mp-weixin,用微信开发者工具�
 ```
 src/
 ├── api/
+│   ├── runtime.ts   # 跨端适配层:调用点直写 uni.xxx(编译期重写),单测在此注入替身
 │   ├── http.ts      # uni.request 封装:令牌注入、401 单飞刷新、错误归一成 ApiError
 │   ├── tokens.ts    # uni.setStorageSync 令牌仓库(非 uni 环境退化为内存)
 │   ├── auth.ts      # 登录/刷新/登出/资料

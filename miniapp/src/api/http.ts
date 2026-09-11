@@ -1,12 +1,14 @@
 import type { ApiErrorBody, ErrorDetail, TokenPair } from '@/types'
 
-import { runtimeRequest, setRuntimeForTest } from './runtime'
+import { runtimeRequest } from './runtime'
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from './tokens'
 
 /**
  * 顾客端 HTTP 客户端。
  *
  * 用的是 `uni.request` 而不是 axios:小程序没有 XHR/fetch,只有 uni 的跨端 API。
+ * 实际请求经 `./runtime` 发出 —— 那里在每个调用点直写 `uni.request`,由 uni-app 编译器
+ * 按平台重写(H5 → @dcloudio/uni-h5,小程序 → uni 运行时)。
  * 于是这里自己实现管理端那套 axios 拦截器做的事:
  * 令牌注入、401 单飞刷新重试、错误归一成 `ApiError`。
  */
@@ -69,7 +71,7 @@ export function resolveUrl(path: string): string {
   return `${apiBaseUrl}${path}`
 }
 
-/* ------------------------------------------------------------------ uni.request 适配 */
+/* ------------------------------------------------------------------ 请求体形状 */
 
 export type UniMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -78,35 +80,6 @@ export interface UniRequestSuccess {
   data: unknown
   header?: Record<string, string>
 }
-
-interface UniRequestFail {
-  errMsg?: string
-}
-
-interface UniRequestTask {
-  abort?: () => void
-}
-
-interface UniLike {
-  request: (options: {
-    url: string
-    method?: UniMethod
-    data?: unknown
-    header?: Record<string, string>
-    timeout?: number
-    success?: (response: UniRequestSuccess) => void
-    fail?: (error: UniRequestFail) => void
-  }) => UniRequestTask
-}
-
-/**
- * 取 `uni` 运行时。
- *
- * **必须用全局标识符 `uni`**:小程序端它由 uni-app 运行时注入成全局变量,
- * 并不保证存在于 `globalThis` 上 —— 之前用 `globalThis.uni` 取值,
- * 在微信开发者工具里就报"当前环境没有 uni.request"(单元测试里反而是好的,
- * 因为 jsdom 的桩正好挂在 globalThis 上,所以这个问题只有真机才暴露)。
- */
 
 /* ------------------------------------------------------------------ 错误归一 */
 

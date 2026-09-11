@@ -1,6 +1,6 @@
 import type { TokenPair } from '@/types'
 
-import { runtimeStorageGet, runtimeStorageRemove, runtimeStorageSet, setRuntimeForTest } from './runtime'
+import { runtimeStorageGet, runtimeStorageRemove, runtimeStorageSet } from './runtime'
 
 /**
  * 令牌仓库(小程序端)。
@@ -14,8 +14,6 @@ const STORAGE_KEY = 'sky.customer.tokens'
 
 let memory: TokenPair | null = null
 let loaded = false
-
-export { setRuntimeForTest }
 
 function isTokenPair(value: unknown): value is TokenPair {
   if (typeof value !== 'object' || value === null) return false

@@ -6,11 +6,39 @@ import { clearTokens, setTokens } from '@/api/tokens'
 
 import { useNotificationStore } from './notification'
 
-const notify = vi.fn()
+/** 记录每次弹窗的配置与返回的句柄,用来断言"会不会自己消失""最多几条在屏" */
+interface NotificationOptions {
+  title?: string
+  message?: string
+  type?: string
+  duration?: number
+  showClose?: boolean
+  onClick?: () => void
+}
+
+interface FakeNotification {
+  close: ReturnType<typeof vi.fn>
+  options: NotificationOptions
+}
+
+const handles: FakeNotification[] = []
 
 vi.mock('element-plus', () => ({
-  ElNotification: (options: unknown) => notify(options),
+  ElNotification: (options: NotificationOptions) => {
+    const handle: FakeNotification = { close: vi.fn(), options }
+    // 关闭即从"在屏列表"里消失,这样 `shown()` 反映的就是真实在屏的弹窗
+    handle.close.mockImplementation(() => {
+      const index = handles.indexOf(handle)
+      if (index >= 0) handles.splice(index, 1)
+    })
+    handles.push(handle)
+    return handle
+  },
 }))
+
+function shown(): NotificationOptions[] {
+  return handles.map((item) => item.options)
+}
 
 function message(overrides: Partial<NotificationMessage> = {}): NotificationMessage {
   return {
@@ -24,7 +52,7 @@ function message(overrides: Partial<NotificationMessage> = {}): NotificationMess
 
 beforeEach(() => {
   setActivePinia(createPinia())
-  notify.mockClear()
+  handles.length = 0
 })
 
 describe('通知中心', () => {
@@ -34,12 +62,14 @@ describe('通知中心', () => {
 
     expect(store.recent).toHaveLength(1)
     expect(store.unreadCount).toBe(1)
-    expect(notify).toHaveBeenCalledTimes(1)
-    expect(notify.mock.calls[0][0]).toMatchObject({
+    expect(shown()).toHaveLength(1)
+    expect(shown()[0]).toMatchObject({
       title: '来单提醒 · 202501011200000001',
       type: 'success',
-      duration: 0,
+      showClose: true,
     })
+    // 必须自己会消失:曾经是 duration: 0(永不关闭),连单时糊满屏幕
+    expect(shown()[0].duration).toBeGreaterThan(0)
   })
 
   it('催单用警告样式', () => {
@@ -51,23 +81,61 @@ describe('通知中心', () => {
       }),
     )
 
-    expect(notify.mock.calls[0][0]).toMatchObject({
+    expect(shown()[0]).toMatchObject({
       title: '顾客催单 · 202501011200000002',
       message: '请尽快派送',
       type: 'warning',
     })
+    expect(shown()[0].duration).toBeGreaterThan(0)
   })
 
-  it('点击通知会跳到对应订单(跳转目标由外部注入)', () => {
+  it('点击通知:关掉这条弹窗并跳到对应订单(跳转目标由外部注入)', () => {
     const store = useNotificationStore()
     const navigate = vi.fn()
     store.setNavigateHandler(navigate)
     store.handleMessage(message())
 
-    const options = notify.mock.calls[0][0] as { onClick: () => void }
-    options.onClick()
+    const handle = handles[0]
+    handle.options.onClick?.()
 
+    expect(handle.close).toHaveBeenCalledTimes(1)
     expect(navigate).toHaveBeenCalledWith(4001)
+  })
+
+  it('同时最多挂 3 条弹窗,第 4 条来的时候最老的一条被关掉', () => {
+    const store = useNotificationStore()
+
+    store.handleMessage(message({ messageId: 'm1' }))
+    store.handleMessage(message({ messageId: 'm2' }))
+    store.handleMessage(message({ messageId: 'm3' }))
+    expect(shown()).toHaveLength(3)
+    const oldest = handles[0]
+
+    store.handleMessage(message({ messageId: 'm4' }))
+
+    expect(shown()).toHaveLength(3)
+    expect(oldest.close).toHaveBeenCalledTimes(1)
+    expect(shown()[2].title).toContain('来单提醒')
+  })
+
+  it('清空通知中心会连弹窗一起收掉', () => {
+    const store = useNotificationStore()
+    store.handleMessage(message())
+    store.handleMessage(message())
+
+    store.clearRecent()
+
+    expect(shown()).toHaveLength(0)
+    expect(store.recent).toHaveLength(0)
+  })
+
+  it('断开连接时收掉残留弹窗(登出后不该还挂着来单提醒)', () => {
+    const store = useNotificationStore()
+    store.handleMessage(message())
+
+    store.disconnect()
+
+    expect(shown()).toHaveLength(0)
   })
 
   it('只保留最近 20 条,旧的被挤掉', () => {

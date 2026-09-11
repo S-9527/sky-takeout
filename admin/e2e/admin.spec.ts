@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 
+import { ADMIN as ADMIN_CREDENTIALS, createPaidOrder } from './backend'
 import { expect, test } from './fixtures'
 
 /**
@@ -15,7 +16,7 @@ import { expect, test } from './fixtures'
  * 用例只读为主;唯一会写库的是营业状态切换,并且会在结束时还原。
  */
 
-const ADMIN = { username: 'admin', password: '123456' }
+const ADMIN = ADMIN_CREDENTIALS
 const STAFF = { username: 'zhangsan', password: '123456' }
 
 async function login(page: Page, credentials = ADMIN): Promise<void> {
@@ -191,6 +192,31 @@ test.describe('商品与门店', () => {
         await page.getByTestId('shop-save').click()
         await expect(page.getByText(/门店已开始营业|门店已打烊/)).toBeVisible()
       }
+    }
+  })
+})
+
+test.describe('来单提醒(WebSocket)', () => {
+  test('真下一单会推送到浏览器,弹窗到点自己消失', async ({ page, request }) => {
+    test.setTimeout(90_000)
+    await login(page)
+    await page.goto('/workbench')
+    // 头部挂着"通知未连接"标签时说明 WebSocket 还没连上,等它消失再下单
+    await expect(page.getByText('通知未连接')).toHaveCount(0)
+
+    const order = await createPaidOrder(request)
+    try {
+      const notification = page.locator('.el-notification', { hasText: order.orderNo })
+      await expect(notification).toBeVisible({ timeout: 20_000 })
+
+      // 关键回归:曾经 duration: 0(永不关闭),连单时弹窗糊满屏幕
+      await expect(notification).toHaveCount(0, { timeout: 20_000 })
+
+      // 铃铛里的通知中心仍然留着这一条,漏看也不会丢
+      await page.locator('.el-badge button').click()
+      await expect(page.getByTestId('notification-item').first()).toContainText(order.orderNo)
+    } finally {
+      await order.cleanup()
     }
   })
 })

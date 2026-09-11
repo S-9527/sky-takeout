@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { ElNotification } from 'element-plus'
+import { ElNotification, type NotificationHandle } from 'element-plus'
 import { defineStore } from 'pinia'
 
 import {
@@ -12,6 +12,13 @@ import { getAccessToken } from '@/api/tokens'
 import { describeNotification, notificationOrderId } from '@/utils/notification'
 
 const MAX_RECENT = 20
+
+/** 弹窗停留时长:来单给足看单号的时间,催单略短 */
+const ORDER_NEW_DURATION_MS = 10_000
+const URGE_DURATION_MS = 8_000
+
+/** 屏幕右侧最多同时挂几条,超了关最老的 —— 午高峰连单时别把列表挡死 */
+const MAX_VISIBLE = 3
 
 /**
  * 通知中心。
@@ -31,6 +38,9 @@ export const useNotificationStore = defineStore('notification', () => {
 
   let socket: NotificationSocket | null = null
   let navigate: ((orderId: number) => void) | null = null
+
+  /** 当前在屏的弹窗句柄(用于限流与统一关闭) */
+  const visible: NotificationHandle[] = []
 
   const connected = computed(() => connectionState.value === 'open')
 
@@ -59,24 +69,54 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
-  /** 收到一条通知 —— 独立出来是为了能在没有 WebSocket 的情况下单测 */
+  /**
+   * 收到一条通知 —— 独立出来是为了能在没有 WebSocket 的情况下单测。
+   *
+   * 弹窗是**会自己消失**的:来单提醒 10 秒、催单 8 秒,同时最多留 3 条。
+   * 早先这里写的是 `duration: 0`(永不消失),结果午高峰连来几单就把屏幕右侧糊满,
+   * 反而挡住了订单列表 —— 漏掉的提醒本来就有铃铛里的通知中心兜着,弹窗没必要赖着不走。
+   */
   function handleMessage(message: NotificationMessage): void {
     recent.value = [message, ...recent.value].slice(0, MAX_RECENT)
     unreadCount.value += 1
 
     const { title, summary } = describeNotification(message)
     const orderId = notificationOrderId(message)
-    ElNotification({
+    const duration = message.type === 'ORDER_URGE' ? URGE_DURATION_MS : ORDER_NEW_DURATION_MS
+
+    const handle = ElNotification({
       title,
       message: summary,
       type: message.type === 'ORDER_URGE' ? 'warning' : 'success',
-      duration: 0,
+      duration,
+      showClose: true,
       position: 'bottom-right',
       onClick: () => {
+        // 点过就算处理了:关掉这条,再去订单详情看权威状态
+        handle.close()
+        forget(handle)
         if (orderId !== null) navigate?.(orderId)
       },
     })
+    track(handle)
     if (message.type === 'ORDER_NEW' || message.type === 'ORDER_URGE') playBeep()
+  }
+
+  /** 记录当前在屏的弹窗,超出上限就把最老的关掉 */
+  function track(handle: NotificationHandle): void {
+    visible.push(handle)
+    while (visible.length > MAX_VISIBLE) {
+      visible.shift()?.close()
+    }
+  }
+
+  function forget(handle: NotificationHandle): void {
+    const index = visible.indexOf(handle)
+    if (index >= 0) visible.splice(index, 1)
+  }
+
+  function closeAll(): void {
+    for (const handle of visible.splice(0)) handle.close()
   }
 
   function connect(): void {
@@ -103,6 +143,8 @@ export const useNotificationStore = defineStore('notification', () => {
     socket?.disconnect()
     socket = null
     connectionState.value = 'idle'
+    // 登出后还挂着"来单提醒"没有意义,而且会盖住登录页
+    closeAll()
   }
 
   function markAllRead(): void {
@@ -112,6 +154,7 @@ export const useNotificationStore = defineStore('notification', () => {
   function clearRecent(): void {
     recent.value = []
     unreadCount.value = 0
+    closeAll()
   }
 
   function toggleSound(): void {

@@ -1,0 +1,16 @@
+# 统一按 LF 存取,避免在 Windows 上因 CRLF 产生整文件级 diff 噪音
+* text=auto eol=lf
+
+# 二进制文件不做行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.jar binary
+*.mp3 binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.xlsx binary

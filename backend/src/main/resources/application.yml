@@ -1,0 +1,89 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: sky-takeout
+
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${SKY_DB_HOST:localhost}:${SKY_DB_PORT:3306}/${SKY_DB_NAME:sky_takeout}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${SKY_DB_USER:root}
+    password: ${SKY_DB_PASSWORD:root}
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 5000
+      validation-query: SELECT 1
+      test-while-idle: true
+
+  data:
+    redis:
+      host: ${SKY_REDIS_HOST:localhost}
+      port: ${SKY_REDIS_PORT:6379}
+      password: ${SKY_REDIS_PASSWORD:123456}
+      database: ${SKY_REDIS_DB:0}
+      timeout: 3s
+
+  # 表结构的唯一来源。启动时自动执行,不再有任何手工建表步骤。
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
+
+  jackson:
+    time-zone: Asia/Shanghai
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      id-type: auto
+  mapper-locations: classpath*:mapper/**/*.xml
+  # 存放 IEnum 枚举的包,MyBatis-Plus 据此注册枚举类型处理器
+  type-enums-package: com.sky
+
+sky:
+  jwt:
+    issuer: sky-takeout
+    # 生产必须通过环境变量覆盖。HS256 要求密钥不短于 32 字节。
+    secret: ${SKY_JWT_SECRET:sky-takeout-v2-dev-secret-key-change-me-in-production}
+    admin-access-ttl: 2h
+    admin-refresh-ttl: 7d
+    customer-access-ttl: 2h
+    customer-refresh-ttl: 7d
+
+  storage:
+    # local:落盘本地并经由 /files/** 暴露;生产可替换为对象存储实现
+    type: ${SKY_STORAGE_TYPE:local}
+    local-dir: ${SKY_STORAGE_DIR:./data/upload}
+    public-base-url: ${SKY_STORAGE_PUBLIC_URL:http://localhost:8080/files}
+
+  payment:
+    # mock:本地联调,发起即成功;wechat:真实微信支付
+    gateway: ${SKY_PAYMENT_GATEWAY:mock}
+
+  wechat:
+    app-id: ${SKY_WECHAT_APP_ID:}
+    app-secret: ${SKY_WECHAT_APP_SECRET:}
+
+  web:
+    # 开发放开本机任意端口(管理端 8888、H5 调试端口等)。生产必须收紧为具体域名。
+    cors-allowed-origin-patterns:
+      - http://localhost:*
+      - http://127.0.0.1:*
+
+logging:
+  level:
+    root: info
+    com.sky: debug

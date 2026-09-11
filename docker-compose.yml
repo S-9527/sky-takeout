@@ -1,0 +1,45 @@
+name: sky-takeout
+
+# 只跑基础设施。表结构由后端 Flyway 迁移脚本负责
+# (backend/src/main/resources/db/migration),不在这里灌 SQL。
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: sky-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: sky_takeout
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+08:00
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    container_name: sky-redis
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "123456", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "123456", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  mysql-data:
+  redis-data:

@@ -1,0 +1,4919 @@
+openapi: 3.1.0
+
+info:
+  title: 苍穹外卖 v2 API
+  version: 2.0.0
+  summary: 苍穹外卖完全重写版接口契约（唯一真相）
+  description: |
+    # 苍穹外卖 v2
+
+    本文件是 v2 的**接口唯一真相**,由 `docs/01-domain.md`(领域模型的唯一语义来源)推导而来。
+    人读的通用约定、完整错误码表、接口清单索引、WebSocket 协议见 `docs/03-api.md`。
+
+    ## 受众与路径
+    - `/api/v1/admin/**` —— 员工(管理端 Web),令牌 `aud: admin`
+    - `/api/v1/customer/**` —— 顾客(小程序),令牌 `aud: customer`
+    - `/api/v1/notify/**` —— 支付平台回调,不使用 Bearer,走平台签名/解密校验
+
+    ## 认证
+    `Authorization: Bearer <accessToken>`。access token 有效期 2 小时,refresh token 7 天且可撤销(Redis)。
+    员工令牌与顾客令牌**互不通用**:载荷 `aud` 声明受众,主体 id 放在 `sub`,角色放在 `role`。
+
+    ## 响应约定
+    - 成功:直接返回资源本身或数组,**不套 `{code,data}` 信封**;无返回体的写操作返回 `204 No Content`。
+    - 分页列表:`{"records": [...], "page": 1, "pageSize": 20, "total": 137}`。
+    - 失败:**正确的 HTTP 状态码** + 统一错误体 `{code, message, details?, traceId}`。
+      - 400 参数校验失败 / 401 未认证或令牌过期 / 403 已认证但无权限
+      - 404 资源不存在 / 409 唯一键冲突或乐观锁冲突 / 422 业务规则不满足 / 500 未预期错误
+
+    ## 数据约定
+    - 金额:整数,**单位分**,字段名以 `Cents` 结尾(如 `payAmountCents`)。
+    - 时间:ISO-8601 带偏移(如 `2025-01-01T12:00:00+08:00`);日期参数 `YYYY-MM-DD`。
+    - JSON 字段 camelCase;分页参数统一 `?page=1&pageSize=20`(`pageSize` 上限 100,**超限钳制为 100**)。
+    - 列表排序统一 `?sort=placedAt,desc`,示例值必须在后端白名单内。
+  contact:
+    name: 苍穹外卖 v2
+  license:
+    name: UNLICENSED
+    identifier: LicenseRef-Proprietary
+
+servers:
+  - url: http://localhost:8080
+    description: 本地开发
+  - url: /
+    description: 同源部署(前端经网关/反向代理)
+
+tags:
+  - name: Identity-Employee
+    description: 员工身份上下文(管理端)。登录、令牌、改密、员工账号管理。仅 ADMIN 可管理员工。
+  - name: Identity-Customer
+    description: 顾客身份上下文(小程序)。微信登录、令牌、当前顾客资料。顾客无密码。
+  - name: Shop
+    description: 门店上下文。营业状态与公告;打烊时顾客可浏览、不可下单(R1)。
+  - name: Catalog-Admin
+    description: 商品上下文管理端。分类 / 菜品(含口味)/ 套餐的增删改查与起停售。
+  - name: Catalog-Customer
+    description: 商品上下文顾客端。只暴露起售且启用分类下的可见商品。
+  - name: Cart
+    description: 购物车上下文(顾客)。不冗余商品快照,读取时联表取实时值(D4)。
+  - name: Order-Customer
+    description: 订单上下文顾客端。下单试算、提交、查询、取消、再来一单、催单。
+  - name: Order-Admin
+    description: 订单上下文管理端。订单查询、状态统计、接单/拒单/派送/完成/取消。
+  - name: Payment
+    description: 支付与退款。顾客发起支付与查询结果;管理端发起退款与查询退款记录。
+  - name: Notify
+    description: 支付平台回调。独立鉴权通道,使用平台签名/解密校验,不使用 Bearer。
+  - name: Profile
+    description: 顾客资料上下文。地址簿,只能被本人读写(R9)。
+  - name: Insights
+    description: 数据洞察(管理端)。全部由订单派生,无独立存储(D8)。
+  - name: Upload
+    description: 文件上传。返回可访问 URL,供菜品/套餐图片使用。
+  - name: WebSocket
+    description: 实时通知占位说明。WebSocket 无法在 OpenAPI 描述,协议见 `docs/03-api.md` 第 4 节。
+
+security:
+  - bearerAuth: []
+
+paths:
+
+  ##########################################################################
+  # Identity - Employee
+  ##########################################################################
+
+  /api/v1/admin/auth/login:
+    post:
+      tags: [Identity-Employee]
+      operationId: employeeLogin
+      summary: 员工登录
+      description: |
+        使用用户名与密码登录,成功返回 access + refresh 令牌对。
+        密码使用 BCrypt 校验;`status=0`(禁用)的员工登录返回 403 `EMPLOYEE_DISABLED`。
+        登录成功写入 `last_login_at`。失败提示不区分"用户不存在"与"密码错误",一律 `AUTH_BAD_CREDENTIALS`。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeLoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: 用户名或密码错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: AUTH_BAD_CREDENTIALS
+                message: 用户名或密码错误
+                traceId: 0f3a1c2b4d5e6f70
+        '403':
+          description: 员工已被禁用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/admin/auth/logout:
+    post:
+      tags: [Identity-Employee]
+      operationId: employeeLogout
+      summary: 员工登出
+      description: 撤销当前 refresh token(从 Redis 删除),access token 依靠短有效期自然失效。幂等:重复登出也返回 204。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '204':
+          description: 已登出
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/auth/refresh:
+    post:
+      tags: [Identity-Employee]
+      operationId: employeeRefreshToken
+      summary: 员工刷新令牌
+      description: |
+        用 refresh token 换新的令牌对。refresh 记录存于 Redis,可撤销;
+        刷新后旧 refresh token 立即失效(旋转 refresh token)。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: 刷新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/admin/auth/password:
+    put:
+      tags: [Identity-Employee]
+      operationId: changeEmployeePassword
+      summary: 员工修改自己密码
+      description: 修改当前登录员工的密码。旧密码错误返回 401 `AUTH_BAD_CREDENTIALS`;成功后所有 refresh token 被撤销,需重新登录。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: 修改成功
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/admin/auth/me:
+    get:
+      tags: [Identity-Employee]
+      operationId: getCurrentEmployee
+      summary: 查询当前登录员工
+      description: 返回 access token 主体对应的员工资料(不含密码散列)。
+      responses:
+        '200':
+          description: 当前员工
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/employees:
+    get:
+      tags: [Identity-Employee]
+      operationId: pageEmployees
+      summary: 员工分页查询
+      description: 仅 ADMIN。可按用户名/姓名模糊、状态、角色筛选。`sort` 白名单:`createdAt`、`username`、`lastLoginAt`(默认 `createdAt,desc`)。
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Sort'
+        - name: name
+          in: query
+          description: 用户名或姓名,模糊匹配
+          schema:
+            type: string
+            maxLength: 32
+            example: 张
+        - name: status
+          in: query
+          description: 启用状态;不传表示全部
+          schema:
+            $ref: '#/components/schemas/EmployeeStatus'
+        - name: role
+          in: query
+          description: 角色;不传表示全部
+          schema:
+            $ref: '#/components/schemas/EmployeeRole'
+      responses:
+        '200':
+          description: 员工分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedEmployee'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Identity-Employee]
+      operationId: createEmployee
+      summary: 新增员工
+      description: 仅 ADMIN。用户名全局唯一,冲突返回 409 `EMPLOYEE_USERNAME_TAKEN`。初始密码由请求给定。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreateRequest'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/admin/employees/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    get:
+      tags: [Identity-Employee]
+      operationId: getEmployeeById
+      summary: 按 id 查询员工
+      description: 仅 ADMIN。
+      responses:
+        '200':
+          description: 员工详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Identity-Employee]
+      operationId: updateEmployee
+      summary: 编辑员工
+      description: |
+        仅 ADMIN。可改姓名、手机号、角色、状态;用户名不可在本接口修改。
+        ADMIN 不能把自己的角色降为 STAFF,也不能禁用自己(422 `EMPLOYEE_SELF_ROLE_CHANGE`, `EMPLOYEE_SELF_DISABLE`)。
+        请求携带 `version` 时按乐观锁校验,冲突返回 409 `EMPLOYEE_CONCURRENT_MODIFIED`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeUpdateRequest'
+      responses:
+        '200':
+          description: 更新后的员工
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/admin/employees/{id}/status:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    patch:
+      tags: [Identity-Employee]
+      operationId: changeEmployeeStatus
+      summary: 启用/禁用员工
+      description: 仅 ADMIN。禁用后该员工的 access/refresh 令牌立即失效(令牌校验时回查状态)。ADMIN 不能禁用自己。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusPatchRequest'
+      responses:
+        '204':
+          description: 已更新
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  ##########################################################################
+  # Identity - Customer
+  ##########################################################################
+
+  /api/v1/customer/auth/wechat-login:
+    post:
+      tags: [Identity-Customer]
+      operationId: customerWechatLogin
+      summary: 顾客微信登录
+      description: |
+        用微信 `code` 换取 `openid`(服务端调用 `code2Session`)。
+        首次登录自动建档(昵称默认"微信用户")。令牌 `aud: customer`;`status=0`(封禁)返回 403 `CUSTOMER_DISABLED`。
+        同一 openid 并发首登返回 409 `CUSTOMER_DUPLICATE_OPENID`,客户端重试即可。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerWechatLoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          description: 顾客已被封禁
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          description: 微信 code 已失效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                code: CUSTOMER_WECHAT_CODE_INVALID
+                message: 微信登录凭证已失效,请重试
+                traceId: 0f3a1c2b4d5e6f70
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/customer/auth/refresh:
+    post:
+      tags: [Identity-Customer]
+      operationId: customerRefreshToken
+      summary: 顾客刷新令牌
+      description: 用 refresh token 换新令牌对,并旋转 refresh token。顾客令牌不能用于员工接口(`AUTH_AUDIENCE_MISMATCH`)。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: 刷新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/customer/auth/logout:
+    post:
+      tags: [Identity-Customer]
+      operationId: customerLogout
+      summary: 顾客登出
+      description: 撤销当前 refresh token。幂等:重复登出也返回 204。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '204':
+          description: 已登出
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/customer/profile:
+    get:
+      tags: [Identity-Customer]
+      operationId: getCustomerProfile
+      summary: 查询当前顾客资料
+      description: 返回访问令牌主体对应的顾客资料;`openid` 不外泄,只返回业务字段。
+      responses:
+        '200':
+          description: 当前顾客
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags: [Identity-Customer]
+      operationId: updateCustomerProfile
+      summary: 更新当前顾客资料
+      description: 只允许更新昵称、头像、手机号;`openid` 与 `status` 不可由顾客修改。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerProfileUpdateRequest'
+      responses:
+        '200':
+          description: 更新后的顾客
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  ##########################################################################
+  # Shop
+  ##########################################################################
+
+  /api/v1/admin/shop/status:
+    get:
+      tags: [Shop]
+      operationId: getShopStatusForAdmin
+      summary: 管理端查询营业状态
+      description: 返回单行配置(含营业时间与公告)。
+      responses:
+        '200':
+          description: 营业状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags: [Shop]
+      operationId: updateShopStatus
+      summary: 切换营业状态
+      description: |
+        设置 `isOpen`。打烊是**显式状态**,不由营业时间推导(领域文档 3.11)。
+        打烊后顾客端仍可浏览、不可下单(R1 → 422 `ORDER_SHOP_CLOSED`)。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShopStatusUpdateRequest'
+      responses:
+        '200':
+          description: 更新后的营业状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopStatus'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/customer/shop/status:
+    get:
+      tags: [Shop]
+      operationId: getShopStatusForCustomer
+      summary: 顾客端查询营业状态与公告
+      description: 顾客端只暴露 `isOpen`、营业时间与公告,不暴露审计字段。打烊时本接口仍正常返回(R1:可浏览、不可下单)。
+      responses:
+        '200':
+          description: 营业状态与公告
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopStatusView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  ##########################################################################
+  # Catalog - Admin : Categories
+  ##########################################################################
+
+  /api/v1/admin/categories:
+    get:
+      tags: [Catalog-Admin]
+      operationId: pageCategories
+      summary: 分类分页查询
+      description: 可按名称模糊、类型、状态筛选。`sort` 白名单:`sortOrder`、`name`、`createdAt`(默认 `sortOrder,asc`)。
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Sort'
+        - name: name
+          in: query
+          description: 分类名称,模糊匹配
+          schema:
+            type: string
+            maxLength: 32
+        - name: type
+          in: query
+          description: 分类类型
+          schema:
+            $ref: '#/components/schemas/CategoryType'
+        - name: status
+          in: query
+          description: 启用状态;不传表示全部
+          schema:
+            $ref: '#/components/schemas/EnabledFlag'
+      responses:
+        '200':
+          description: 分类分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedCategory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Catalog-Admin]
+      operationId: createCategory
+      summary: 新增分类
+      description: 同类型下名称唯一,冲突返回 409 `CATEGORY_NAME_TAKEN`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreateRequest'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/v1/admin/categories/options:
+    get:
+      tags: [Catalog-Admin]
+      operationId: listCategoryOptions
+      summary: 按类型列出分类
+      description: 供下拉选择使用,不分页;默认只返回启用中的分类(`status=1`),`includeDisabled=true` 时返回全部。按 `sortOrder` 升序。
+      parameters:
+        - name: type
+          in: query
+          required: true
+          description: 分类类型
+          schema:
+            $ref: '#/components/schemas/CategoryType'
+        - name: includeDisabled
+          in: query
+          description: 是否包含已禁用的分类,默认 false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: 分类列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/categories/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    get:
+      tags: [Catalog-Admin]
+      operationId: getCategoryById
+      summary: 按 id 查询分类
+      description: 返回分类详情,供编辑页回填。
+      responses:
+        '200':
+          description: 分类详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Catalog-Admin]
+      operationId: updateCategory
+      summary: 编辑分类
+      description: 类型不可修改(422 `CATEGORY_TYPE_IMMUTABLE`),否则已引用它的菜品/套餐会落到错误类型的分类下。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdateRequest'
+      responses:
+        '200':
+          description: 更新后的分类
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      tags: [Catalog-Admin]
+      operationId: deleteCategory
+      summary: 删除分类
+      description: |
+        **不做软删除**(D13)。被菜品/套餐引用的分类不可删除 → 422 `CATEGORY_IN_USE`(数据库外键 `RESTRICT` 兜底)。
+        需要"下架"语义请用 `PATCH /status` 禁用。
+      responses:
+        '204':
+          description: 已删除
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/admin/categories/{id}/status:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    patch:
+      tags: [Catalog-Admin]
+      operationId: changeCategoryStatus
+      summary: 启用/禁用分类
+      description: 禁用分类后,顾客端不再返回该分类及其商品(顾客端可见性同样受分类 `status` 约束)。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusPatchRequest'
+      responses:
+        '204':
+          description: 已更新
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  ##########################################################################
+  # Catalog - Admin : Dishes
+  ##########################################################################
+
+  /api/v1/admin/dishes:
+    get:
+      tags: [Catalog-Admin]
+      operationId: pageDishes
+      summary: 菜品分页查询
+      description: 可按名称模糊、分类、起售状态筛选。`sort` 白名单:`sortOrder`、`priceCents`、`createdAt`、`name`(默认 `sortOrder,asc`)。
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Sort'
+        - name: name
+          in: query
+          description: 菜品名称,模糊匹配
+          schema:
+            type: string
+            maxLength: 64
+        - name: categoryId
+          in: query
+          description: 分类 id(必须属于 DISH 类型分类)
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          description: 起售状态;不传表示全部
+          schema:
+            $ref: '#/components/schemas/EnabledFlag'
+      responses:
+        '200':
+          description: 菜品分页(列表项不含口味明细)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedDish'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Catalog-Admin]
+      operationId: createDish
+      summary: 新增菜品
+      description: |
+        同分类内名称唯一,冲突 409 `DISH_NAME_TAKEN`。
+        分类必须是 `type=DISH` 的分类,否则 422 `DISH_CATEGORY_TYPE_MISMATCH`。
+        请求中的 `flavors` 为新菜品的口味配置(可空)。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DishCreateRequest'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      tags: [Catalog-Admin]
+      operationId: deleteDishes
+      summary: 删除菜品(支持批量)
+      description: |
+        真删除,连带删除口味配置(领域文档 3.5)。
+        被套餐引用的菜品不可删除 → 422 `SETMEAL_CONTAINS_DISH`(请先从套餐移除)。
+        `ids` 为逗号分隔 id 列表,如 `?ids=1,2,3`;任一 id 不存在返回 404。
+      parameters:
+        - $ref: '#/components/parameters/IdsQuery'
+      responses:
+        '204':
+          description: 已删除
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/admin/dishes/status:
+    patch:
+      tags: [Catalog-Admin]
+      operationId: changeDishesStatus
+      summary: 菜品起售/停售(支持批量)
+      description: |
+        停售菜品会**连带停售包含它的套餐**(同一事务,领域文档 3.6)。
+        起售菜品不自动起售套餐;套餐起售本身还要求所含菜品全部起售(`SETMEAL_DISH_NOT_ON_SALE`)。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchStatusRequest'
+      responses:
+        '204':
+          description: 已更新
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/admin/dishes/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    get:
+      tags: [Catalog-Admin]
+      operationId: getDishById
+      summary: 按 id 查询菜品(含口味)
+      description: 返回菜品详情及完整口味配置,供编辑页回填。
+      responses:
+        '200':
+          description: 菜品详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Catalog-Admin]
+      operationId: updateDish
+      summary: 编辑菜品
+      description: |
+        传入 `flavors` 时**整体替换**口味配置(未出现的旧口味被删除)。
+        停售菜品保留口味配置(领域文档 3.5)。乐观锁冲突 409 `DISH_CONCURRENT_MODIFIED`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DishUpdateRequest'
+      responses:
+        '200':
+          description: 更新后的菜品详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  ##########################################################################
+  # Catalog - Admin : Setmeals
+  ##########################################################################
+
+  /api/v1/admin/setmeals:
+    get:
+      tags: [Catalog-Admin]
+      operationId: pageSetmeals
+      summary: 套餐分页查询
+      description: 可按名称模糊、分类、起售状态筛选。`sort` 白名单:`priceCents`、`createdAt`、`name`(默认 `createdAt,desc`)。
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Sort'
+        - name: name
+          in: query
+          description: 套餐名称,模糊匹配
+          schema:
+            type: string
+            maxLength: 64
+        - name: categoryId
+          in: query
+          description: 分类 id(必须属于 SETMEAL 类型分类)
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          description: 起售状态;不传表示全部
+          schema:
+            $ref: '#/components/schemas/EnabledFlag'
+      responses:
+        '200':
+          description: 套餐分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedSetmeal'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Catalog-Admin]
+      operationId: createSetmeal
+      summary: 新增套餐
+      description: |
+        同分类内名称唯一 → 409 `SETMEAL_NAME_TAKEN`;分类必须 `type=SETMEAL` → 422 `SETMEAL_CATEGORY_TYPE_MISMATCH`。
+        定价必须 ≤ 所含菜品单价×份数之和 → 422 `SETMEAL_PRICE_EXCEEDS_ITEMS`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetmealCreateRequest'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetmealDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      tags: [Catalog-Admin]
+      operationId: deleteSetmeals
+      summary: 删除套餐(支持批量)
+      description: 真删除,连带删除套餐组成行。`ids` 逗号分隔;起售中的套餐需先停售吗?不需要——真删除即可,但历史订单不受影响(订单有快照)。
+      parameters:
+        - $ref: '#/components/parameters/IdsQuery'
+      responses:
+        '204':
+          description: 已删除
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/setmeals/status:
+    patch:
+      tags: [Catalog-Admin]
+      operationId: changeSetmealsStatus
+      summary: 套餐起售/停售(支持批量)
+      description: 起售要求所含菜品全部处于起售状态 → 否则 422 `SETMEAL_DISH_NOT_ON_SALE`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchStatusRequest'
+      responses:
+        '204':
+          description: 已更新
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/admin/setmeals/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    get:
+      tags: [Catalog-Admin]
+      operationId: getSetmealById
+      summary: 按 id 查询套餐(含所含菜品)
+      description: 返回套餐详情、所含菜品与份数,供编辑页回填。
+      responses:
+        '200':
+          description: 套餐详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetmealDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Catalog-Admin]
+      operationId: updateSetmeal
+      summary: 编辑套餐
+      description: 传入 `items` 时整体替换组成明细。乐观锁冲突 409 `SETMEAL_CONCURRENT_MODIFIED`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetmealUpdateRequest'
+      responses:
+        '200':
+          description: 更新后的套餐详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetmealDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  ##########################################################################
+  # Catalog - Customer
+  ##########################################################################
+
+  /api/v1/customer/catalog/categories:
+    get:
+      tags: [Catalog-Customer]
+      operationId: listCustomerCategories
+      summary: 顾客端按类型查询分类列表
+      description: |
+        只返回**启用中**的分类,按 `sortOrder` 升序。`type` 必填:选 `DISH` 查点菜分类,选 `SETMEAL` 查套餐分类。
+        打烊时本接口仍可用(R1:可浏览)。
+      parameters:
+        - name: type
+          in: query
+          required: true
+          description: 分类类型
+          schema:
+            $ref: '#/components/schemas/CategoryType'
+      responses:
+        '200':
+          description: 分类列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/customer/catalog/dishes:
+    get:
+      tags: [Catalog-Customer]
+      operationId: listCustomerDishes
+      summary: 顾客端按分类查询菜品列表
+      description: |
+        只返回**起售**菜品,且其分类必须是 `type=DISH` 且启用中。返回精简字段(不含口味明细,口味见菜品详情)。
+      parameters:
+        - name: categoryId
+          in: query
+          required: true
+          description: 分类 id
+          schema:
+            type: integer
+            format: int64
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 菜品分页(顾客视角)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedDish'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/customer/catalog/dishes/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    get:
+      tags: [Catalog-Customer]
+      operationId: getCustomerDishById
+      summary: 顾客端菜品详情(含口味选项)
+      description: 只返回起售菜品;口味 `options` 为 JSON 字符串数组(D7)。
+      responses:
+        '200':
+          description: 菜品详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DishDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/customer/catalog/setmeals:
+    get:
+      tags: [Catalog-Customer]
+      operationId: listCustomerSetmeals
+      summary: 顾客端套餐列表(可按分类)
+      description: 只返回起售套餐。`categoryId` 可选:不传表示全部套餐;传了则按分类过滤。
+      parameters:
+        - name: categoryId
+          in: query
+          description: 分类 id;不传表示全部
+          schema:
+            type: integer
+            format: int64
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 套餐分页(顾客视角)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedSetmeal'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/customer/catalog/setmeals/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    get:
+      tags: [Catalog-Customer]
+      operationId: getCustomerSetmealById
+      summary: 顾客端套餐详情(含所含菜品)
+      description: 返回套餐当前售价、图片、描述与所含菜品明细;只返回起售套餐。
+      responses:
+        '200':
+          description: 套餐详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetmealDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  ##########################################################################
+  # Cart - Customer
+  ##########################################################################
+
+  /api/v1/customer/cart/items:
+    get:
+      tags: [Cart]
+      operationId: listCartItems
+      summary: 查询购物车列表
+      description: |
+        只返回当前顾客的购物车(R9)。返回按分类分组的视图,商品名称/图片/价格均为**联表实时值**(D4),
+        不含任何快照;每项附带 `available` 与服务端算出的 `amountCents`,便于前端直接展示与试算。
+      responses:
+        '200':
+          description: 购物车
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Cart]
+      operationId: addCartItem
+      summary: 加入购物车
+      description: |
+        商品必须处于起售状态(R2),分类类型必须与 `itemType` 匹配(dish 需 DISH 分类,setmeal 需 SETMEAL 分类)。
+        同菜同口味自动合并数量(唯一键 `(customerId, itemType, dishId, setmealId, flavorKey)`)。
+        顾客从没加过该商品时返回 201,合并到已有行时返回 200 并返回更新后的行。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemAddRequest'
+      responses:
+        '200':
+          description: 已合并到已存在的购物车行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemView'
+        '201':
+          description: 已新增购物车行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      tags: [Cart]
+      operationId: clearCart
+      summary: 清空购物车
+      description: 清空当前顾客的全部购物车行。幂等:清空空购物车也返回 204。
+      responses:
+        '204':
+          description: 已清空
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/customer/cart/items/{id}/quantity:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    put:
+      tags: [Cart]
+      operationId: updateCartItemQuantity
+      summary: 修改购物车数量
+      description: |
+        `quantity` 为**最终数量**(覆盖式,不是增量)。`quantity<=0` 语义为删除该行(返回 204)。
+        只能操作本人的购物车行,他人 id 一律 404 `CART_ITEM_NOT_FOUND`(不泄露存在性)。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemQuantityRequest'
+      responses:
+        '200':
+          description: 更新后的购物车行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartItemView'
+        '204':
+          description: 数量置为 0,该行已删除
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  ##########################################################################
+  # Order - Customer
+  ##########################################################################
+
+  /api/v1/customer/orders/preview:
+    post:
+      tags: [Order-Customer]
+      operationId: previewOrder
+      summary: 订单预览/金额试算
+      description: |
+        **不落库、不清空购物车**,仅按当前数据库价格试算金额(R5),供结算页展示。
+        请求体与下单一致。购物车为空 → 422 `ORDER_CART_EMPTY`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderPreviewRequest'
+      responses:
+        '200':
+          description: 试算结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPreview'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/customer/orders:
+    get:
+      tags: [Order-Customer]
+      operationId: pageMyOrders
+      summary: 我的订单分页(按状态筛选)
+      description: |
+        只返回 `customerId` 等于自己的订单(R9)。`sort` 白名单:`placedAt`、`payAmountCents`(默认 `placedAt,desc`)。
+        列表项不含 `items` 明细,明细见订单详情。
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Sort'
+        - name: status
+          in: query
+          description: 订单状态;不传表示全部
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: placedAtFrom
+          in: query
+          description: 下单时间起(含),格式 `YYYY-MM-DD`
+          schema:
+            type: string
+            format: date
+        - name: placedAtTo
+          in: query
+          description: 下单时间止(含),格式 `YYYY-MM-DD`
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 订单分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedOrder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Order-Customer]
+      operationId: submitOrder
+      summary: 下单提交
+      description: |
+        下单 = 校验 + 快照 + 清空购物车 + 生成待付款订单,全程同一事务(R3)。
+
+        服务端行为与校验:
+        - R5:金额由服务端按**当前数据库价格**重算,请求体中的任何金额字段一律忽略。
+        - R1:打烊时禁止下单 → 422 `ORDER_SHOP_CLOSED`。
+        - R4:购物车非空;所有商品仍起售(否则 422 `ORDER_ITEM_NOT_ON_SALE`);价格与顾客加购时不一致时提示刷新
+          (请求可用 `expectedTotalAmountCents` 声明客户端看到的合计,不匹配则 422 `ORDER_PRICE_CHANGED`);
+          地址必须属于本人(否则 422 `ORDER_ADDRESS_INVALID`)。
+        - R3:下单成功即快照商品名/图/价/口味/套餐组成与地址,并清空购物车(D5)。
+        - 结果状态固定为 `PENDING_PAYMENT`;15 分钟未支付由系统定时任务关单(CANCELLED / cancelSide=SYSTEM)。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderSubmitRequest'
+      responses:
+        '201':
+          description: 订单已创建(待付款)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSubmitResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/customer/orders/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    get:
+      tags: [Order-Customer]
+      operationId: getMyOrderById
+      summary: 顾客端订单详情
+      description: 返回订单全部字段 + 不可变明细(含名价图与口味/套餐快照)+ 支付与退款摘要。他人订单返回 404(R9)。
+      responses:
+        '200':
+          description: 订单详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/customer/orders/{id}/cancellation:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    post:
+      tags: [Order-Customer]
+      operationId: cancelMyOrder
+      summary: 顾客取消订单
+      description: |
+        仅 `PENDING_PAYMENT` 可被顾客取消(未支付,无需退款)。其他状态 → 422 `ORDER_INVALID_TRANSITION`。
+        取消后 `cancelSide=CUSTOMER`,写 `cancelledAt`。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelOrderRequest'
+      responses:
+        '204':
+          description: 已取消
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/customer/orders/{id}/reorder:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    post:
+      tags: [Order-Customer]
+      operationId: reorderFromOrder
+      summary: 再来一单
+      description: |
+        把该订单的明细重新加入购物车(同菜同口味合并),**不自动下单**。
+        价格与起售状态以当前库为准,已下架/已删除的商品会被跳过并在响应 `skippedItems` 中列出。只能对自己的订单操作(R9)。
+      responses:
+        '200':
+          description: 重新加购结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReorderResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/customer/orders/{id}/reminders:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    post:
+      tags: [Order-Customer, WebSocket]
+      operationId: remindOrder
+      summary: 催单
+      description: |
+        顾客催单,向管理端推送 WebSocket 通知(见 `docs/03-api.md` 第 4 节)。
+        仅 `PENDING_ACCEPTANCE` / `ACCEPTED` / `DELIVERING` 可催 → 其他状态 422 `ORDER_URGE_NOT_ALLOWED`。
+        同一订单 5 分钟内重复催单 → 409 `ORDER_URGE_TOO_FREQUENT`。该操作不产生持久状态。
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRemindRequest'
+      responses:
+        '204':
+          description: 已通知商家
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  ##########################################################################
+  # Order - Admin
+  ##########################################################################
+
+  /api/v1/admin/orders:
+    get:
+      tags: [Order-Admin]
+      operationId: pageOrders
+      summary: 订单分页查询
+      description: |
+        可按状态、下单时间区间、订单号、手机号筛选。`sort` 白名单:`placedAt`、`payAmountCents`(默认 `placedAt,desc`)。
+        时间区间参数名与报表保持一致:`beginDate` / `endDate`,格式 `YYYY-MM-DD`,**含首含尾**。
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Sort'
+        - name: status
+          in: query
+          description: 订单状态;不传表示全部
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - $ref: '#/components/parameters/BeginDate'
+        - $ref: '#/components/parameters/EndDate'
+        - name: orderNo
+          in: query
+          description: 订单号,精确匹配
+          schema:
+            type: string
+            maxLength: 32
+        - name: phone
+          in: query
+          description: 收货人手机号(订单地址快照上的),精确匹配
+          schema:
+            type: string
+            maxLength: 20
+        - name: customerId
+          in: query
+          description: 顾客 id
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 订单分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedOrder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/orders/status-counts:
+    get:
+      tags: [Order-Admin]
+      operationId: countOrdersByStatus
+      summary: 各状态订单数量统计
+      description: 返回每个状态的数量,用于工作台与订单页角标;未出现的状态补 0。
+      responses:
+        '200':
+          description: 状态计数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderStatusCounts'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/orders/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    get:
+      tags: [Order-Admin]
+      operationId: getOrderById
+      summary: 管理端订单详情
+      description: 返回订单全部字段、不可变明细(含快照)与支付/退款记录;管理端不受顾客归属限制(R9 只约束顾客端)。
+      responses:
+        '200':
+          description: 订单详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/orders/{id}/acceptance:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    post:
+      tags: [Order-Admin]
+      operationId: acceptOrder
+      summary: 商家接单
+      description: '`PENDING_ACCEPTANCE → ACCEPTED`。其他状态 → 422 `ORDER_INVALID_TRANSITION`;写 `acceptedAt`。'
+      responses:
+        '204':
+          description: 已接单
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/admin/orders/{id}/rejection:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    post:
+      tags: [Order-Admin]
+      operationId: rejectOrder
+      summary: 商家拒单
+      description: |
+        `PENDING_ACCEPTANCE → CANCELLED`,`cancelSide=MERCHANT`。
+        订单已支付时**必须发起退款**(R6):退款受理成功才落取消;退款受理失败则订单保持 `PENDING_ACCEPTANCE` 并告警
+        → 502 `PAY_REFUND_FAILED`,不允许"假取消"。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectOrderRequest'
+      responses:
+        '204':
+          description: 已拒单(取消完成)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+
+  /api/v1/admin/orders/{id}/delivery:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    post:
+      tags: [Order-Admin]
+      operationId: startOrderDelivery
+      summary: 开始派送
+      description: '`ACCEPTED → DELIVERING`,写 `deliveringAt`。'
+      responses:
+        '204':
+          description: 已开始派送
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/admin/orders/{id}/completion:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    post:
+      tags: [Order-Admin]
+      operationId: completeOrder
+      summary: 完成订单
+      description: |
+        `DELIVERING → COMPLETED`。`COMPLETED` 为终态:此后不可取消、不可退款
+        (R8 → 422 `PAY_ORDER_NOT_REFUNDABLE`)。
+      responses:
+        '204':
+          description: 已完成
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/admin/orders/{id}/cancellation:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    post:
+      tags: [Order-Admin]
+      operationId: cancelOrderByAdmin
+      summary: 商家取消订单
+      description: |
+        仅 `PENDING_ACCEPTANCE` / `ACCEPTED` 可被商家取消,`cancelSide=MERCHANT`。
+        **`DELIVERING` 不可取消**(已出餐,只能走售后,本期不做)→ 422 `ORDER_INVALID_TRANSITION`。
+        已支付必须退款(R6),退款受理失败 → 502 `PAY_REFUND_FAILED`,订单保持原状态。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelOrderRequest'
+      responses:
+        '204':
+          description: 已取消
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+
+  ##########################################################################
+  # Payment
+  ##########################################################################
+
+  /api/v1/customer/orders/{orderId}/payments:
+    parameters:
+      - $ref: '#/components/parameters/PathOrderId'
+    post:
+      tags: [Payment]
+      operationId: createPayment
+      summary: 顾客发起支付
+      description: |
+        对本人 `PENDING_PAYMENT` 订单发起支付,返回小程序调起支付所需参数
+        (`timeStamp`/`nonceStr`/`package`/`signType`/`paySign`)。
+        重复发起时复用/重建同一笔 `PENDING` 支付的 `prepayId`(幂等)。已支付 → 409 `PAY_DUPLICATE_PAYMENT`;
+        订单金额与实付不一致 → 422 `PAY_AMOUNT_MISMATCH`;订单已取消 → 422 `PAY_ORDER_NOT_PAYABLE`。
+        `channel=MOCK` 时返回模拟参数,由 `POST /api/v1/notify/wechat/pay` 之外的内置模拟通道完成回调(仅开发环境)。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreateRequest'
+      responses:
+        '201':
+          description: 支付参数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStartResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/customer/orders/{orderId}/payments/status:
+    parameters:
+      - $ref: '#/components/parameters/PathOrderId'
+    get:
+      tags: [Payment]
+      operationId: getPaymentStatus
+      summary: 顾客查询支付结果
+      description: |
+        供前端支付后轮询。返回最近一笔支付的状态与订单 `payStatus`;订单尚未发起支付时 `payment` 为 null。
+        状态以数据库为准,不实时查微信。
+      responses:
+        '200':
+          description: 支付状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentStatusView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/admin/refunds:
+    get:
+      tags: [Payment]
+      operationId: pageRefunds
+      summary: 查询退款记录
+      description: 可按状态、订单号、退款单号、申请时间区间过滤。`sort` 白名单:`createdAt`、`refundedAt`、`amountCents`(默认 `createdAt,desc`)。
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Sort'
+        - name: status
+          in: query
+          description: 退款状态;不传表示全部
+          schema:
+            $ref: '#/components/schemas/RefundStatus'
+        - name: orderNo
+          in: query
+          description: 订单号,精确匹配
+          schema:
+            type: string
+            maxLength: 32
+        - name: refundNo
+          in: query
+          description: 退款单号,精确匹配
+          schema:
+            type: string
+            maxLength: 32
+        - $ref: '#/components/parameters/BeginDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: 退款记录分页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedRefund'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Payment]
+      operationId: createRefund
+      summary: 管理端发起退款(整单全额退)
+      description: |
+        仅 ADMIN。v2 只支持**整单全额退**(范围限定见领域文档 §7)。
+        - 订单必须已支付 → 否则 422 `PAY_ORDER_NOT_PAID`。
+        - `COMPLETED` 订单不可退款(R8)→ 422 `PAY_ORDER_NOT_REFUNDABLE`。
+        - 已有成功或处理中的退款 → 409 `PAY_REFUND_ALREADY_EXISTS`。
+        - 退款金额固定等于 `payAmountCents`;请求若带不一致金额 → 422 `PAY_REFUND_AMOUNT_EXCEEDED`。
+        - 受理成功写 Refund(`PENDING`);退款回调成功后置 Refund `SUCCESS`、写 `refundedAt`、订单 `payStatus=REFUNDED`。
+        - 渠道受理失败 → 502 `PAY_REFUND_FAILED`,订单状态与 `payStatus` 不变(R6:不允许"假取消")。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundCreateRequest'
+      responses:
+        '201':
+          description: 退款已受理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+
+
+  /api/v1/notify/wechat/pay:
+    post:
+      tags: [Notify]
+      operationId: handleWechatPayNotify
+      summary: 微信支付结果回调
+      description: |
+        **不使用 Bearer**(`security: []`),鉴权走微信支付平台签名校验 + APIv3 报文解密(`resource` 字段)。
+        请求头携带微信的 `Wechatpay-Signature` / `Wechatpay-Timestamp` / `Wechatpay-Nonce` / `Wechatpay-Serial`
+        (OpenAPI 无法逐一表达平台私有头,故仅在此说明,未在 `parameters` 中重复声明)。
+
+        幂等(R7):以解密后的 `transaction_id` 为准,同一笔重复通知只生效一次,重复通知同样返回成功应答。
+        处理内容:写 Payment(`SUCCESS`、`transactionId`、`rawNotify`);迁移订单
+        `PENDING_PAYMENT → PENDING_ACCEPTANCE`;写 `paidAt`、`payStatus=PAID`;向管理端推送 WebSocket 来单提醒。
+        应答体是微信支付规定格式(`{code, message}`),**不是** v2 统一错误体;处理失败返回 500 + `FAIL` 触发微信重试。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatNotifyRequest'
+      responses:
+        '200':
+          description: 处理成功应答(微信要求 HTTP 200)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WechatNotifyAck'
+        '400':
+          description: 报文无法解析或签名校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WechatNotifyAck'
+        '500':
+          description: 处理失败,请微信重试
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WechatNotifyAck'
+
+  /api/v1/notify/wechat/refund:
+    post:
+      tags: [Notify]
+      operationId: handleWechatRefundNotify
+      summary: 微信退款结果回调
+      description: |
+        **不使用 Bearer**。幂等:以解密后的 `refund_no` 为准。
+        处理内容:更新 Refund 为 `SUCCESS`/`FAILED`、写 `refundedAt` 与 `rawNotify`;
+        成功时订单 `payStatus=REFUNDED`。应答规则同支付回调。
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WechatNotifyRequest'
+      responses:
+        '200':
+          description: 处理成功应答
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WechatNotifyAck'
+        '400':
+          description: 报文无法解析或签名校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WechatNotifyAck'
+        '500':
+          description: 处理失败,请微信重试
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WechatNotifyAck'
+
+  ##########################################################################
+  # Profile - customer addresses
+  ##########################################################################
+
+  /api/v1/customer/addresses:
+    get:
+      tags: [Profile]
+      operationId: listMyAddresses
+      summary: 地址列表
+      description: 只返回本人地址(R9);默认地址排在最前,其余按 `createdAt` 倒序。
+      responses:
+        '200':
+          description: 地址列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserAddress'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [Profile]
+      operationId: createAddress
+      summary: 新增地址
+      description: |
+        `isDefault=true` 时先清空本人其它默认地址(同一事务,应用层保证"每顾客至多一条默认")。
+        每顾客地址数量上限 20 → 超出 422 `ADDRESS_LIMIT_EXCEEDED`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserAddressCreateRequest'
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAddress'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /api/v1/customer/addresses/{id}:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    get:
+      tags: [Profile]
+      operationId: getAddressById
+      summary: 按 id 查询地址
+      description: 他人地址返回 404(R9),不泄露存在性。
+      responses:
+        '200':
+          description: 地址详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAddress'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Profile]
+      operationId: updateAddress
+      summary: 编辑地址
+      description: 全量更新;`isDefault=true` 同样先清空其它默认。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserAddressUpdateRequest'
+      responses:
+        '200':
+          description: 更新后的地址
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAddress'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      tags: [Profile]
+      operationId: deleteAddress
+      summary: 删除地址
+      description: 真删除(D13)。订单里的地址是快照,删除地址不影响历史订单。
+      responses:
+        '204':
+          description: 已删除
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/customer/addresses/{id}/default:
+    parameters:
+      - $ref: '#/components/parameters/PathId'
+    patch:
+      tags: [Profile]
+      operationId: setDefaultAddress
+      summary: 设为默认地址
+      description: 先清空本人其它默认,再把该地址置为默认(同一事务)。已经是默认时幂等返回 204。
+      responses:
+        '204':
+          description: 已设为默认
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  ##########################################################################
+  # Insights - Admin
+  ##########################################################################
+
+  /api/v1/admin/insights/turnover-stats:
+    get:
+      tags: [Insights]
+      operationId: getTurnoverStats
+      summary: 营业额统计
+      description: |
+        日期区间统计,**含首含尾**。营业额口径 = `COMPLETED` 订单的 `payAmountCents` 之和。
+        返回 `sum`(区间总计,单位分)与 `daily`(逐日明细,缺席日期补 0);`beginDate`/`endDate` 都省略时默认最近 7 天。
+        区间跨度上限 366 天,超出 400 `REPORT_DATE_RANGE_INVALID`。
+      parameters:
+        - $ref: '#/components/parameters/BeginDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: 营业额统计
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TurnoverStats'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/insights/user-stats:
+    get:
+      tags: [Insights]
+      operationId: getUserStats
+      summary: 用户统计
+      description: 新增顾客数(按 `createdAt` 落在区间内)与总顾客数(截至 `endDate` 当日 23:59:59),逐日明细缺席补 0。
+      parameters:
+        - $ref: '#/components/parameters/BeginDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: 用户统计
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStats'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/insights/order-stats:
+    get:
+      tags: [Insights]
+      operationId: getOrderStats
+      summary: 订单统计
+      description: |
+        区间内订单总数与有效订单数。有效订单 = 状态为 `COMPLETED` 的订单;
+        `validOrderRate` = 有效订单数 / 订单总数(0~1);逐日明细缺席补 0。
+      parameters:
+        - $ref: '#/components/parameters/BeginDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: 订单统计
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderStats'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/insights/top-dishes:
+    get:
+      tags: [Insights]
+      operationId: getTopDishes
+      summary: 销量 Top10
+      description: |
+        按 `COMPLETED` 订单明细的 `quantity` 汇总,取前 10 名(不足 10 条返回实际条数)。
+        排名依据订单明细快照中的 `nameSnapshot`,因此已删除菜品仍能上榜(D5 的收益)。
+        `topNumber` 默认 10,上限 20,超限钳制为 20。
+      parameters:
+        - $ref: '#/components/parameters/BeginDate'
+        - $ref: '#/components/parameters/EndDate'
+        - name: topNumber
+          in: query
+          description: 取前几名,默认 10,上限 20(超限钳制)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+      responses:
+        '200':
+          description: 销量排行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopDishSales'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/v1/admin/insights/workbench:
+    get:
+      tags: [Insights]
+      operationId: getWorkbench
+      summary: 工作台概览(今日数据汇总)
+      description: |
+        "今日"按门店时区(Asia/Shanghai)自然日计算;全部为订单投影,不持久化(D8)。
+        返回待接单/待派送数量、今日营业额与订单数、今日新增顾客数,以及订单概览与菜品概览。
+      responses:
+        '200':
+          description: 工作台概览
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Workbench'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  ##########################################################################
+  # Upload - Admin
+  ##########################################################################
+
+  /api/v1/admin/uploads:
+    post:
+      tags: [Upload]
+      operationId: uploadImage
+      summary: 管理端图片上传
+      description: |
+        `multipart/form-data`,字段名 `file`。允许 `jpg/jpeg/png/webp`,单文件上限 5MB。
+        超限 400 `UPLOAD_FILE_TOO_LARGE`;类型不符 400 `UPLOAD_TYPE_NOT_ALLOWED`;空文件 400 `UPLOAD_EMPTY_FILE`;
+        存储失败 500 `UPLOAD_STORE_FAILED`。返回可公开访问的 URL,直接写入菜品/套餐的 `imageUrl`。
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 图片文件
+      responses:
+        '201':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+##########################################################################
+# Components
+##########################################################################
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        `Authorization: Bearer <accessToken>`。
+        员工令牌 `aud=admin`、顾客令牌 `aud=customer`,受众不匹配返回 403 `AUTH_AUDIENCE_MISMATCH`。
+        access token 有效期 2 小时;过期返回 401 `AUTH_TOKEN_EXPIRED`。
+        `/api/v1/notify/**` 不使用本方案,走支付平台签名/解密校验。
+
+  parameters:
+    PathId:
+      name: id
+      in: path
+      required: true
+      description: 资源 id
+      schema:
+        type: integer
+        format: int64
+      example: 1
+    PathOrderId:
+      name: orderId
+      in: path
+      required: true
+      description: 订单 id
+      schema:
+        type: integer
+        format: int64
+      example: 1001
+    IdsQuery:
+      name: ids
+      in: query
+      required: true
+      description: 逗号分隔的资源 id 列表,如 `1,2,3`
+      schema:
+        type: string
+        pattern: '^[0-9]+(,[0-9]+)*$'
+      example: '1,2,3'
+    Page:
+      name: page
+      in: query
+      description: 页码,从 1 开始;小于 1 时按 1 处理
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+    PageSize:
+      name: pageSize
+      in: query
+      description: |
+        每页条数,默认 20,上限 100。**超限钳制为 100**(不报错),
+        传入非正整数返回 400 `COMMON_VALIDATION_FAILED`。
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      example: 20
+    Sort:
+      name: sort
+      in: query
+      description: |
+        排序,格式 `字段,asc|desc`,例如 `sort=placedAt,desc`。
+        字段必须在**该接口白名单**内,否则 400 `COMMON_SORT_FIELD_NOT_ALLOWED`;缺省 `direction` 视为 `asc`。
+      schema:
+        type: string
+        pattern: '^[a-zA-Z][a-zA-Z0-9]*(,(asc|desc))?$'
+      example: placedAt,desc
+    BeginDate:
+      name: beginDate
+      in: query
+      description: 区间起(含),`YYYY-MM-DD`
+      schema:
+        type: string
+        format: date
+      example: '2025-01-01'
+    EndDate:
+      name: endDate
+      in: query
+      description: 区间止(含),`YYYY-MM-DD`
+      schema:
+        type: string
+        format: date
+      example: '2025-01-31'
+
+  responses:
+    BadRequest:
+      description: 参数校验失败(400 `COMMON_VALIDATION_FAILED`)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: COMMON_VALIDATION_FAILED
+            message: 请求参数校验失败
+            details:
+              - field: pageSize
+                reason: 必须为正整数
+            traceId: 0f3a1c2b4d5e6f70
+    Unauthorized:
+      description: 未认证或令牌已过期(401)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: AUTH_TOKEN_EXPIRED
+            message: 登录状态已过期,请重新登录
+            traceId: 0f3a1c2b4d5e6f70
+    Forbidden:
+      description: 已认证但无权限(403)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: AUTH_AUDIENCE_MISMATCH
+            message: 令牌受众不匹配,无法访问该接口
+            traceId: 0f3a1c2b4d5e6f70
+    NotFound:
+      description: 资源不存在(404)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: COMMON_RESOURCE_NOT_FOUND
+            message: 请求的资源不存在
+            traceId: 0f3a1c2b4d5e6f70
+    Conflict:
+      description: 唯一键冲突或乐观锁冲突(409)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: CATEGORY_NAME_TAKEN
+            message: 同类型下已存在同名分类
+            details:
+              - field: name
+                reason: 该名称已被占用
+            traceId: 0f3a1c2b4d5e6f70
+    UnprocessableEntity:
+      description: 业务规则不满足(422)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: ORDER_SHOP_CLOSED
+            message: 门店已打烊,暂时无法下单
+            traceId: 0f3a1c2b4d5e6f70
+    InternalError:
+      description: 未预期错误(500 `COMMON_INTERNAL_ERROR`)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: COMMON_INTERNAL_ERROR
+            message: 服务器开小差了,请稍后重试
+            traceId: 0f3a1c2b4d5e6f70
+    BadGateway:
+      description: 外部支付渠道调用失败(502 `PAY_REFUND_FAILED`)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: PAY_REFUND_FAILED
+            message: 退款受理失败,请稍后重试
+            traceId: 0f3a1c2b4d5e6f70
+
+  schemas:
+
+    ########################################################################
+    # 通用:错误 / 审计 / 枚举旗标
+    ########################################################################
+
+    ErrorDetail:
+      type: object
+      description: 单条字段级错误说明
+      required: [reason]
+      properties:
+        field:
+          type: string
+          description: 出错的字段名(路径式,如 `flavors[0].name`);非字段级错误可省略
+          maxLength: 128
+          example: status
+        reason:
+          type: string
+          description: 面向开发者的中文说明
+          maxLength: 255
+          example: DELIVERING 不能取消
+
+    ErrorResponse:
+      type: object
+      description: |
+        统一错误体。**与成功响应不同构**——成功响应直接是资源本身,绝不套壳。
+        每个错误响应都带 `X-Trace-Id` 响应头(与 `traceId` 相同),便于串联日志。
+      required: [code, message, traceId]
+      properties:
+        code:
+          type: string
+          description: 错误码,`SCREAMING_SNAKE_CASE`,按上下文前缀;完整清单见 `docs/03-api.md` 第 2.2 节
+          pattern: '^[A-Z][A-Z0-9_]*$'
+          example: ORDER_INVALID_TRANSITION
+        message:
+          type: string
+          description: 面向用户的中文提示,前端可直接展示
+          maxLength: 255
+          example: 订单当前状态不允许该操作
+        details:
+          type: array
+          description: 可选的字段级细节,主要用于 400/422
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+        traceId:
+          type: string
+          description: 链路追踪 id,报障时请提供
+          maxLength: 64
+          example: 0f3a1c2b4d5e6f70
+
+    AuditFields:
+      type: object
+      description: 审计四件套。响应中始终出现,请求中不应出现(由服务端写入)。
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间,ISO-8601 带偏移
+          example: '2025-01-01T12:00:00+08:00'
+        updatedAt:
+          type: string
+          format: date-time
+          description: 最后更新时间
+          example: '2025-01-02T09:30:00+08:00'
+        createdBy:
+          type: integer
+          format: int64
+          description: 创建人员工 id;系统创建为 0
+          example: 1
+        updatedBy:
+          type: integer
+          format: int64
+          description: 最后更新人员工 id;系统更新为 0
+          example: 1
+
+    EnabledFlag:
+      type: integer
+      description: 启用标志。分类/菜品/套餐:`1` 启用(起售)/ `0` 禁用(停售)
+      enum: [1, 0]
+      example: 1
+
+    EmployeeStatus:
+      type: integer
+      description: 员工状态。`1` 启用 / `0` 禁用
+      enum: [1, 0]
+      example: 1
+
+    CustomerStatus:
+      type: integer
+      description: 顾客状态。`1` 正常 / `0` 封禁
+      enum: [1, 0]
+      example: 1
+
+    OrderStatus:
+      type: string
+      description: |
+        订单状态(见领域文档 §4 状态机)。终态:`COMPLETED`、`CANCELLED`,不可再迁移。
+      enum:
+        - PENDING_PAYMENT
+        - PENDING_ACCEPTANCE
+        - ACCEPTED
+        - DELIVERING
+        - COMPLETED
+        - CANCELLED
+      example: PENDING_ACCEPTANCE
+
+    PayStatus:
+      type: string
+      description: 支付状态(订单上的冗余字段,D6)
+      enum: [UNPAID, PAID, REFUNDED, PARTIAL_REFUNDED]
+      example: PAID
+
+    PayMethod:
+      type: string
+      description: 支付方式;订单未支付时为空字符串
+      enum: [WECHAT, MOCK, '']
+      example: WECHAT
+
+    PaymentChannel:
+      type: string
+      description: 支付/退款渠道。`MOCK` 仅用于本地开发
+      enum: [WECHAT, MOCK]
+      example: WECHAT
+
+    ItemType:
+      type: string
+      description: 商品类型,对应分类 `type`
+      enum: [DISH, SETMEAL]
+      example: DISH
+
+    CancelSide:
+      type: string
+      description: 取消方
+      enum: [CUSTOMER, MERCHANT, SYSTEM]
+      example: CUSTOMER
+
+    ########################################################################
+    # 身份 Identity
+    ########################################################################
+
+    EmployeeRole:
+      type: string
+      description: 员工角色。`ADMIN` 可管理员工,`STAFF` 不可(D3)
+      enum: [ADMIN, STAFF]
+      example: STAFF
+
+    Employee:
+      type: object
+      description: 员工(不含密码散列)
+      required: [id, username, name, role, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        username:
+          type: string
+          description: 登录名,全局唯一
+          maxLength: 32
+          example: zhangsan
+        name:
+          type: string
+          description: 姓名
+          maxLength: 32
+          example: 张三
+        phone:
+          type: string
+          description: 手机号
+          maxLength: 20
+          example: '13800138000'
+        role:
+          $ref: '#/components/schemas/EmployeeRole'
+        status:
+          $ref: '#/components/schemas/EmployeeStatus'
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 最近登录时间,从未登录为 null
+          example: '2025-01-01T12:00:00+08:00'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: integer
+          format: int64
+        updatedBy:
+          type: integer
+          format: int64
+
+    EmployeeLoginRequest:
+      type: object
+      description: 员工登录请求
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: admin
+        password:
+          type: string
+          format: password
+          minLength: 6
+          maxLength: 64
+          description: 明文密码,HTTPS 传输;服务端按 BCrypt 校验
+          example: admin123
+
+    EmployeeCreateRequest:
+      type: object
+      description: 新增员工请求;用户名全局唯一,初始密码由请求给定
+      required: [username, password, name, role]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 32
+          pattern: '^[a-zA-Z][a-zA-Z0-9_]{2,31}$'
+          description: 登录名,全局唯一
+          example: lisi
+        password:
+          type: string
+          format: password
+          minLength: 6
+          maxLength: 64
+          example: lisi1234
+        name:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 李四
+        phone:
+          type: string
+          maxLength: 20
+          pattern: '^1[3-9][0-9]{9}$'
+          example: '13900139000'
+        role:
+          $ref: '#/components/schemas/EmployeeRole'
+
+    EmployeeUpdateRequest:
+      type: object
+      description: 编辑员工。用户名不可改。
+      required: [name, role, status]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 李四
+        phone:
+          type: string
+          maxLength: 20
+          pattern: '^1[3-9][0-9]{9}$'
+          example: '13900139000'
+        role:
+          $ref: '#/components/schemas/EmployeeRole'
+        status:
+          $ref: '#/components/schemas/EmployeeStatus'
+        version:
+          type: integer
+          format: int64
+          description: 可选。乐观锁版本号;不传则不做并发校验
+          example: 3
+
+    ChangePasswordRequest:
+      type: object
+      description: 修改当前登录员工密码
+      required: [oldPassword, newPassword]
+      properties:
+        oldPassword:
+          type: string
+          format: password
+          minLength: 6
+          maxLength: 64
+          example: admin123
+        newPassword:
+          type: string
+          format: password
+          minLength: 6
+          maxLength: 64
+          description: 不能与旧密码相同
+          example: admin1234
+
+    RefreshTokenRequest:
+      type: object
+      description: 刷新/登出请求;两种接口共用同一请求体
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+          minLength: 16
+          description: 登录/刷新时下发的 refresh token(7 天有效,可撤销,存 Redis)
+          example: rt_7f3c9a1e5b2d4086
+
+    TokenPair:
+      type: object
+      description: |
+        令牌对。员工令牌 `aud=admin`,顾客令牌 `aud=customer`,互不通用。
+        载荷声明:`aud`(受众)、`sub`(主体 id)、`role`(员工为 ADMIN/STAFF,顾客为 CUSTOMER)。
+      required: [accessToken, refreshToken, expiresIn, refreshExpiresIn, tokenType]
+      properties:
+        accessToken:
+          type: string
+          description: 访问令牌,有效期 2 小时,请求时放入 `Authorization` 头,Bearer 方案
+          example: eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJhZG1pbiJ9.x
+        refreshToken:
+          type: string
+          description: 刷新令牌,有效期 7 天,刷新后旋转(旧值立即失效)
+          example: rt_7f3c9a1e5b2d4086
+        expiresIn:
+          type: integer
+          description: access token 剩余有效期(秒),固定 7200
+          example: 7200
+        refreshExpiresIn:
+          type: integer
+          description: refresh token 剩余有效期(秒),固定 604800
+          example: 604800
+        tokenType:
+          type: string
+          description: 固定为 `Bearer`
+          enum: [Bearer]
+          example: Bearer
+
+    Customer:
+      type: object
+      description: 顾客(顾客实体叫 Customer,不叫 user —— D2)
+      required: [id, nickname, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1001
+        nickname:
+          type: string
+          maxLength: 64
+          example: 微信用户
+        avatarUrl:
+          type: string
+          maxLength: 255
+          description: 头像可访问 URL
+          example: https://cdn.example.com/avatar/1001.png
+        phone:
+          type: string
+          maxLength: 20
+          description: 可空,未绑定手机号时为 null
+          nullable: true
+          example: '13800138000'
+        status:
+          $ref: '#/components/schemas/CustomerStatus'
+        lastLoginAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        createdBy:
+          type: integer
+          format: int64
+        updatedBy:
+          type: integer
+          format: int64
+
+    CustomerWechatLoginRequest:
+      type: object
+      description: 顾客微信登录请求;`code` 单次有效
+      required: [code]
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: 小程序 `wx.login` 返回的临时登录凭证,服务端用它换 `openid`
+          example: 081Kq7Ga1xY2FG0zJQHa1ZPbGa1Kq7Ga
+        nickname:
+          type: string
+          maxLength: 64
+          description: 可选。首次登录建档时的昵称,不传则用"微信用户"
+          example: 小明
+        avatarUrl:
+          type: string
+          maxLength: 255
+          description: 可选。首次登录建档时的头像 URL
+          example: https://cdn.example.com/avatar/new.png
+
+    CustomerProfileUpdateRequest:
+      type: object
+      description: 顾客自助更新资料;`openid` 与 `status` 不可修改
+      properties:
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 64
+          example: 小明
+        avatarUrl:
+          type: string
+          maxLength: 255
+          example: https://cdn.example.com/avatar/1001.png
+        phone:
+          type: string
+          maxLength: 20
+          pattern: '^1[3-9][0-9]{9}$'
+          example: '13800138000'
+
+    ########################################################################
+    # 门店 Shop
+    ########################################################################
+
+    ShopStatus:
+      type: object
+      description: 单行配置表(`id=1`)。打烊是显式状态,不由时间推导。
+      required: [isOpen]
+      properties:
+        isOpen:
+          type: boolean
+          description: |
+            是否营业。`false` 时顾客端仍可浏览商品,但下单返回 422 `ORDER_SHOP_CLOSED`(R1)。
+          example: true
+        openTime:
+          type: string
+          nullable: true
+          description: 开始营业时间,`HH:mm:ss`
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$'
+          example: '09:00:00'
+        closeTime:
+          type: string
+          nullable: true
+          description: 打样时间,`HH:mm:ss`
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$'
+          example: '22:00:00'
+        notice:
+          type: string
+          nullable: true
+          description: 门店公告
+          maxLength: 255
+          example: 本店今日 22:00 打烊,请提前下单
+        updatedAt:
+          type: string
+          format: date-time
+
+    ShopStatusUpdateRequest:
+      type: object
+      description: 管理端切换营业状态;`isOpen` 必填,其余字段不传表示保持原值
+      required: [isOpen]
+      properties:
+        isOpen:
+          type: boolean
+          example: false
+        openTime:
+          type: string
+          nullable: true
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$'
+          example: '09:00:00'
+        closeTime:
+          type: string
+          nullable: true
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$'
+          example: '22:00:00'
+        notice:
+          type: string
+          nullable: true
+          maxLength: 255
+          example: 本店今日 22:00 打烊,请提前下单
+
+    ShopStatusView:
+      type: object
+      description: 顾客端可见的营业状态(不含审计信息)
+      required: [isOpen]
+      properties:
+        isOpen:
+          type: boolean
+          example: true
+        openTime:
+          type: string
+          nullable: true
+          example: '09:00:00'
+        closeTime:
+          type: string
+          nullable: true
+          example: '22:00:00'
+        notice:
+          type: string
+          nullable: true
+          maxLength: 255
+          example: 本店今日 22:00 打烊,请提前下单
+
+    ########################################################################
+    # 商品 Catalog
+    ########################################################################
+
+    CategoryType:
+      type: string
+      description: 分类类型。`DISH` 只能挂菜品,`SETMEAL` 只能挂套餐
+      enum: [DISH, SETMEAL]
+      example: DISH
+
+    Category:
+      type: object
+      description: 分类。同类型下名称唯一;被商品引用的分类不可删除
+      required: [id, name, type, sortOrder, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 10
+        name:
+          type: string
+          maxLength: 32
+          example: 川湘菜
+        type:
+          $ref: '#/components/schemas/CategoryType'
+        sortOrder:
+          type: integer
+          description: 排序值,越小越前
+          example: 1
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CategoryCreateRequest:
+      type: object
+      description: 新增分类请求
+      required: [name, type]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: 同类型下唯一
+          example: 川湘菜
+        type:
+          $ref: '#/components/schemas/CategoryType'
+        sortOrder:
+          type: integer
+          default: 0
+          description: 不传默认 0
+          example: 1
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+
+    CategoryUpdateRequest:
+      type: object
+      description: 类型不可修改(改了会让已引用的菜品落到错误类型分类下)
+      required: [name, sortOrder, status]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 川湘菜
+        sortOrder:
+          type: integer
+          example: 2
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+
+    StatusPatchRequest:
+      type: object
+      description: 单资源启用/禁用
+      required: [status]
+      properties:
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+
+    BatchStatusRequest:
+      type: object
+      description: 批量起售/停售
+      required: [ids, status]
+      properties:
+        ids:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: integer
+            format: int64
+          example: [1, 2, 3]
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+
+    DishFlavor:
+      type: object
+      description: 口味维度。选项存 JSON 字符串数组(D7),不是逗号拼接字符串。
+      required: [name, options]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 新建时不需要传,响应中始终返回
+          example: 100
+        name:
+          type: string
+          minLength: 1
+          maxLength: 32
+          description: 口味维度名,如"辣度""忌口"
+          example: 辣度
+        options:
+          type: array
+          minItems: 1
+          description: 选项数组;选项文本本身含逗号也不会损坏
+          items:
+            type: string
+            minLength: 1
+            maxLength: 32
+          example: [不辣, 微辣, 中辣, 重辣]
+        sortOrder:
+          type: integer
+          default: 0
+          example: 1
+
+    Dish:
+      type: object
+      description: 菜品(列表项,不含口味明细)
+      required: [id, categoryId, name, priceCents, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 2001
+        categoryId:
+          type: integer
+          format: int64
+          description: 必须是 `type=DISH` 的分类
+          example: 10
+        categoryName:
+          type: string
+          description: 分类名称(联表返回,便于列表展示)
+          example: 川湘菜
+        name:
+          type: string
+          maxLength: 64
+          example: 水煮牛肉
+        priceCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 单价,**单位分**
+          example: 4800
+        imageUrl:
+          type: string
+          maxLength: 255
+          example: https://cdn.example.com/dish/2001.png
+        description:
+          type: string
+          maxLength: 255
+          example: 麻辣鲜香,牛肉现片
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+        sortOrder:
+          type: integer
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DishDetail:
+      description: 菜品详情,在 `Dish` 基础上追加口味配置
+      allOf:
+        - $ref: '#/components/schemas/Dish'
+        - type: object
+          required: [flavors]
+          properties:
+            flavors:
+              type: array
+              description: 口味配置;停售菜品仍保留配置
+              items:
+                $ref: '#/components/schemas/DishFlavor'
+
+    DishCreateRequest:
+      type: object
+      description: 新增菜品请求;`flavors` 为新菜品的口味配置(可空)
+      required: [categoryId, name, priceCents]
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+          description: 必须属于 `type=DISH` 的分类,否则 422 `DISH_CATEGORY_TYPE_MISMATCH`
+          example: 10
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: 同分类内唯一
+          example: 水煮牛肉
+        priceCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 单价,**单位分**(整数,不用浮点)
+          example: 4800
+        imageUrl:
+          type: string
+          maxLength: 255
+          example: https://cdn.example.com/dish/2001.png
+        description:
+          type: string
+          maxLength: 255
+          example: 麻辣鲜香,牛肉现片
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+        sortOrder:
+          type: integer
+          default: 0
+        flavors:
+          type: array
+          description: 口味配置,可空
+          items:
+            $ref: '#/components/schemas/DishFlavor'
+
+    DishUpdateRequest:
+      type: object
+      description: 全量更新;`flavors` 出现时整体替换旧配置
+      required: [categoryId, name, priceCents, status]
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+          example: 10
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+          example: 水煮牛肉
+        priceCents:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 5200
+        imageUrl:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+        sortOrder:
+          type: integer
+        flavors:
+          type: array
+          items:
+            $ref: '#/components/schemas/DishFlavor'
+        version:
+          type: integer
+          format: int64
+          description: 可选乐观锁版本号
+
+    SetmealItem:
+      type: object
+      description: 套餐组成行
+      required: [dishId, copies]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 500
+        dishId:
+          type: integer
+          format: int64
+          example: 2001
+        dishName:
+          type: string
+          description: 所含菜品名称(联表返回)
+          example: 水煮牛肉
+        dishPriceCents:
+          type: integer
+          format: int64
+          description: 所含菜品当前单价,单位分(联表返回)
+          example: 4800
+        copies:
+          type: integer
+          minimum: 1
+          description: 份数,≥1
+          example: 2
+
+    Setmeal:
+      type: object
+      description: 套餐(列表项)。套餐是独立商品,有独立图片/描述/价格。
+      required: [id, categoryId, name, priceCents, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 3001
+        categoryId:
+          type: integer
+          format: int64
+          description: 必须是 `type=SETMEAL` 的分类
+          example: 20
+        categoryName:
+          type: string
+          example: 人气套餐
+        name:
+          type: string
+          maxLength: 64
+          example: 双人牛肉套餐
+        priceCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 手工定价,**单位分**;必须 ≤ 所含菜品单价×份数之和
+          example: 8800
+        imageUrl:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SetmealDetail:
+      description: 套餐详情,在 `Setmeal` 基础上追加所含菜品
+      allOf:
+        - $ref: '#/components/schemas/Setmeal'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              description: 所含菜品明细
+              items:
+                $ref: '#/components/schemas/SetmealItem'
+
+    SetmealCreateRequest:
+      type: object
+      description: 新增套餐请求;定价必须 ≤ 所含菜品单价×份数之和
+      required: [categoryId, name, priceCents, items]
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+          description: 必须属于 `type=SETMEAL` 的分类,否则 422 `SETMEAL_CATEGORY_TYPE_MISMATCH`
+          example: 20
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: 同分类内唯一
+          example: 双人牛肉套餐
+        priceCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 手工定价,单位分;超过菜品合计 → 422 `SETMEAL_PRICE_EXCEEDS_ITEMS`
+          example: 8800
+        imageUrl:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+        items:
+          type: array
+          minItems: 1
+          description: 组成明细;同一菜品不可重复出现(唯一约束 `(setmealId, dishId)`)
+          items:
+            $ref: '#/components/schemas/SetmealItem'
+
+    SetmealUpdateRequest:
+      type: object
+      description: 全量更新;`items` 出现时整体替换组成明细
+      required: [categoryId, name, priceCents, status]
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 64
+        priceCents:
+          type: integer
+          format: int64
+          minimum: 0
+        imageUrl:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          maxLength: 255
+        status:
+          $ref: '#/components/schemas/EnabledFlag'
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/SetmealItem'
+        version:
+          type: integer
+          format: int64
+          description: 可选乐观锁版本号
+
+    ########################################################################
+    # 购物车 Cart
+    ########################################################################
+
+    FlavorChoice:
+      type: object
+      description: 顾客选中的某个口味维度
+      required: [name, option]
+      properties:
+        name:
+          type: string
+          maxLength: 32
+          description: 口味维度名
+          example: 辣度
+        option:
+          type: string
+          maxLength: 32
+          description: 选中的选项
+          example: 微辣
+
+    CartItemAddRequest:
+      type: object
+      description: |
+        加入购物车。`itemType=DISH` 时只传 `dishId`,`SETMEAL` 时只传 `setmealId`;
+        两者矛盾或都缺失 → 400 `COMMON_VALIDATION_FAILED`。
+      required: [itemType, quantity]
+      properties:
+        itemType:
+          $ref: '#/components/schemas/ItemType'
+        dishId:
+          type: integer
+          format: int64
+          example: 2001
+        setmealId:
+          type: integer
+          format: int64
+          example: 3001
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 99
+          description: 本次要增加的数量;同菜同口味会累加到已有行
+          example: 2
+        flavorChoice:
+          type: array
+          description: 选中的口味;不传按空口味处理(与"无口味"视为同一行)
+          items:
+            $ref: '#/components/schemas/FlavorChoice'
+          example:
+            - name: 辣度
+              option: 微辣
+
+    CartItemQuantityRequest:
+      type: object
+      description: 覆盖式改量请求
+      required: [quantity]
+      properties:
+        quantity:
+          type: integer
+          minimum: 0
+          maximum: 99
+          description: 最终数量(覆盖式);`0` 表示删除该行并返回 204
+          example: 3
+
+    CartItemView:
+      type: object
+      description: |
+        购物车行。商品名称/图片/价格均为**联表实时值**,不是快照(D4);
+        商家改价后这里立刻反映新价,下单时服务端还会再按库里价格重算(R5)。
+      required: [id, itemType, quantity, amountCents, available]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 9001
+        itemType:
+          $ref: '#/components/schemas/ItemType'
+        dishId:
+          type: integer
+          format: int64
+          nullable: true
+          example: 2001
+        setmealId:
+          type: integer
+          format: int64
+          nullable: true
+          example: null
+        name:
+          type: string
+          description: 当前商品名称(实时)
+          example: 水煮牛肉
+        imageUrl:
+          type: string
+          description: 当前商品图片(实时)
+          example: https://cdn.example.com/dish/2001.png
+        unitPriceCents:
+          type: integer
+          format: int64
+          description: 当前单价,单位分(实时)
+          example: 4800
+        quantity:
+          type: integer
+          example: 2
+        amountCents:
+          type: integer
+          format: int64
+          description: 实时小计 = 当前单价 × 数量,单位分
+          example: 9600
+        flavorChoice:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlavorChoice'
+        available:
+          type: boolean
+          description: 商品当前是否仍可下单(起售且分类启用);`false` 时行内保留但不可结算
+          example: true
+        unavailableReason:
+          type: string
+          nullable: true
+          description: 商品不可下单时的原因文案
+          example: 商品已停售
+
+    CartCategoryGroup:
+      type: object
+      description: 购物车按分类分组的视图
+      required: [categoryId, categoryName, items]
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+          example: 10
+        categoryName:
+          type: string
+          example: 川湘菜
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItemView'
+
+    CartView:
+      type: object
+      description: 购物车全量视图(按分类分组)
+      required: [groups, totalQuantity, totalAmountCents]
+      properties:
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartCategoryGroup'
+        totalQuantity:
+          type: integer
+          description: 全部行的数量之和
+          example: 4
+        totalAmountCents:
+          type: integer
+          format: int64
+          description: 全部行的实时金额之和,单位分
+          example: 14400
+
+    ########################################################################
+    # 订单 Order
+    ########################################################################
+
+    OrderItem:
+      type: object
+      description: |
+        订单明细,**不可变**。这是全系统唯一允许(也要求)存快照的地方(领域文档 3.9 / D5)。
+      required: [id, itemType, nameSnapshot, unitPriceCents, quantity, amountCents]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 8001
+        itemType:
+          $ref: '#/components/schemas/ItemType'
+        dishId:
+          type: integer
+          format: int64
+          nullable: true
+          description: 原商品引用,可能已被删除
+          example: 2001
+        setmealId:
+          type: integer
+          format: int64
+          nullable: true
+          example: null
+        nameSnapshot:
+          type: string
+          description: 下单时的名称
+          example: 水煮牛肉
+        imageSnapshot:
+          type: string
+          description: 下单时的图片 URL
+          example: https://cdn.example.com/dish/2001.png
+        unitPriceCents:
+          type: integer
+          format: int64
+          description: 下单时的单价,单位分
+          example: 4800
+        quantity:
+          type: integer
+          example: 2
+        amountCents:
+          type: integer
+          format: int64
+          description: 单价 × 数量,单位分
+          example: 9600
+        flavorSnapshot:
+          type: array
+          nullable: true
+          description: 下单时选中的口味;菜品无口味时为 null
+          items:
+            $ref: '#/components/schemas/FlavorChoice'
+        comboSnapshot:
+          type: array
+          nullable: true
+          description: 套餐所含菜品明细快照;菜品行为 null
+          items:
+            $ref: '#/components/schemas/ComboSnapshotItem'
+
+    ComboSnapshotItem:
+      type: object
+      description: 套餐组成在下单那一刻的快照
+      required: [dishId, name, copies]
+      properties:
+        dishId:
+          type: integer
+          format: int64
+          example: 2001
+        name:
+          type: string
+          description: 下单时菜品名称
+          example: 水煮牛肉
+        copies:
+          type: integer
+          example: 2
+
+    OrderAmounts:
+      type: object
+      description: |
+        订单金额五列,**单位一律为分**,字段名以 `Cents` 结尾(D1)。
+        `payAmountCents = totalAmountCents + packAmountCents + deliveryAmountCents - discountAmountCents`。
+      required: [totalAmountCents, packAmountCents, deliveryAmountCents, discountAmountCents, payAmountCents]
+      properties:
+        totalAmountCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 商品合计
+          example: 9600
+        packAmountCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 打包费
+          example: 200
+        deliveryAmountCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 配送费
+          example: 600
+        discountAmountCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 优惠金额;v2 恒为 0,字段预留
+          example: 0
+        payAmountCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 实付金额
+          example: 10400
+
+    OrderPreviewRequest:
+      type: object
+      description: 试算请求;不落库
+      properties:
+        addressId:
+          type: integer
+          format: int64
+          description: 所选地址 id(影响配送费计算与可用性校验)
+          example: 501
+
+    OrderSubmitRequest:
+      type: object
+      description: |
+        下单请求。**请求体中没有任何金额字段参与计算**(R5),`expectedTotalAmountCents` 仅用于价格变动检测。
+      required: [addressId]
+      properties:
+        addressId:
+          type: integer
+          format: int64
+          description: 必须属于当前顾客,否则 422 `ORDER_ADDRESS_INVALID`
+          example: 501
+        remark:
+          type: string
+          maxLength: 255
+          description: 顾客备注
+          example: 不要香菜
+        tablewareCount:
+          type: integer
+          minimum: 0
+          maximum: 20
+          default: 1
+          description: 餐具份数,默认 1
+          example: 2
+        expectedTotalAmountCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            可选。客户端在结算页看到的商品合计(分)。与下单时服务端重算的结果不一致 →
+            422 `ORDER_PRICE_CHANGED`,提示顾客刷新。不传则跳过该校验。
+          example: 9600
+
+    PreviewOrderItem:
+      type: object
+      description: 试算明细(实时值,非快照)
+      required: [itemType, name, unitPriceCents, quantity, amountCents]
+      properties:
+        itemType:
+          $ref: '#/components/schemas/ItemType'
+        dishId:
+          type: integer
+          format: int64
+          nullable: true
+        setmealId:
+          type: integer
+          format: int64
+          nullable: true
+        name:
+          type: string
+          example: 水煮牛肉
+        imageUrl:
+          type: string
+          example: https://cdn.example.com/dish/2001.png
+        unitPriceCents:
+          type: integer
+          format: int64
+          example: 4800
+        quantity:
+          type: integer
+          example: 2
+        amountCents:
+          type: integer
+          format: int64
+          example: 9600
+        flavorChoice:
+          type: array
+          items:
+            $ref: '#/components/schemas/FlavorChoice'
+
+    OrderPreview:
+      description: 订单试算结果(金额构成 + 明细)
+      allOf:
+        - $ref: '#/components/schemas/OrderAmounts'
+        - type: object
+          required: [items, address]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/PreviewOrderItem'
+            address:
+              allOf:
+                - $ref: '#/components/schemas/UserAddress'
+              description: 所选地址(校验通过时返回)
+            estimatedDeliveryAt:
+              type: string
+              format: date-time
+              nullable: true
+              example: '2025-01-01T13:00:00+08:00'
+            shopOpen:
+              type: boolean
+              description: 门店当前是否营业;`false` 时前端应禁用提交按钮(R1)
+              example: true
+
+    OrderSubmitResult:
+      type: object
+      description: 下单结果(轻量投影,完整内容用 `GET /api/v1/customer/orders/{id}` 拉取)
+      required: [id, orderNo, status, payAmountCents]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 4001
+        orderNo:
+          type: string
+          description: 业务单号,顾客可见
+          example: '202501011200000001'
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        payAmountCents:
+          type: integer
+          format: int64
+          description: 实付金额(服务端重算结果),单位分
+          example: 10400
+        needPay:
+          type: boolean
+          description: 是否需要在 15 分钟内完成支付
+          example: true
+
+    Order:
+      type: object
+      description: 订单(列表项,含金额与地址快照,不含明细)
+      required: [id, orderNo, status, payStatus, payAmountCents, placedAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 4001
+        orderNo:
+          type: string
+          maxLength: 32
+          example: '202501011200000001'
+        customerId:
+          type: integer
+          format: int64
+          example: 1001
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        totalAmountCents:
+          type: integer
+          format: int64
+          example: 9600
+        packAmountCents:
+          type: integer
+          format: int64
+          example: 200
+        deliveryAmountCents:
+          type: integer
+          format: int64
+          example: 600
+        discountAmountCents:
+          type: integer
+          format: int64
+          example: 0
+        payAmountCents:
+          type: integer
+          format: int64
+          example: 10400
+        payStatus:
+          $ref: '#/components/schemas/PayStatus'
+        payMethod:
+          $ref: '#/components/schemas/PayMethod'
+        consignee:
+          type: string
+          description: 收货人(下单时快照)
+          example: 张三
+        phone:
+          type: string
+          example: '13800138000'
+        province:
+          type: string
+          example: 北京市
+        city:
+          type: string
+          example: 北京市
+        district:
+          type: string
+          example: 朝阳区
+        detail:
+          type: string
+          example: 望京街道 1 号院 2 号楼 3 单元 401
+        sourceAddressId:
+          type: integer
+          format: int64
+          nullable: true
+          description: 下单时选用的地址 id,仅作溯源
+          example: 501
+        remark:
+          type: string
+          nullable: true
+          example: 不要香菜
+        tablewareCount:
+          type: integer
+          example: 2
+        itemCount:
+          type: integer
+          description: 明细种类数(列表展示用)
+          example: 3
+        placedAt:
+          type: string
+          format: date-time
+          example: '2025-01-01T12:00:00+08:00'
+        estimatedDeliveryAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2025-01-01T13:00:00+08:00'
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        acceptedAt:
+          type: string
+          format: date-time
+          nullable: true
+        deliveringAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        cancelledAt:
+          type: string
+          format: date-time
+          nullable: true
+        cancelSide:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/CancelSide'
+        cancelReason:
+          type: string
+          nullable: true
+          example: 顾客不再需要
+
+    OrderDetail:
+      description: 订单详情 = 订单 + 不可变明细
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              description: 订单明细快照
+              items:
+                $ref: '#/components/schemas/OrderItem'
+            payments:
+              type: array
+              description: 该订单的支付记录(通常 0~1 条)
+              items:
+                $ref: '#/components/schemas/Payment'
+            refunds:
+              type: array
+              description: 该订单的退款记录
+              items:
+                $ref: '#/components/schemas/Refund'
+
+    OrderStatusCounts:
+      type: object
+      description: 各状态订单数量;未出现的状态补 0
+      required: [all, pendingPayment, pendingAcceptance, accepted, delivering, completed, cancelled]
+      properties:
+        all:
+          type: integer
+          example: 137
+        pendingPayment:
+          type: integer
+          example: 3
+        pendingAcceptance:
+          type: integer
+          example: 5
+        accepted:
+          type: integer
+          example: 2
+        delivering:
+          type: integer
+          example: 1
+        completed:
+          type: integer
+          example: 120
+        cancelled:
+          type: integer
+          example: 6
+
+    CancelOrderRequest:
+      type: object
+      description: 取消原因;可空
+      properties:
+        reason:
+          type: string
+          maxLength: 255
+          example: 顾客不再需要
+
+    RejectOrderRequest:
+      type: object
+      description: 拒单原因。已支付订单会被强制退款(R6)
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: 菜品已售完
+
+    OrderRemindRequest:
+      type: object
+      description: 催单请求;说明文字可空
+      properties:
+        message:
+          type: string
+          maxLength: 100
+          description: 顾客附加说明,可空;仅用于 WebSocket 催单通知
+          example: 请尽快派送
+
+    ReorderResult:
+      type: object
+      description: 再来一单的加购结果
+      required: [addedCount, skippedItems]
+      properties:
+        addedCount:
+          type: integer
+          description: 成功加回购物车的明细行数
+          example: 2
+        skippedItems:
+          type: array
+          description: 已下架/已删除而跳过的明细
+          items:
+            $ref: '#/components/schemas/SkippedReorderItem'
+
+    SkippedReorderItem:
+      type: object
+      description: 再来一单时被跳过的明细
+      required: [name, reason]
+      properties:
+        name:
+          type: string
+          description: 下单时的名称快照
+          example: 水煮牛肉
+        reason:
+          type: string
+          example: 商品已停售
+
+    ########################################################################
+    # 支付与退款 Payment
+    ########################################################################
+
+    PaymentStatus:
+      type: string
+      description: 支付记录状态
+      enum: [PENDING, SUCCESS, FAILED, CLOSED]
+      example: SUCCESS
+
+    Payment:
+      type: object
+      description: 支付记录(独立成表 —— D6)
+      required: [id, orderId, orderNo, channel, status, amountCents]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 6001
+        orderId:
+          type: integer
+          format: int64
+          example: 4001
+        orderNo:
+          type: string
+          example: '202501011200000001'
+        channel:
+          $ref: '#/components/schemas/PaymentChannel'
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        amountCents:
+          type: integer
+          format: int64
+          description: 支付金额,单位分
+          example: 10400
+        transactionId:
+          type: string
+          nullable: true
+          description: 支付平台单号,唯一;同一 `transactionId` 的重复回调只生效一次(R7)
+          example: '4200001234202501011234567890'
+        prepayId:
+          type: string
+          nullable: true
+          example: wx01120000abcdef
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2025-01-01T12:01:10+08:00'
+        createdAt:
+          type: string
+          format: date-time
+
+    PaymentCreateRequest:
+      type: object
+      description: 发起支付请求
+      required: [channel]
+      properties:
+        channel:
+          $ref: '#/components/schemas/PaymentChannel'
+        payerOpenid:
+          type: string
+          maxLength: 64
+          description: 可选。缺省时服务端用当前顾客的 `openid`
+          example: oX7Yz5abcdefghijklmnop
+
+    PaymentStartResponse:
+      type: object
+      description: |
+        小程序支付参数(`wx.requestPayment` 直接消费)。金额以分为单位,`payAmountCents` 供前端核对展示。
+      required: [paymentId, channel, status, payAmountCents]
+      properties:
+        paymentId:
+          type: integer
+          format: int64
+          example: 6001
+        channel:
+          $ref: '#/components/schemas/PaymentChannel'
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        payAmountCents:
+          type: integer
+          format: int64
+          example: 10400
+        timeStamp:
+          type: string
+          nullable: true
+          description: 时间戳(秒,字符串)
+          example: '1735704070'
+        nonceStr:
+          type: string
+          nullable: true
+          example: 5K8264ILTKCH16CQ2502SI8ZNMTM67VS
+        package:
+          type: string
+          nullable: true
+          description: 微信支付 `package` 参数,形如 `prepay_id=wx01120000abcdef`
+          example: prepay_id=wx01120000abcdef
+        signType:
+          type: string
+          nullable: true
+          enum: [RSA, MD5, HMAC-SHA256, null]
+          example: RSA
+        paySign:
+          type: string
+          nullable: true
+          example: oR9d8PuhnIc+6tOCSA4KprMZTLbSqOwYlZ0zdvjO4aKuQHx2UePoJ9b9T7Sk6VJ+Vm3dXOZJc4=
+        mockPayUrl:
+          type: string
+          nullable: true
+          description: 仅 `channel=MOCK` 时返回,供本地联调的模拟支付地址
+          example: /api/v1/notify/mock/pay?paymentId=6001
+
+    PaymentStatusView:
+      type: object
+      description: 顾客支付结果轮询视图
+      required: [orderId, orderNo, payStatus]
+      properties:
+        orderId:
+          type: integer
+          format: int64
+          example: 4001
+        orderNo:
+          type: string
+          example: '202501011200000001'
+        orderStatus:
+          $ref: '#/components/schemas/OrderStatus'
+        payStatus:
+          $ref: '#/components/schemas/PayStatus'
+        payment:
+          description: 最近一笔支付;未发起支付时为 null
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Payment'
+
+    RefundStatus:
+      type: string
+      description: 退款状态
+      enum: [PENDING, SUCCESS, FAILED]
+      example: PENDING
+
+    Refund:
+      type: object
+      description: 退款记录(独立成表 —— D6)
+      required: [id, orderId, refundNo, amountCents, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 7001
+        paymentId:
+          type: integer
+          format: int64
+          example: 6001
+        orderId:
+          type: integer
+          format: int64
+          example: 4001
+        orderNo:
+          type: string
+          example: '202501011200000001'
+        refundNo:
+          type: string
+          description: 退款单号,唯一
+          example: 'RF20250101120000001'
+        amountCents:
+          type: integer
+          format: int64
+          description: 退款金额,单位分;v2 恒等于订单 `payAmountCents`
+          example: 10400
+        status:
+          $ref: '#/components/schemas/RefundStatus'
+        reason:
+          type: string
+          nullable: true
+          example: 商家拒单
+        reasonType:
+          type: string
+          nullable: true
+          description: 退款原因分类,如 `MERCHANT_REJECT` / `MERCHANT_CANCEL` / `CUSTOMER_REQUEST`
+          example: MERCHANT_REJECT
+        refundedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2025-01-01T12:05:00+08:00'
+        createdAt:
+          type: string
+          format: date-time
+
+    RefundCreateRequest:
+      type: object
+      description: 整单全额退;金额由服务端取订单 `payAmountCents`
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: 顾客电话要求取消
+        reasonType:
+          type: string
+          maxLength: 32
+          enum: [MERCHANT_REJECT, MERCHANT_CANCEL, CUSTOMER_REQUEST, OTHER]
+          default: OTHER
+          example: CUSTOMER_REQUEST
+        expectedAmountCents:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 可选。与订单实付不一致时返回 422 `PAY_REFUND_AMOUNT_EXCEEDED`
+          example: 10400
+
+    ########################################################################
+    # 回调 Notify
+    ########################################################################
+
+    WechatNotifyRequest:
+      type: object
+      description: |
+        微信支付 APIv3 通知报文外层结构(支付与退款共用)。`resource` 为密文,
+        服务端用 APIv3 密钥解密后得到 `out_trade_no` / `transaction_id`(支付)或 `out_refund_no` / `refund_status`(退款)。
+      required: [id, event_type, resource]
+      properties:
+        id:
+          type: string
+          description: 通知 id(微信侧唯一)
+          example: EV-20250101120000001
+        create_time:
+          type: string
+          description: 通知创建时间(RFC3339)
+          example: '2025-01-01T12:01:10+08:00'
+        event_type:
+          type: string
+          description: 事件类型;支付为 `TRANSACTION.SUCCESS`,退款为 `REFUND.SUCCESS` / `REFUND.ABNORMAL` / `REFUND.CLOSED`
+          example: TRANSACTION.SUCCESS
+        resource_type:
+          type: string
+          example: encrypt-resource
+        summary:
+          type: string
+          example: 支付成功
+        resource:
+          type: object
+          required: [algorithm, ciphertext, nonce, associated_data]
+          properties:
+            algorithm:
+              type: string
+              enum: [AEAD_AES_256_GCM]
+              example: AEAD_AES_256_GCM
+            ciphertext:
+              type: string
+              description: 业务报文密文(Base64)
+              example: 'ab12...=='
+            nonce:
+              type: string
+              example: 1234567890ab
+            associated_data:
+              type: string
+              example: transaction
+            original_type:
+              type: string
+              example: transaction
+
+    WechatNotifyAck:
+      type: object
+      description: |
+        微信支付要求的应答体。**不是** v2 统一错误体:
+        成功返回 200 + `SUCCESS`;失败返回 500 + `FAIL`(微信会按策略重试)。
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum: [SUCCESS, FAIL]
+          example: SUCCESS
+        message:
+          type: string
+          example: 成功
+
+    ########################################################################
+    # 顾客资料 Profile
+    ########################################################################
+
+    UserAddress:
+      type: object
+      description: 地址簿条目。只能被本人读写(R9);`isDefault` 由应用层保证每顾客至多一条为 1。
+      required: [id, customerId, consignee, phone, province, city, district, detail, isDefault]
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 501
+        customerId:
+          type: integer
+          format: int64
+          example: 1001
+        consignee:
+          type: string
+          maxLength: 32
+          description: 收货人
+          example: 张三
+        phone:
+          type: string
+          maxLength: 20
+          example: '13800138000'
+        province:
+          type: string
+          maxLength: 32
+          example: 北京市
+        city:
+          type: string
+          maxLength: 32
+          example: 北京市
+        district:
+          type: string
+          maxLength: 32
+          example: 朝阳区
+        detail:
+          type: string
+          maxLength: 255
+          example: 望京街道 1 号院 2 号楼 3 单元 401
+        label:
+          type: string
+          nullable: true
+          maxLength: 16
+          description: 标签:家 / 公司 / 学校
+          example: 家
+        isDefault:
+          type: integer
+          description: 1 表示默认地址,0 表示普通地址
+          enum: [1, 0]
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UserAddressCreateRequest:
+      type: object
+      description: 新增地址请求;`isDefault=1` 时先清空本人其它默认
+      required: [consignee, phone, province, city, district, detail]
+      properties:
+        consignee:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 张三
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+          pattern: '^1[3-9][0-9]{9}$'
+          example: '13800138000'
+        province:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 北京市
+        city:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 北京市
+        district:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 朝阳区
+        detail:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: 望京街道 1 号院 2 号楼 3 单元 401
+        label:
+          type: string
+          maxLength: 16
+          example: 家
+        isDefault:
+          type: integer
+          enum: [1, 0]
+          default: 0
+          description: 传 1 时先清空本人其它默认地址
+          example: 1
+
+    UserAddressUpdateRequest:
+      type: object
+      description: 编辑地址请求(全量)
+      required: [consignee, phone, province, city, district, detail, isDefault]
+      properties:
+        consignee:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 张三
+        phone:
+          type: string
+          minLength: 1
+          maxLength: 20
+          pattern: '^1[3-9][0-9]{9}$'
+          example: '13800138000'
+        province:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 北京市
+        city:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 北京市
+        district:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: 朝阳区
+        detail:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: 望京街道 1 号院 2 号楼 3 单元 401
+        label:
+          type: string
+          maxLength: 16
+          example: 家
+        isDefault:
+          type: integer
+          enum: [1, 0]
+          example: 1
+
+    ########################################################################
+    # 洞察 Insights
+    ########################################################################
+
+    TurnoverStats:
+      type: object
+      description: 营业额统计;营业额 = `COMPLETED` 订单的 `payAmountCents` 之和
+      required: [beginDate, endDate, sum, daily]
+      properties:
+        beginDate:
+          type: string
+          format: date
+          example: '2025-01-01'
+        endDate:
+          type: string
+          format: date
+          example: '2025-01-07'
+        sum:
+          type: integer
+          format: int64
+          description: 区间总营业额,单位分
+          example: 1250000
+        daily:
+          type: array
+          description: 逐日明细,缺席日期补 0
+          items:
+            $ref: '#/components/schemas/TurnoverStatsItem'
+
+    TurnoverStatsItem:
+      type: object
+      description: 单日营业额明细
+      required: [date, revenueCents]
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2025-01-01'
+        revenueCents:
+          type: integer
+          format: int64
+          example: 186000
+        orderCount:
+          type: integer
+          description: 当日完成订单数
+          example: 18
+        averageOrderCents:
+          type: integer
+          format: int64
+          description: 当日客单价,单位分;无订单时为 0
+          example: 10333
+
+    UserStats:
+      type: object
+      description: 用户统计结果
+      required: [beginDate, endDate, newUserCount, totalUserCount, daily]
+      properties:
+        beginDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        newUserCount:
+          type: integer
+          description: 区间新增顾客数
+          example: 42
+        totalUserCount:
+          type: integer
+          description: 截至 `endDate` 当日 23:59:59 的顾客总数
+          example: 830
+        daily:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserStatsItem'
+
+    UserStatsItem:
+      type: object
+      description: 单日用户明细
+      required: [date, newUserCount]
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2025-01-01'
+        newUserCount:
+          type: integer
+          example: 6
+        totalUserCount:
+          type: integer
+          example: 794
+
+    OrderStats:
+      type: object
+      description: 订单统计结果;有效订单 = 状态为 `COMPLETED` 的订单
+      required: [beginDate, endDate, totalOrderCount, validOrderCount, validOrderRate, daily]
+      properties:
+        beginDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        totalOrderCount:
+          type: integer
+          description: 区间订单总数
+          example: 137
+        validOrderCount:
+          type: integer
+          description: 区间有效订单数(状态为 `COMPLETED`)
+          example: 120
+        validOrderRate:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 1
+          description: 有效订单占比 = 有效订单数 / 订单总数;无订单时为 0
+          example: 0.8759
+        daily:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderStatsItem'
+
+    OrderStatsItem:
+      type: object
+      description: 单日订单明细
+      required: [date, totalOrderCount, validOrderCount]
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2025-01-01'
+        totalOrderCount:
+          type: integer
+          example: 20
+        validOrderCount:
+          type: integer
+          example: 18
+
+    TopDishSales:
+      type: object
+      description: 销量排行结果
+      required: [topNumber, items]
+      properties:
+        topNumber:
+          type: integer
+          description: 实际请求的排名数量
+          example: 10
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DishSalesItem'
+
+    DishSalesItem:
+      type: object
+      description: 单个菜品的销量条目
+      required: [rank, name, copies]
+      properties:
+        rank:
+          type: integer
+          description: 名次,从 1 开始
+          example: 1
+        name:
+          type: string
+          description: 名称(取自订单明细快照,因此已删除菜品也能上榜)
+          example: 水煮牛肉
+        copies:
+          type: integer
+          description: 销量(份数)
+          example: 86
+
+    Workbench:
+      type: object
+      description: 工作台概览;全部为订单投影,不持久化(D8)
+      required: [today, orderOverview, dishOverview]
+      properties:
+        today:
+          $ref: '#/components/schemas/WorkbenchToday'
+        orderOverview:
+          type: array
+          items:
+            $ref: '#/components/schemas/OverviewItem'
+        dishOverview:
+          type: array
+          items:
+            $ref: '#/components/schemas/OverviewItem'
+
+    WorkbenchToday:
+      type: object
+      description: 工作台"今日"数据块
+      required: [turnoverCents, validOrderCount, totalOrderCount, newUserCount]
+      properties:
+        turnoverCents:
+          type: integer
+          format: int64
+          description: 今日营业额(已完成订单实付合计),单位分
+          example: 186000
+        validOrderCount:
+          type: integer
+          description: 今日有效订单数(已完成)
+          example: 18
+        totalOrderCount:
+          type: integer
+          description: 今日订单总数
+          example: 21
+        newUserCount:
+          type: integer
+          description: 今日新增顾客数
+          example: 6
+        pendingAcceptanceCount:
+          type: integer
+          description: 当前待接单数量(不限今日)
+          example: 5
+        pendingDeliveryCount:
+          type: integer
+          description: 当前待派送数量(`ACCEPTED`,不限今日)
+          example: 2
+
+    OverviewItem:
+      type: object
+      description: 工作台概览里的单个计数指标
+      required: [name, value]
+      properties:
+        name:
+          type: string
+          description: |
+            指标键。订单概览:`allOrders` / `validOrders` / `cancelledOrders` / `pendingPayment` / `pendingAcceptance` / `accepted` / `delivering` / `completed`;
+            菜品概览:`onSaleDishes` / `offSaleDishes` / `onSaleSetmeals` / `offSaleSetmeals` / `soldOutDishes`(今日零销量)。
+          example: pendingAcceptance
+        title:
+          type: string
+          description: 中文展示名
+          example: 待接单
+        value:
+          type: integer
+          format: int64
+          example: 5
+
+    ########################################################################
+    # 上传 Upload
+    ########################################################################
+
+    UploadResult:
+      type: object
+      description: 上传结果
+      required: [url]
+      properties:
+        url:
+          type: string
+          maxLength: 255
+          description: 可公开访问的图片 URL,写入菜品/套餐的 `imageUrl`
+          example: https://cdn.example.com/upload/20250101/9f3c1a.png
+        size:
+          type: integer
+          format: int64
+          description: 文件字节数
+          example: 204800
+        contentType:
+          type: string
+          example: image/png
+
+    ########################################################################
+    # 分页信封(每个列表接口各有一个具体类型,避免泛型在代码生成器里失效)
+    ########################################################################
+
+    PagedEmployee:
+      type: object
+      description: 员工分页
+      required: [records, page, pageSize, total]
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          format: int64
+          example: 137
+
+    PagedCategory:
+      type: object
+      description: 分类分页
+      required: [records, page, pageSize, total]
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          format: int64
+          example: 12
+
+    PagedDish:
+      type: object
+      description: 菜品分页(列表项不含口味明细)
+      required: [records, page, pageSize, total]
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/Dish'
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          format: int64
+          example: 137
+
+    PagedSetmeal:
+      type: object
+      description: 套餐分页
+      required: [records, page, pageSize, total]
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/Setmeal'
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          format: int64
+          example: 24
+
+    PagedOrder:
+      type: object
+      description: 订单分页
+      required: [records, page, pageSize, total]
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          format: int64
+          example: 137
+
+    PagedRefund:
+      type: object
+      description: 退款记录分页
+      required: [records, page, pageSize, total]
+      properties:
+        records:
+          type: array
+          items:
+            $ref: '#/components/schemas/Refund'
+        page:
+          type: integer
+          example: 1
+        pageSize:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          format: int64
+          example: 8
+

@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.sky.catalog.domain.CatalogErrorCode;
@@ -87,6 +88,15 @@ public class CategoryService {
         }
         return categoryMapper.selectBatchIds(ids).stream()
                 .collect(Collectors.toMap(Category::getId, Category::getName));
+    }
+
+    /** 批量取分类实体,供同上下文内部判断"分类启用/类型"用(不跨上下文暴露)。 */
+    public Map<Long, Category> byIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Map.of();
+        }
+        return categoryMapper.selectBatchIds(ids).stream()
+                .collect(Collectors.toMap(Category::getId, Function.identity()));
     }
 
     @Transactional

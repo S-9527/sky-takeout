@@ -546,4 +546,53 @@ class SetmealServiceTest {
 
         assertThat(setmealService.requireCustomerVisible(201L).getId()).isEqualTo(201L);
     }
+
+    // ---------------------------------------------------------------- 跨上下文:可售视图
+
+    @Test
+    void purchasableViewReportsAvailability() {
+        when(setmealMapper.selectById(201L)).thenReturn(setmeal(201L, 7L, 4500L, EnableStatus.ENABLED));
+        when(categoryService.byIds(any()))
+                .thenReturn(java.util.Map.of(7L, category(7L, CategoryType.SETMEAL, EnableStatus.ENABLED)));
+
+        var view = setmealService.purchasable(201L);
+
+        assertThat(view.available()).isTrue();
+        assertThat(view.name()).isEqualTo("套餐201");
+        assertThat(view.categoryName()).isEqualTo("单人套餐");
+    }
+
+    @Test
+    void purchasableViewExplainsWhyItIsNotAvailable() {
+        when(setmealMapper.selectById(201L)).thenReturn(setmeal(201L, 7L, 4500L, EnableStatus.DISABLED));
+        when(categoryService.byIds(any()))
+                .thenReturn(java.util.Map.of(7L, category(7L, CategoryType.SETMEAL, EnableStatus.ENABLED)));
+        assertThat(setmealService.purchasable(201L).unavailableReason()).isEqualTo("套餐已停售");
+
+        when(setmealMapper.selectById(202L)).thenReturn(setmeal(202L, 8L, 3900L, EnableStatus.ENABLED));
+        when(categoryService.byIds(any()))
+                .thenReturn(java.util.Map.of(8L, category(8L, CategoryType.SETMEAL, EnableStatus.DISABLED)));
+        assertThat(setmealService.purchasable(202L).unavailableReason()).isEqualTo("套餐所属分类已停用");
+    }
+
+    @Test
+    void purchasableViewRejectsUnknownSetmeal() {
+        when(setmealMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> setmealService.purchasable(999L))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode()).isEqualTo(CatalogErrorCode.SETMEAL_NOT_FOUND));
+    }
+
+    @Test
+    void purchasableByIdsReturnsBatchMapAndShortCircuitsOnEmpty() {
+        assertThat(setmealService.purchasableByIds(List.of())).isEmpty();
+        verify(setmealMapper, never()).selectBatchIds(any());
+
+        when(setmealMapper.selectBatchIds(any())).thenReturn(List.of(setmeal(201L, 7L, 4500L, EnableStatus.ENABLED)));
+        when(categoryService.byIds(any()))
+                .thenReturn(java.util.Map.of(7L, category(7L, CategoryType.SETMEAL, EnableStatus.ENABLED)));
+
+        assertThat(setmealService.purchasableByIds(List.of(201L))).containsOnlyKeys(201L);
+    }
 }

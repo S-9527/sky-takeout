@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -489,5 +490,85 @@ class DishServiceTest {
         categoryIs(1L, CategoryType.DISH, EnableStatus.ENABLED);
 
         assertThat(dishService.requireCustomerVisible(101L).getId()).isEqualTo(101L);
+    }
+
+    // ---------------------------------------------------------------- 跨上下文:可售视图
+
+    @Test
+    void purchasableViewReportsAvailabilityAndCategory() {
+        when(dishMapper.selectById(101L)).thenReturn(dish(101L, 1L, EnableStatus.ENABLED));
+        when(categoryService.byIds(any())).thenReturn(java.util.Map.of(1L, category(1L, CategoryType.DISH, EnableStatus.ENABLED)));
+
+        var view = dishService.purchasable(101L);
+
+        assertThat(view.available()).isTrue();
+        assertThat(view.name()).isEqualTo("宫保鸡丁");
+        assertThat(view.categoryName()).isEqualTo("川湘菜");
+        assertThat(view.unavailableReason()).isNull();
+    }
+
+    @Test
+    void purchasableViewExplainsWhyItIsNotAvailable() {
+        when(dishMapper.selectById(101L)).thenReturn(dish(101L, 1L, EnableStatus.DISABLED));
+        when(categoryService.byIds(any())).thenReturn(java.util.Map.of(1L, category(1L, CategoryType.DISH, EnableStatus.ENABLED)));
+        assertThat(dishService.purchasable(101L).unavailableReason()).isEqualTo("商品已停售");
+
+        when(dishMapper.selectById(102L)).thenReturn(dish(102L, 2L, EnableStatus.ENABLED));
+        when(categoryService.byIds(any())).thenReturn(java.util.Map.of(2L, category(2L, CategoryType.DISH, EnableStatus.DISABLED)));
+        assertThat(dishService.purchasable(102L).unavailableReason()).isEqualTo("商品所属分类已停用");
+    }
+
+    @Test
+    void purchasableViewHandlesMissingCategory() {
+        when(dishMapper.selectById(101L)).thenReturn(dish(101L, 1L, EnableStatus.ENABLED));
+        when(categoryService.byIds(any())).thenReturn(java.util.Map.of());
+
+        var view = dishService.purchasable(101L);
+
+        assertThat(view.available()).isFalse();
+        assertThat(view.categoryId()).isNull();
+        assertThat(view.categoryName()).isNull();
+    }
+
+    @Test
+    void purchasableViewRejectsUnknownDish() {
+        when(dishMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> dishService.purchasable(999L))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode()).isEqualTo(CatalogErrorCode.DISH_NOT_FOUND));
+    }
+
+    @Test
+    void purchasableByIdsReturnsBatchMap() {
+        when(dishMapper.selectBatchIds(any())).thenReturn(List.of(
+                dish(101L, 1L, EnableStatus.ENABLED), dish(102L, 1L, EnableStatus.ENABLED)));
+        when(categoryService.byIds(any())).thenReturn(java.util.Map.of(1L, category(1L, CategoryType.DISH, EnableStatus.ENABLED)));
+
+        var views = dishService.purchasableByIds(List.of(101L, 102L));
+
+        assertThat(views).containsOnlyKeys(101L, 102L);
+        assertThat(views.get(101L).available()).isTrue();
+        verify(dishMapper, times(1)).selectBatchIds(any());
+    }
+
+    @Test
+    void purchasableByIdsShortCircuitsOnEmptyInput() {
+        assertThat(dishService.purchasableByIds(List.of())).isEmpty();
+        assertThat(dishService.purchasableByIds(null)).isEmpty();
+        verify(dishMapper, never()).selectBatchIds(any());
+    }
+
+    @Test
+    void flavorOptionsReturnsDimensionToOptionsMap() {
+        DishFlavor flavor = new DishFlavor();
+        flavor.setName("辣度");
+        flavor.setOptions(List.of("不辣", "微辣"));
+        when(dishFlavorMapper.selectList(any())).thenReturn(List.of(flavor));
+
+        var options = dishService.flavorOptions(101L);
+
+        assertThat(options).containsOnlyKeys("辣度");
+        assertThat(options.get("辣度")).containsExactly("不辣", "微辣");
     }
 }

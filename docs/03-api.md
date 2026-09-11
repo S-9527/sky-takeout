@@ -267,7 +267,6 @@
 |---|---|---|---|
 | `CART_ITEM_NOT_FOUND` | 404 | 购物车行 id 不存在或不属于当前顾客 | 购物车项不存在 |
 | `CART_ITEM_OFF_SALE` | 422 | 加购的商品当前不在起售状态(R2) | 商品已下架,无法加入购物车 |
-| `CART_ITEM_TYPE_MISMATCH` | 422 | `itemType` 与商品实际类型不符 | 商品类型不匹配 |
 | `CART_FLAVOR_REQUIRED` | 422 | 商品有口味配置但未选择口味 | 请选择商品口味 |
 | `CART_FLAVOR_INVALID` | 422 | 提交的口味维度或选项不在配置中 | 所选口味已变更,请重新选择 |
 | `CART_QUANTITY_INVALID` | 422 | 数量非正整数,或合并后超过上限 99 | 数量不合理,请重新输入 |
@@ -342,7 +341,7 @@
 | `UPLOAD_TYPE_NOT_ALLOWED` | 400 | 扩展名或内容类型不在 `jpg/jpeg/png/webp` | 仅支持 jpg/png/webp 格式 |
 | `UPLOAD_STORE_FAILED` | 500 | 存储写入失败 | 图片上传失败,请稍后重试 |
 
-合计 **88** 个错误码(与 79 个 endpoint 不是同一个数字:错误码按上下文收敛,一个码会被多个接口复用)。
+合计 **87** 个错误码(与 79 个 endpoint 不是同一个数字:错误码按上下文收敛,一个码会被多个接口复用)。
 
 ### 2.4 阈值与自主拍板项
 

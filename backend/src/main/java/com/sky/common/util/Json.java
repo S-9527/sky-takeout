@@ -2,6 +2,7 @@ package com.sky.common.util;
 
 import tools.jackson.databind.ObjectMapper;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,11 +29,22 @@ public final class Json {
 
     /** JSON 字符串数组 → List;null / 空白 → 空列表。 */
     public static List<String> readStringList(String json) {
+        return readList(json, String.class);
+    }
+
+    /**
+     * JSON 数组 → 对象列表;null / 空白 → 空列表。
+     *
+     * <p>用"数组 class"而不是 TypeFactory:Jackson 3 的类型工厂 API 与 2.x 不同,
+     * 而 {@code Array.newInstance} 在任何版本上都稳定。
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> readList(String json, Class<T> elementType) {
         if (json == null || json.isBlank()) {
             return List.of();
         }
-        String[] values = MAPPER.readValue(json, String[].class);
+        Object array = MAPPER.readValue(json, Array.newInstance(elementType, 0).getClass());
         // 用 Arrays.asList 而不是 List.of:数据库里万一有 null 元素,不应该在读的时候炸掉
-        return values == null ? List.of() : Arrays.asList(values);
+        return array == null ? List.of() : Arrays.asList((T[]) array);
     }
 }

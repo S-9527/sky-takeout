@@ -46,4 +46,24 @@ class JsonTest {
         assertThat(Json.write(java.util.Map.of("k", "v"))).isEqualTo("{\"k\":\"v\"}");
         assertThat(Json.write(Arrays.asList(1, 2))).isEqualTo("[1,2]");
     }
+
+    /** 对象列表往返:购物车的 flavor_choice 就是这种形状。 */
+    @Test
+    void roundTripsObjectLists() {
+        List<FlavorChoiceSample> choices = List.of(
+                new FlavorChoiceSample("辣度", "微辣"), new FlavorChoiceSample("忌口", "不要葱,不要蒜"));
+
+        List<FlavorChoiceSample> parsed = Json.readList(Json.write(choices), FlavorChoiceSample.class);
+
+        assertThat(parsed).isEqualTo(choices);
+    }
+
+    @Test
+    void readListToleratesNullAndBlank() {
+        assertThat(Json.readList(null, FlavorChoiceSample.class)).isEmpty();
+        assertThat(Json.readList("  ", FlavorChoiceSample.class)).isEmpty();
+    }
+
+    private record FlavorChoiceSample(String name, String option) {
+    }
 }

@@ -247,6 +247,48 @@ public class SetmealService {
         setmealMapper.update(update, Wrappers.<Setmeal>lambdaUpdate().in(Setmeal::getId, ids));
     }
 
+    // ---------------------------------------------------------------- 跨上下文:可售视图
+
+    /** 单个套餐的可售视图。不存在 → 404 {@code SETMEAL_NOT_FOUND}。 */
+    public PurchasableItemView purchasable(Long setmealId) {
+        Setmeal setmeal = requireById(setmealId);
+        Category category = categoryService.byIds(List.of(setmeal.getCategoryId())).get(setmeal.getCategoryId());
+        return toPurchasableView(setmeal, category);
+    }
+
+    /** 批量版本,供购物车/订单一次取多件(避免 N+1)。 */
+    public Map<Long, PurchasableItemView> purchasableByIds(Collection<Long> setmealIds) {
+        if (setmealIds == null || setmealIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Setmeal> setmeals = setmealMapper.selectBatchIds(setmealIds);
+        if (setmeals.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Category> categories = categoryService.byIds(
+                setmeals.stream().map(Setmeal::getCategoryId).collect(Collectors.toSet()));
+        Map<Long, PurchasableItemView> result = new LinkedHashMap<>();
+        for (Setmeal setmeal : setmeals) {
+            result.put(setmeal.getId(), toPurchasableView(setmeal, categories.get(setmeal.getCategoryId())));
+        }
+        return result;
+    }
+
+    private static PurchasableItemView toPurchasableView(Setmeal setmeal, Category category) {
+        boolean onSale = setmeal.getStatus() != null && setmeal.getStatus().isEnabled();
+        boolean categoryVisible = category != null
+                && category.getType() == CategoryType.SETMEAL
+                && category.getStatus() != null
+                && category.getStatus().isEnabled();
+        boolean available = onSale && categoryVisible;
+        String reason = available ? null : (onSale ? "套餐所属分类已停用" : "套餐已停售");
+        return new PurchasableItemView(
+                setmeal.getId(), setmeal.getName(), setmeal.getImageUrl(), setmeal.getPriceCents(),
+                category == null ? null : category.getId(),
+                category == null ? null : category.getName(),
+                available, reason);
+    }
+
     // ---------------------------------------------------------------- 内部校验
 
     private void requireAllExist(List<Long> ids) {
@@ -345,8 +387,7 @@ public class SetmealService {
         }
     }
 
-    private List<ItemInput> currentItems(Long setmealId) {
-        return setmealItemMapper.selectList(Wrappers.<SetmealItem>lambdaQuery()
+    private List<ItemInput> currentItems(Long setmealId) {        return setmealItemMapper.selectList(Wrappers.<SetmealItem>lambdaQuery()
                         .eq(SetmealItem::getSetmealId, setmealId)
                         .orderByAsc(SetmealItem::getId)).stream()
                 .map(item -> new ItemInput(item.getDishId(), item.getCopies()))

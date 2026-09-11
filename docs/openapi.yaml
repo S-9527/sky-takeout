@@ -3508,9 +3508,9 @@ components:
           example: 3001
         quantity:
           type: integer
-          minimum: 1
-          maximum: 99
-          description: 本次要增加的数量;同菜同口味会累加到已有行
+          description: |
+            本次要增加的数量;同菜同口味会累加到已有行。
+            范围由服务端判定:非 1~99 的整数,或与已有行合并后超过 99 → 422 `CART_QUANTITY_INVALID`。
           example: 2
         flavorChoice:
           type: array
@@ -3528,9 +3528,9 @@ components:
       properties:
         quantity:
           type: integer
-          minimum: 0
-          maximum: 99
-          description: 最终数量(覆盖式);`0` 表示删除该行并返回 204
+          description: |
+            最终数量(覆盖式);`0` 表示删除该行并返回 204。
+            大于 99 或为负数 → 422 `CART_QUANTITY_INVALID`。
           example: 3
 
     CartItemView:

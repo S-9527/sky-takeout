@@ -8,9 +8,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.sky.catalog.domain.CatalogErrorCode;
 import com.sky.catalog.domain.Category;
@@ -120,6 +124,62 @@ public class DishService {
         return category.getType() == CategoryType.DISH
                 && category.getStatus() != null
                 && category.getStatus().isEnabled();
+    }
+
+    // ---------------------------------------------------------------- 跨上下文:可售视图
+
+    /**
+     * 单个菜品的可售视图。不存在 → 404 {@code DISH_NOT_FOUND}(调用方要的就是这个错误码)。
+     */
+    public PurchasableItemView purchasable(Long dishId) {
+        Dish dish = requireById(dishId);
+        Category category = categoryService.byIds(List.of(dish.getCategoryId())).get(dish.getCategoryId());
+        return toPurchasableView(dish, category);
+    }
+
+    /**
+     * 批量版本,供购物车/订单一次取多件(避免 N+1)。返回的 Map 只包含真实存在的菜品。
+     */
+    public Map<Long, PurchasableItemView> purchasableByIds(Collection<Long> dishIds) {
+        if (dishIds == null || dishIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Dish> dishes = dishMapper.selectBatchIds(dishIds);
+        if (dishes.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Category> categories = categoryService.byIds(
+                dishes.stream().map(Dish::getCategoryId).collect(Collectors.toSet()));
+        Map<Long, PurchasableItemView> result = new LinkedHashMap<>();
+        for (Dish dish : dishes) {
+            result.put(dish.getId(), toPurchasableView(dish, categories.get(dish.getCategoryId())));
+        }
+        return result;
+    }
+
+    /**
+     * 菜品的口味配置(维度 → 选项)。给购物车做口味校验用。
+     *
+     * <p>返回 Map/List 而不是 {@code DishFlavor} 实体:跨上下文只能用对方 service 包里的类型。
+     */
+    public Map<String, List<String>> flavorOptions(Long dishId) {
+        Map<String, List<String>> options = new LinkedHashMap<>();
+        for (DishFlavor flavor : flavorsOf(dishId)) {
+            options.put(flavor.getName(), List.copyOf(flavor.getOptions()));
+        }
+        return options;
+    }
+
+    private static PurchasableItemView toPurchasableView(Dish dish, Category category) {
+        boolean dishOnSale = dish.getStatus() != null && dish.getStatus().isEnabled();
+        boolean categoryVisible = category != null && isVisibleDishCategory(category);
+        boolean available = dishOnSale && categoryVisible;
+        String reason = available ? null : (dishOnSale ? "商品所属分类已停用" : "商品已停售");
+        return new PurchasableItemView(
+                dish.getId(), dish.getName(), dish.getImageUrl(), dish.getPriceCents(),
+                category == null ? null : category.getId(),
+                category == null ? null : category.getName(),
+                available, reason);
     }
 
     /** 某菜品的口味配置,按 sortOrder 升序。停售菜品也照常返回(配置不因停售丢失)。 */

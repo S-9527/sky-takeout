@@ -55,26 +55,15 @@
     </view>
   </view>
 </template>
-<script>
-export default {
-  // 获取父级传的数据
-  props: {
-    // 菜品数据
-    orderDataes: {
-      type: Array,
-      default: () => [],
-    },
-    // 订单信息
-    orderDetailsData: {
-      type: Object,
-      default: () => ({}),
-    },
-    // 是否显示展开收起
-    showDisplay: {
-      type: Boolean,
-      default: false,
-    },
-  },
-};
+<script setup lang="ts">
+withDefaults(defineProps<{
+  orderDataes?: any[]
+  orderDetailsData?: Record<string, any>
+  showDisplay?: boolean
+}>(), {
+  orderDataes: () => [],
+  orderDetailsData: () => ({}),
+  showDisplay: false
+})
 </script>
 <style src="../../order/style.scss" lang="scss"></style>

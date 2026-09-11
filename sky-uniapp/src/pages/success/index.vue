@@ -22,45 +22,42 @@
     </view>
   </view>
 </template>
-<script>
-import { mapState } from "vuex";
-export default {
-  data() {
-    return {
-      arrivalTime: "",
-      orderId: null,
-    };
-  },
-  computed: {
-    tableInfo: function () {
-      return this.shopInfo();
-    },
-  },
-  onLoad(options) {
-    // 获取一小时以后的时间
-    this.getHarfAnOur();
-    this.orderId = options.orderId;
-  },
-  methods: {
-    ...mapState(["shopInfo", "arrivals"]),
-    // 回首页
-    goIndex() {
-      uni.navigateTo({
-        url: "/pages/index/index?status=" + "不验证",
-      });
-    },
-    // 查看订单
-    goOrder() {
-      uni.navigateTo({
-        url: "/pages/details/index?orderId=" + this.orderId,
-      });
-    },
-    // 获取一小时以后的时间
-    getHarfAnOur() {
-      this.arrivalTime = this.arrivals();
-    },
-  },
-};
+<script setup lang="ts">
+import { ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '@/stores'
+
+const store = useAppStore()
+const { arrivals } = storeToRefs(store)
+
+const arrivalTime = ref('')
+const orderId = ref<any>(null)
+
+onLoad((options: any) => {
+  // 获取一小时以后的时间
+  getHarfAnOur()
+  orderId.value = options.orderId
+})
+
+// 回首页
+function goIndex() {
+  uni.navigateTo({
+    url: '/pages/index/index?status=' + '不验证'
+  })
+}
+
+// 查看订单
+function goOrder() {
+  uni.navigateTo({
+    url: '/pages/details/index?orderId=' + orderId.value
+  })
+}
+
+// 获取一小时以后的时间
+function getHarfAnOur() {
+  arrivalTime.value = arrivals.value
+}
 </script>
 <style src="./../common/Navbar/navbar.scss" lang="scss" scoped></style>
 <style lang="scss" scoped>
@@ -136,4 +133,3 @@ export default {
   }
 }
 </style>
- 

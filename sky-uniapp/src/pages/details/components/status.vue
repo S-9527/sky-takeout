@@ -56,55 +56,53 @@
     </view>
   </view>
 </template>
-<script>
-import { statusWord } from "@/utils/index";
-export default {
-  // 获取父级传的数据
-  props: {
-    // 订单详情
-    orderDetailsData: {
-      type: Object,
-      default: () => ({}),
-    },
-    // 倒计时间
-    timeout: {
-      type: Boolean,
-      default: false,
-    },
-    // 支付时间
-    rocallTime: {
-      type: String,
-      default: "",
-    },
-  },
-  methods: {
-    // 地址选择
-    statusWord(status) {
-      this.$emit("statusWord", status);
-      // return errr;
-      return statusWord(status);
-    },
-    //取消订单
-    handleCancel(type, obj) {
-      this.$emit("handleCancel", { type: type, obj: obj });
-    },
-    // 立即支付
-    handlePay(id) {
-      this.$emit("handlePay", id);
-    },
-    // 催单
-    handleReminder(type, id) {
-      this.$emit("handleReminder", { type: type, id: id });
-    },
-    // 申请退款
-    handleRefund(type) {
-      this.$emit("handleRefund", type);
-    },
-    // 再来一单
-    oneMoreOrder(id) {
-      this.$emit("oneMoreOrder", id);
-    },
-  },
-};
+<script setup lang="ts">
+import { statusWord as statusWordUtil } from '@/utils/index'
+
+const paymentTime = ''
+
+withDefaults(defineProps<{
+  orderDetailsData?: Record<string, any>
+  timeout?: boolean
+  rocallTime?: string
+}>(), {
+  orderDetailsData: () => ({}),
+  timeout: false,
+  rocallTime: ''
+})
+
+const emit = defineEmits<{
+  (e: 'statusWord', status: number): void
+  (e: 'handlePay', id: number): void
+  (e: 'handleReminder', payload: { type: string; id: number }): void
+  (e: 'handleCancel', payload: { type: string; obj: Record<string, any> }): void
+  (e: 'handleRefund', type: string): void
+  (e: 'oneMoreOrder', id: number): void
+}>()
+
+function statusWord(status: number) {
+  emit('statusWord', status)
+  return statusWordUtil(status)
+}
+
+function handleCancel(type: string, obj: Record<string, any>) {
+  emit('handleCancel', { type, obj })
+}
+
+function handlePay(id: number) {
+  emit('handlePay', id)
+}
+
+function handleReminder(type: string, id: number) {
+  emit('handleReminder', { type, id })
+}
+
+function handleRefund(type: string) {
+  emit('handleRefund', type)
+}
+
+function oneMoreOrder(id: number) {
+  emit('oneMoreOrder', id)
+}
 </script>
 <style src="../../order/style.scss" lang="scss"></style>

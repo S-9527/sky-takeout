@@ -23,29 +23,22 @@
     </view>
   </view>
 </template>
-<script>
-export default {
-  // 获取父级传的数据
-  props: {
-    // 订单详情
-    orderDetailsData: {
-      type: Object,
-      default: () => ({}),
-    },
-  },
-  computed: {
-    // 处理姓名 如x先生
-    cryptoName() {
-      if (!this.orderDetailsData.consignee) return "";
-      if (this.orderDetailsData.sex == 0) {
-        // 男
-        return this.orderDetailsData.consignee.charAt(0) + "先生";
-      } else {
-        // 女
-        return this.orderDetailsData.consignee.charAt(0) + "女士";
-      }
-    },
-  },
-};
+<script setup lang="ts">
+import { computed } from 'vue'
+
+const props = withDefaults(defineProps<{
+  orderDetailsData?: Record<string, any>
+}>(), {
+  orderDetailsData: () => ({})
+})
+
+const cryptoName = computed(() => {
+  if (!props.orderDetailsData.consignee) return ''
+  if (props.orderDetailsData.sex == 0) {
+    return props.orderDetailsData.consignee.charAt(0) + '先生'
+  } else {
+    return props.orderDetailsData.consignee.charAt(0) + '女士'
+  }
+})
 </script>
 <style src="../../order/style.scss" lang="scss"></style>

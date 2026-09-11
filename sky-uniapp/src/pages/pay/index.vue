@@ -55,118 +55,123 @@
   </view>
 </template>
 
-<script>
-import { mapState } from "vuex";
-import { paymentOrder, cancelOrder } from "@/pages/api/api.js";
-export default {
-  data() {
-    return {
-      timeout: false,
-      rocallTime: "",
-      orderId: null,
-      orderDataInfo: {},
-      activeRadio: 0,
-      payMethodList: ["微信支付"],
-      times: null,
-    };
-  },
-  created() {
-    this.orderDataInfo = this.orderData();
-  },
-  mounted() {
-    this.runTimeBack();
-  },
-  onLoad(options) {
-    this.orderId = options.orderId;
-  },
-  methods: {
-    ...mapState(["orderData", "shopInfo"]),
-    // 支付详情
-    handleSave() {
-      if (this.timeout) {
-        cancelOrder(this.orderId).then((res) => {});
-        uni.redirectTo({
-          url: "/pages/details/index?orderId=" + this.orderId,
-        });
-      } else {
-        // 如果支付成功进入成功页
-        clearTimeout(this.times);
-        const params = {
-          orderNumber: this.orderDataInfo.orderNumber,
-          payMethod: this.activeRadio === 0 ? 1 : 2,
-        };
-        paymentOrder(params).then(async (res) => {
-          if (res.code === 200) {
-            const [err, payRes] = await uni.requestPayment({
-              ...res.data,
-              package: res.data.packageStr, // package 为微信支付必须的字段
-            });
-            console.log(err, payRes);
-            if (err) {
-              await uni.showToast({ title: "支付失败", icon: "error" });
-              setTimeout(() => {
-                // 下单失败!!
-                uni.redirectTo({
-                  url: "/pages/details/index?orderId=" + this.orderId,
-                });
-              }, 1500);
-            } else {
-              await uni.showToast({ title: "支付成功", icon: "success" });
-              setTimeout(() => {
-                // 下单成功!!
-                uni.redirectTo({
-                  url: "/pages/success/index?orderId=" + this.orderId,
-                });
-              }, 1500);
-            }
-          } else {
-            uni.showToast({
-              title: res.msg,
-              duration: 1000,
-              icon: "none",
-            });
-          }
-        });
-      }
-    },
-    // // 订单倒计时
-    runTimeBack() {
-      const end = Date.parse(this.orderDataInfo.orderTime.replace(/-/g, "/"));
-      const now = Date.parse(new Date());
-      const m15 = 15 * 60 * 1000;
-      const msec = m15 - (now - end);
-      if (msec < 0) {
-        this.timeout = true;
-        clearTimeout(this.times);
-      } else {
-        let min = parseInt((msec / 1000 / 60) % 60);
-        let sec = parseInt((msec / 1000) % 60);
-        if (min < 10) {
-          min = "0" + min;
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '@/stores'
+import { paymentOrder, cancelOrder } from '@/pages/api/api'
+
+const store = useAppStore()
+const { orderData } = storeToRefs(store)
+// 模板以 shopInfo() 函数调用方式访问,保持模板不变
+const shopInfo = () => store.shopInfo
+
+const timeout = ref(false)
+const rocallTime = ref('')
+const orderId = ref<any>(null)
+const orderDataInfo = ref<Record<string, any>>({})
+const activeRadio = ref(0)
+const payMethodList = ref(['微信支付'])
+const times = ref<any>(null)
+
+// created:初始化支付信息
+orderDataInfo.value = orderData.value
+
+onMounted(() => {
+  runTimeBack()
+})
+
+onLoad((options: any) => {
+  orderId.value = options.orderId
+})
+
+// 支付详情
+function handleSave() {
+  if (timeout.value) {
+    cancelOrder(orderId.value).then((res) => {})
+    uni.redirectTo({
+      url: '/pages/details/index?orderId=' + orderId.value
+    })
+  } else {
+    // 如果支付成功进入成功页
+    clearTimeout(times.value)
+    const params = {
+      orderNumber: orderDataInfo.value.orderNumber,
+      payMethod: activeRadio.value === 0 ? 1 : 2
+    }
+    paymentOrder(params).then(async (res) => {
+      if (res.code === 200) {
+        const [err, payRes] = await uni.requestPayment({
+          ...res.data,
+          package: res.data.packageStr // package 为微信支付必须的字段
+        })
+        console.log(err, payRes)
+        if (err) {
+          await uni.showToast({ title: '支付失败', icon: 'error' })
+          setTimeout(() => {
+            // 下单失败!!
+            uni.redirectTo({
+              url: '/pages/details/index?orderId=' + orderId.value
+            })
+          }, 1500)
         } else {
-          min = min;
+          await uni.showToast({ title: '支付成功', icon: 'success' })
+          setTimeout(() => {
+            // 下单成功!!
+            uni.redirectTo({
+              url: '/pages/success/index?orderId=' + orderId.value
+            })
+          }, 1500)
         }
-        if (sec < 10) {
-          sec = "0" + sec;
-        } else {
-          sec = sec;
-        }
-        this.rocallTime = min + ":" + sec;
-        let that = this;
-        if (min >= 0 && sec >= 0) {
-          if (min === 0 && sec === 0) {
-            this.timeout = true;
-            clearTimeout(this.times);
-            return;
-          }
-          this.times = setTimeout(function () {
-            that.runTimeBack();
-          }, 1000);
-        }
+      } else {
+        uni.showToast({
+          title: res.msg,
+          duration: 1000,
+          icon: 'none'
+        })
       }
-    },
-  },
-};
+    })
+  }
+}
+
+// // 订单倒计时
+function runTimeBack() {
+  const end = Date.parse(String(orderDataInfo.value.orderTime).replace(/-/g, '/'))
+  const now = Date.parse(new Date())
+  const m15 = 15 * 60 * 1000
+  const msec = m15 - (now - end)
+  if (msec < 0) {
+    timeout.value = true
+    clearTimeout(times.value)
+  } else {
+    let min: any = parseInt((msec / 1000 / 60) % 60)
+    let sec: any = parseInt((msec / 1000) % 60)
+    if (min < 10) {
+      min = '0' + min
+    } else {
+      min = min
+    }
+    if (sec < 10) {
+      sec = '0' + sec
+    } else {
+      sec = sec
+    }
+    rocallTime.value = min + ':' + sec
+    if (min >= 0 && sec >= 0) {
+      if (min === 0 && sec === 0) {
+        timeout.value = true
+        clearTimeout(times.value)
+        return
+      }
+      times.value = setTimeout(function () {
+        runTimeBack()
+      }, 1000)
+    }
+  }
+}
+
+function styleChange() {}
 </script>
 <style src="./../common/Navbar/navbar.scss" lang="scss" scoped></style>
 <style src="./../order/style.scss" lang="scss"></style>

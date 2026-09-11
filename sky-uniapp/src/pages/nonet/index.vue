@@ -7,21 +7,21 @@
     </view>
   </view>
 </template>
-<script>
-import { mapState } from "vuex";
-export default {
-  computed: {
-    tableInfo: function () {
-      return this.shopInfo();
-    },
-  },
-  methods: {
-    ...mapState(["shopInfo"]),
-    goIndex() {
-      uni.navigateTo({ url: "/pages/index/index" });
-    },
-  },
-};
+<script setup lang="ts">
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useAppStore } from '@/stores'
+
+const store = useAppStore()
+const { shopInfo } = storeToRefs(store)
+
+const tableInfo = computed(() => {
+  return shopInfo.value
+})
+
+function goIndex() {
+  uni.navigateTo({ url: '/pages/index/index' })
+}
 </script>
 <style src="./../common/Navbar/navbar.scss" lang="scss" scoped></style>
 <style lang="scss" scoped>
@@ -55,4 +55,3 @@ export default {
   }
 }
 </style>
- 

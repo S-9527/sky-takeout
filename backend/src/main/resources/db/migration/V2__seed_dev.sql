@@ -58,27 +58,27 @@ VALUES
 INSERT INTO `dish`
   (`id`, `category_id`, `name`, `price_cents`, `image_url`, `description`, `status`, `sort_order`, `created_by`, `updated_by`)
 VALUES
-  (101, 1, '宫保鸡丁',       3800, '/files/dish/gongbao-jiding.jpg',   '鸡腿肉丁配油酥花生,酸甜微辣,经典川味', 1, 1, 1, 1),
-  (102, 1, '水煮牛肉',       5800, '/files/dish/shuizhu-niurou.jpg',   '牛里脊现片现煮,麻辣鲜香,配黄豆芽垫底', 1, 2, 1, 1),
-  (103, 1, '酸辣土豆丝',     2200, '/files/dish/suanla-tudousi.jpg',   '手工切丝,酸辣爽脆,下饭首选',           1, 3, 1, 1),
-  (104, 1, '麻婆豆腐',       2800, '/files/dish/mapo-doufu.jpg',       '嫩豆腐配牛肉末,麻辣烫香,一勺拌饭',     1, 4, 1, 1),
-  (105, 2, '番茄炒蛋',       2400, '/files/dish/fanqie-chaodan.jpg',   '沙瓤番茄配土鸡蛋,酸甜家常味',           1, 1, 1, 1),
-  (106, 2, '红烧肉',         4200, '/files/dish/hongshaorou.jpg',      '五花肉慢炖两小时,肥而不腻',             1, 2, 1, 1),
-  (107, 2, '清炒时蔬',       1800, '/files/dish/qingchao-shishu.jpg',  '当季绿叶菜,少油快炒,清爽解腻',         1, 3, 1, 1),
-  (108, 2, '蒜蓉粉丝娃娃菜', 2600, '/files/dish/suanrong-wawacai.jpg', '娃娃菜垫粉丝,蒜蓉蒸制,鲜甜入味',       1, 4, 1, 1),
-  (109, 3, '紫菜蛋花汤',     1200, '/files/dish/zicai-danhuatang.jpg', '紫菜虾皮蛋花汤,清淡暖胃',               1, 1, 1, 1),
-  (110, 3, '酸萝卜老鸭汤',   3600, '/files/dish/suanluobo-laoyatang.jpg', '老鸭配酸萝卜慢炖,汤鲜开胃',           1, 2, 1, 1),
-  (111, 3, '皮蛋瘦肉粥',     1600, '/files/dish/pidan-shourouzhou.jpg', '东北珍珠米熬煮,配皮蛋与瘦肉丝',        1, 3, 1, 1),
-  (112, 4, '米饭',            300, '/files/dish/mifan.jpg',            '现蒸东北大米饭,一碗装',                 1, 1, 1, 1),
-  (113, 4, '手工水饺',       2800, '/files/dish/shougong-shuijiao.jpg','现包水饺 12 只,皮薄馅大',               1, 2, 1, 1),
-  (114, 4, '担担面',         2600, '/files/dish/dandanmian.jpg',       '细面配肉臊花生碎,麻辣干拌',             1, 3, 1, 1),
-  (115, 5, '酸梅汤',          800, '/files/dish/suanmeitang.jpg',      '乌梅山楂现熬,冰镇后更解辣',             1, 1, 1, 1),
-  (116, 5, '鲜榨橙汁',       1500, '/files/dish/xianzha-chengzhi.jpg', '赣南脐橙现榨,不加水不加糖',             1, 2, 1, 1),
-  (117, 5, '冰镇可乐',        500, '/files/dish/bingzhen-kele.jpg',    '罐装可乐 330ml,冰镇出品',               1, 3, 1, 1),
-  (118, 5, '蜂蜜柠檬水',      900, '/files/dish/fengmi-ningmengshui.jpg', '柠檬片配洋槐蜂蜜,清爽解腻',           1, 4, 1, 1),
-  (119, 6, '红糖糍粑',       1800, '/files/dish/hongtang-ciba.jpg',    '糯米糍粑现炸,淋古法红糖汁',             1, 1, 1, 1),
-  (120, 6, '杨枝甘露',       2200, '/files/dish/yangzhi-ganlu.jpg',    '芒果西柚西米露,港式经典甜品',           1, 2, 1, 1),
-  (121, 6, '冰糖银耳羹',     1600, '/files/dish/bingtang-yinergeng.jpg', '银耳红枣枸杞慢炖,胶质浓稠',           1, 3, 1, 1);
+  (101, 1, '宫保鸡丁',       3800, '/img/dish/gongbao-jiding.jpg',   '鸡腿肉丁配油酥花生,酸甜微辣,经典川味', 1, 1, 1, 1),
+  (102, 1, '水煮牛肉',       5800, '/img/dish/shuizhu-niurou.jpg',   '牛里脊现片现煮,麻辣鲜香,配黄豆芽垫底', 1, 2, 1, 1),
+  (103, 1, '酸辣土豆丝',     2200, '/img/dish/suanla-tudousi.jpg',   '手工切丝,酸辣爽脆,下饭首选',           1, 3, 1, 1),
+  (104, 1, '麻婆豆腐',       2800, '/img/dish/mapo-doufu.jpg',       '嫩豆腐配牛肉末,麻辣烫香,一勺拌饭',     1, 4, 1, 1),
+  (105, 2, '番茄炒蛋',       2400, '/img/dish/fanqie-chaodan.jpg',   '沙瓤番茄配土鸡蛋,酸甜家常味',           1, 1, 1, 1),
+  (106, 2, '红烧肉',         4200, '/img/dish/hongshaorou.jpg',      '五花肉慢炖两小时,肥而不腻',             1, 2, 1, 1),
+  (107, 2, '清炒时蔬',       1800, '/img/dish/qingchao-shishu.jpg',  '当季绿叶菜,少油快炒,清爽解腻',         1, 3, 1, 1),
+  (108, 2, '蒜蓉粉丝娃娃菜', 2600, '/img/dish/suanrong-wawacai.jpg', '娃娃菜垫粉丝,蒜蓉蒸制,鲜甜入味',       1, 4, 1, 1),
+  (109, 3, '紫菜蛋花汤',     1200, '/img/dish/zicai-danhuatang.jpg', '紫菜虾皮蛋花汤,清淡暖胃',               1, 1, 1, 1),
+  (110, 3, '酸萝卜老鸭汤',   3600, '/img/dish/suanluobo-laoyatang.jpg', '老鸭配酸萝卜慢炖,汤鲜开胃',           1, 2, 1, 1),
+  (111, 3, '皮蛋瘦肉粥',     1600, '/img/dish/pidan-shourouzhou.jpg', '东北珍珠米熬煮,配皮蛋与瘦肉丝',        1, 3, 1, 1),
+  (112, 4, '米饭',            300, '/img/dish/mifan.jpg',            '现蒸东北大米饭,一碗装',                 1, 1, 1, 1),
+  (113, 4, '手工水饺',       2800, '/img/dish/shougong-shuijiao.jpg','现包水饺 12 只,皮薄馅大',               1, 2, 1, 1),
+  (114, 4, '担担面',         2600, '/img/dish/dandanmian.jpg',       '细面配肉臊花生碎,麻辣干拌',             1, 3, 1, 1),
+  (115, 5, '酸梅汤',          800, '/img/dish/suanmeitang.jpg',      '乌梅山楂现熬,冰镇后更解辣',             1, 1, 1, 1),
+  (116, 5, '鲜榨橙汁',       1500, '/img/dish/xianzha-chengzhi.jpg', '赣南脐橙现榨,不加水不加糖',             1, 2, 1, 1),
+  (117, 5, '冰镇可乐',        500, '/img/dish/bingzhen-kele.jpg',    '罐装可乐 330ml,冰镇出品',               1, 3, 1, 1),
+  (118, 5, '蜂蜜柠檬水',      900, '/img/dish/fengmi-ningmengshui.jpg', '柠檬片配洋槐蜂蜜,清爽解腻',           1, 4, 1, 1),
+  (119, 6, '红糖糍粑',       1800, '/img/dish/hongtang-ciba.jpg',    '糯米糍粑现炸,淋古法红糖汁',             1, 1, 1, 1),
+  (120, 6, '杨枝甘露',       2200, '/img/dish/yangzhi-ganlu.jpg',    '芒果西柚西米露,港式经典甜品',           1, 2, 1, 1),
+  (121, 6, '冰糖银耳羹',     1600, '/img/dish/bingtang-yinergeng.jpg', '银耳红枣枸杞慢炖,胶质浓稠',           1, 3, 1, 1);
 
 -- ---------------------------------------------------------------------
 -- dish_flavor:口味维度 name 在同一菜品内唯一;options 为 JSON 数组
@@ -118,11 +118,11 @@ VALUES
 INSERT INTO `setmeal`
   (`id`, `category_id`, `name`, `price_cents`, `image_url`, `description`, `status`, `created_by`, `updated_by`)
 VALUES
-  (201, 7,  '单人川味套餐', 4500,  '/files/setmeal/danren-chuanwei.jpg',   '宫保鸡丁 + 米饭 + 酸梅汤,一人食的川味,原价 49 元',       1, 1, 1),
-  (202, 7,  '家常小炒套餐', 3900,  '/files/setmeal/jiachang-xiaochao.jpg', '番茄炒蛋 + 米饭 x2 + 紫菜蛋花汤,原价 42 元',             1, 1, 1),
-  (203, 8,  '双人川湘套餐', 8800,  '/files/setmeal/shuangren-chuanxiang.jpg', '水煮牛肉 + 酸辣土豆丝 + 米饭 x2 + 酸梅汤 x2,原价 102 元', 1, 1, 1),
-  (204, 9,  '家庭四人套餐', 10800, '/files/setmeal/jiating-siren.jpg',     '红烧肉 + 宫保鸡丁 + 清炒时蔬 + 紫菜蛋花汤 + 米饭 x4,原价 122 元', 1, 1, 1),
-  (205, 10, '六人聚会套餐', 22800, '/files/setmeal/liuren-juhui.jpg',      '水煮牛肉 + 红烧肉 + 麻婆豆腐 + 蒜蓉粉丝娃娃菜 + 酸辣土豆丝 + 紫菜蛋花汤 + 米饭 x6 + 酸梅汤 x6,原价 254 元', 1, 1, 1);
+  (201, 7,  '单人川味套餐', 4500,  '/img/setmeal/danren-chuanwei.jpg',   '宫保鸡丁 + 米饭 + 酸梅汤,一人食的川味,原价 49 元',       1, 1, 1),
+  (202, 7,  '家常小炒套餐', 3900,  '/img/setmeal/jiachang-xiaochao.jpg', '番茄炒蛋 + 米饭 x2 + 紫菜蛋花汤,原价 42 元',             1, 1, 1),
+  (203, 8,  '双人川湘套餐', 8800,  '/img/setmeal/shuangren-chuanxiang.jpg', '水煮牛肉 + 酸辣土豆丝 + 米饭 x2 + 酸梅汤 x2,原价 102 元', 1, 1, 1),
+  (204, 9,  '家庭四人套餐', 10800, '/img/setmeal/jiating-siren.jpg',     '红烧肉 + 宫保鸡丁 + 清炒时蔬 + 紫菜蛋花汤 + 米饭 x4,原价 122 元', 1, 1, 1),
+  (205, 10, '六人聚会套餐', 22800, '/img/setmeal/liuren-juhui.jpg',      '水煮牛肉 + 红烧肉 + 麻婆豆腐 + 蒜蓉粉丝娃娃菜 + 酸辣土豆丝 + 紫菜蛋花汤 + 米饭 x6 + 酸梅汤 x6,原价 254 元', 1, 1, 1);
 
 -- ---------------------------------------------------------------------
 -- setmeal_item:(setmeal_id, dish_id) 唯一;copies 体现不同份数

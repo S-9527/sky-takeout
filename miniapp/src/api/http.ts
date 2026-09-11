@@ -50,12 +50,22 @@ export const REFRESH_PATH = '/api/v1/customer/auth/refresh'
 const REFRESHABLE_CODES = new Set(['AUTH_TOKEN_EXPIRED', 'AUTH_TOKEN_INVALID'])
 
 /**
+ * 各端默认 API 根地址,由 `vite.config.ts` 的 `define` 在编译期注入:
+ * H5 为空(走 Vite 代理),小程序是后端绝对地址(没有代理概念)。
+ */
+declare const __API_BASE_URL__: string
+
+/**
  * API 根地址。
  *
+ * 优先用 `VITE_API_BASE_URL`,否则用构建期注入的各端默认值:
  * - H5 开发期留空,走 Vite 的 `/api` 代理;
- * - 小程序必须给完整地址(没有代理概念),用 `VITE_API_BASE_URL` 配,例如 `http://localhost:8080`。
+ * - 小程序必须是完整地址,否则 `wx.request` 会以 `request:fail invalid url`
+ *   直接失败 —— 网络面板里连请求都不会出现。
  */
-let apiBaseUrl = (import.meta.env?.VITE_API_BASE_URL as string | undefined) ?? ''
+let apiBaseUrl =
+  (import.meta.env?.VITE_API_BASE_URL as string | undefined) ??
+  (typeof __API_BASE_URL__ === 'string' ? __API_BASE_URL__ : '')
 
 export function setApiBaseUrl(url: string): void {
   apiBaseUrl = url.replace(/\/$/, '')

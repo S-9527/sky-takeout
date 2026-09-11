@@ -21,7 +21,11 @@ pnpm dev:mp-weixin      # 产物在 dist/dev/mp-weixin,用微信开发者工具�
 而后者的 `uni.login` 是"当前平台不支持"的桩,一调就失败。
 
 **小程序端的接口地址**:小程序没有代理概念,`vite.config.ts` 里的 `server.proxy` 只对 H5 生效。
-真机/开发者工具里用 `VITE_API_BASE_URL` 指定完整地址(如 `http://localhost:8080`)。
+构建时会把默认根地址经 `define` 注入 `__API_BASE_URL__`:微信端默认指到 `SKY_BACKEND`
+(默认 `http://localhost:8080`),所以开发者工具里导入产物即可直接发请求;发布时用
+`SKY_BACKEND=https://api.example.com pnpm build:mp-weixin`(或 `VITE_API_BASE_URL`)覆盖。
+注意 `wx.request` 只认真实 URL —— 传相对路径会以 `request:fail invalid url` 直接失败,
+网络面板里连请求都不会出现,只会看到"无法连接服务器"。
 
 ## 目录
 

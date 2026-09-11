@@ -24,9 +24,24 @@ import { weappTailwindcss } from 'weapp-tailwindcss/vite'
 const backendTarget = process.env.SKY_BACKEND ?? 'http://localhost:8080'
 const isWeapp = process.env.UNI_PLATFORM === 'mp-weixin'
 
+/**
+ * API 根地址(编译期经 `define` 注入 `__API_BASE_URL__`)。
+ *
+ * - H5:留空,请求走同源 + `server.proxy`;
+ * - 小程序:**没有代理概念**,`wx.request` 只认真实 URL —— 传相对路径会直接以
+ *   `request:fail invalid url` 失败(微信开发者工具的网络面板里连请求都不会出现,
+ *   只看到"无法连接服务器")。所以这里默认指到本地后端,
+ *   发布时用 `SKY_BACKEND` / `VITE_API_BASE_URL` 覆盖成线上域名。
+ */
+const apiBaseUrl = (process.env.VITE_API_BASE_URL ?? (isWeapp ? backendTarget : '')).replace(/\/$/, '')
+
 export default defineConfig(async () => {
   const { default: tailwindcss } = await import('@tailwindcss/vite')
   return {
+    define: {
+      // 各端默认 API 根地址;业务代码用 `import.meta.env.VITE_API_BASE_URL` 优先覆盖
+      __API_BASE_URL__: JSON.stringify(apiBaseUrl),
+    },
     plugins: [uni(), tailwindcss(), ...(isWeapp ? weappTailwindcss({ rem2rpx: true }) : [])],
     server: {
       port: 5174,

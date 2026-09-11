@@ -1,5 +1,6 @@
 import type { ApiErrorBody, ErrorDetail, TokenPair } from '@/types'
 
+import { runtimeRequest, setRuntimeForTest } from './runtime'
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from './tokens'
 
 /**
@@ -72,7 +73,7 @@ export function resolveUrl(path: string): string {
 
 export type UniMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
-interface UniRequestSuccess {
+export interface UniRequestSuccess {
   statusCode: number
   data: unknown
   header?: Record<string, string>
@@ -106,17 +107,6 @@ interface UniLike {
  * 在微信开发者工具里就报"当前环境没有 uni.request"(单元测试里反而是好的,
  * 因为 jsdom 的桩正好挂在 globalThis 上,所以这个问题只有真机才暴露)。
  */
-function uniApi(): UniLike {
-  const candidate = typeof uni === 'undefined' ? null : (uni as unknown as Partial<UniLike>)
-  if (!candidate?.request) {
-    throw new ApiError({
-      status: 0,
-      code: 'UNI_NOT_AVAILABLE',
-      message: '当前环境没有 uni.request(单元测试请注入 uni 桩)',
-    })
-  }
-  return candidate as UniLike
-}
 
 /* ------------------------------------------------------------------ 错误归一 */
 
@@ -164,20 +154,20 @@ type RefreshTransport = (refreshToken: string) => Promise<TokenPair>
 
 async function uniPost<T>(url: string, data: unknown): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    uniApi().request({
+    runtimeRequest({
       url: resolveUrl(url),
       method: 'POST',
       data,
       header: { 'Content-Type': 'application/json' },
       timeout: 15_000,
-      success: (response) => {
+      success: (response: { statusCode: number; data: unknown; header?: Record<string, string> }) => {
         if (response.statusCode >= 200 && response.statusCode < 300) {
           resolve(response.data as T)
           return
         }
         reject(toApiError(response.statusCode, response.data, response.header?.['x-trace-id']))
       },
-      fail: (error) => reject(toApiError(0, null, error?.errMsg)),
+      fail: (error: { errMsg?: string }) => reject(toApiError(0, null, error?.errMsg)),
     })
   })
 }
@@ -262,14 +252,14 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   if (token) header.Authorization = `Bearer ${token}`
 
   const response = await new Promise<UniRequestSuccess>((resolve, reject) => {
-    uniApi().request({
+    runtimeRequest({
       url: resolveUrl(path),
       method,
       data: options.data,
       header,
       timeout: options.timeout ?? 20_000,
       success: resolve,
-      fail: (error) => reject(toApiError(0, null, error?.errMsg)),
+      fail: (error: { errMsg?: string }) => reject(toApiError(0, null, error?.errMsg)),
     })
   })
 

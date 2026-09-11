@@ -29,7 +29,9 @@ export const uniTestDouble = {
   },
 }
 
-;(globalThis as { uni?: unknown }).uni = {
+import { setRuntimeForTest } from '@/api/runtime'
+
+const runtime = {
   request(options: UniRequestOptions) {
     uniTestDouble.requests.push(options)
     if (uniTestDouble.handler) {
@@ -56,6 +58,22 @@ export const uniTestDouble = {
   redirectTo: () => undefined,
   stopPullDownRefresh: () => undefined,
 }
+
+// 单元测试通过 runtime 注入替身:生产代码里永远是直接的 uni.xxx 调用
+setRuntimeForTest({
+  request: (options) => runtime.request(options as UniRequestOptions),
+  storage: {
+    get: (key) => storage.get(key) ?? '',
+    set: (key, value) => {
+      storage.set(key, value)
+    },
+    remove: (key) => {
+      storage.delete(key)
+    },
+  },
+})
+
+;(globalThis as { uni?: unknown }).uni = runtime
 
 afterEach(() => {
   uniTestDouble.reset()

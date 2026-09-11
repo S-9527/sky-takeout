@@ -1,5 +1,7 @@
 import type { TokenPair } from '@/types'
 
+import { runtimeStorageGet, runtimeStorageRemove, runtimeStorageSet, setRuntimeForTest } from './runtime'
+
 /**
  * 令牌仓库(小程序端)。
  *
@@ -13,23 +15,7 @@ const STORAGE_KEY = 'sky.customer.tokens'
 let memory: TokenPair | null = null
 let loaded = false
 
-interface UniStorage {
-  getStorageSync: (key: string) => unknown
-  setStorageSync: (key: string, value: unknown) => void
-  removeStorageSync: (key: string) => void
-}
-
-function storage(): UniStorage | null {
-  // 必须用全局标识符 `uni`,不能用 `globalThis.uni`:小程序端 uni 由运行时注入为全局变量,
-  // 并不保证挂在 globalThis 上(实机/开发者工具里 globalThis.uni 是 undefined,
-  // 于是会走到"内存降级"——登录能过,刷新页面就掉登录)。
-  if (typeof uni === 'undefined') return null
-  const candidate = uni as unknown as Partial<UniStorage>
-  if (!candidate.getStorageSync || !candidate.setStorageSync || !candidate.removeStorageSync) {
-    return null
-  }
-  return candidate as UniStorage
-}
+export { setRuntimeForTest }
 
 function isTokenPair(value: unknown): value is TokenPair {
   if (typeof value !== 'object' || value === null) return false
@@ -40,10 +26,8 @@ function isTokenPair(value: unknown): value is TokenPair {
 function ensureLoaded(): void {
   if (loaded) return
   loaded = true
-  const store = storage()
-  if (!store) return
   try {
-    const raw = store.getStorageSync(STORAGE_KEY)
+    const raw = runtimeStorageGet(STORAGE_KEY)
     const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw
     memory = isTokenPair(parsed) ? parsed : null
   } catch {
@@ -68,7 +52,7 @@ export function setTokens(pair: TokenPair): void {
   ensureLoaded()
   memory = pair
   try {
-    storage()?.setStorageSync(STORAGE_KEY, JSON.stringify(pair))
+    runtimeStorageSet(STORAGE_KEY, JSON.stringify(pair))
   } catch {
     // 存储写失败不影响本次会话(内存里还在)
   }
@@ -78,7 +62,7 @@ export function clearTokens(): void {
   ensureLoaded()
   memory = null
   try {
-    storage()?.removeStorageSync(STORAGE_KEY)
+    runtimeStorageRemove(STORAGE_KEY)
   } catch {
     // 同上
   }

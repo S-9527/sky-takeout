@@ -22,43 +22,48 @@
   </view>
 </template>
 
-<script>
-export default {
-  // 获取父级传的数据
-  props: ["baseData"],
-  data () {
-    return {
-      selectscooldata: {},
-      title: "picker-view",
-      indicatorStyle: `height: 50px;`,
-      defaultValue: [0], //默认选中hoverhover中下标为2的那个元素
-      //defaultValue是默认展示的值，你要注意，如果hoverhover是动态循环出来时，你在data中直接给默认值，可能不能够显示你想要展示的值
-    }
-  },
+<script setup lang="ts">
+import { ref } from 'vue'
 
-  methods: {
+const props = withDefaults(
+  defineProps<{
+    // 获取父级传的数据
+    baseData?: any[]
+  }>(),
+  {
+    baseData: () => []
+  }
+)
+const emit = defineEmits<{
+  (e: 'changeCont', val: any): void
+}>()
 
-    /**
-     * uniapp中，向上传递值得时候，不要在关闭事件中进行传递值；
-     * 因为关闭事件中有可能形成异步(造成选择的值和页面显示的值不一致这个问题)
-     * 使用change事件将值抛出去
-     * */
-    bindChange (e) {
-      this.selectscooldata = e
-      if (e.detail && e.detail.value) {
-        //实时将用户选择的值抛出去
-        this.$emit("changeCont", this.baseData[e.detail.value[0]])
-        this.tablewareData = this.baseData[e.detail.value[0]]
-        this.$emit("changeCont", this.tablewareData)
-      } else {
-        this.$emit("changeCont", this.baseData[e.detail.value[0]])
-        this.tablewareData = this.baseData[e.detail.value[0]]
-        // 用户没有滚动，说明用户选择的是我们给用户展示的默认值
-        this.$emit("changeCont", this.tablewareData)
-      }
-    },
-  },
-};
+const selectscooldata = ref<any>({})
+const title = ref('picker-view')
+const indicatorStyle = ref('height: 50px;')
+// 默认选中hoverhover中下标为2的那个元素
+// defaultValue是默认展示的值，你要注意，如果hoverhover是动态循环出来时，你在data中直接给默认值，可能不能够显示你想要展示的值
+const defaultValue = ref<any[]>([0])
+
+/**
+ * uniapp中，向上传递值得时候，不要在关闭事件中进行传递值；
+ * 因为关闭事件中有可能形成异步(造成选择的值和页面显示的值不一致这个问题)
+ * 使用change事件将值抛出去
+ * */
+function bindChange(e: any) {
+  selectscooldata.value = e
+  if (e.detail && e.detail.value) {
+    //实时将用户选择的值抛出去
+    emit('changeCont', props.baseData[e.detail.value[0]])
+    const tablewareData = props.baseData[e.detail.value[0]]
+    emit('changeCont', tablewareData)
+  } else {
+    emit('changeCont', props.baseData[e.detail.value[0]])
+    const tablewareData = props.baseData[e.detail.value[0]]
+    // 用户没有滚动，说明用户选择的是我们给用户展示的默认值
+    emit('changeCont', tablewareData)
+  }
+}
 </script>
 
 <style scoped lang="scss">

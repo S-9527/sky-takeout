@@ -47,88 +47,72 @@
 	</view>
 </template>
 
-<script>
+<script setup lang="ts">
+	import { onMounted } from 'vue'
 	import uniStatusBar from "../uni-status-bar/uni-status-bar.vue";
 	import uniIcons from "../uni-icons/uni-icons.vue";
 
-	export default {
-		name: "UniNavBar",
-		components: {
-			uniStatusBar,
-			uniIcons
-		},
-		props: {
+	defineOptions({
+		name: "UniNavBar"
+	})
+
+	const props = withDefaults(
+		defineProps<{
 			// 标题
-			title: {
-				type: String,
-				default: ""
-			},
+			title?: string
 			// 导航左侧信息
-			leftText: {
-				type: String,
-				default: ""
-			},
+			leftText?: string
 			// 导航右侧信息
-			rightText: {
-				type: String,
-				default: ""
-			},
+			rightText?: string
 			// 左侧图标
-			leftIcon: {
-				type: String,
-				default: ""
-			},
+			leftIcon?: string
 			// 右侧图标
-			rightIcon: {
-				type: String,
-				default: ""
-			},
+			rightIcon?: string
 			// 定位信息
-			fixed: {
-				type: [Boolean, String],
-				default: false
-			},
+			fixed?: boolean
 			// 颜色
-			color: {
-				type: String,
-				default: "#000000"
-			},
+			color?: string
 			// 背景色
-			backgroundColor: {
-				type: String,
-				default: "#FFFFFF"
-			},
+			backgroundColor?: string
 			// 状态
-			statusBar: {
-				type: [Boolean, String],
-				default: false
-			},
+			statusBar?: boolean
 			// 是否有阴影
-			shadow: {
-				type: [String, Boolean],
-				default: false
-			},
-			border: {
-				type: [String, Boolean],
-				default: true
-			}
-		},
-        mounted() {
-          if(uni.report && this.title !== '') {
-              uni.report('title', this.title)
-          }
-        },
-		methods: {
-			// 触发左侧信息
-			onClickLeft() {
-				this.$emit("clickLeft");
-			},
-			// 触发右侧信息
-			onClickRight() {
-				this.$emit("clickRight");
-			}
+			shadow?: boolean
+			border?: boolean
+		}>(),
+		{
+			title: "",
+			leftText: "",
+			rightText: "",
+			leftIcon: "",
+			rightIcon: "",
+			fixed: false,
+			color: "#000000",
+			backgroundColor: "#FFFFFF",
+			statusBar: false,
+			shadow: false,
+			border: true
 		}
-	};
+	)
+	const emit = defineEmits<{
+		(e: "clickLeft"): void
+		(e: "clickRight"): void
+	}>()
+
+	onMounted(() => {
+		if (uni.report && props.title !== '') {
+			uni.report('title', props.title)
+		}
+	})
+
+	// 触发左侧信息
+	function onClickLeft() {
+		emit("clickLeft")
+	}
+	// 触发右侧信息
+	function onClickRight() {
+		emit("clickRight")
+	}
 </script>
 
 <style lang="scss" scoped>

@@ -6,17 +6,17 @@
     </view>
   </view>
 </template>
-<script>
-export default {
-  // 获取父级传的数据
-  props: {
+<script setup lang="ts">
+// 获取父级传的数据
+withDefaults(
+  defineProps<{
     // 数据加载提示
-    loadingText:{
-      type: String,
-      default: ''
-    }
+    loadingText?: string
+  }>(),
+  {
+    loadingText: ''
   }
-}
+)
 </script>
 
 <style lang="scss">

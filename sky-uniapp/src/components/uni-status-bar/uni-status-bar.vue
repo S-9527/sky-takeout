@@ -4,16 +4,12 @@
     <slot />
   </view>
 </template>
-<script>
-var statusBarHeight = uni.getSystemInfoSync().statusBarHeight + "px";
-export default {
-  name: "UniStatusBar",
-  data() {
-    return {
-      statusBarHeight: statusBarHeight,
-    };
-  },
-};
+<script setup lang="ts">
+defineOptions({
+  name: "UniStatusBar"
+})
+
+const statusBarHeight = uni.getSystemInfoSync().statusBarHeight + "px";
 </script>
 <style lang="scss" scoped>
 .uni-status-bar {

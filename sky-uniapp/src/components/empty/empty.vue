@@ -5,17 +5,17 @@
     <view class="empty-des">{{textLabel}}</view>
   </view>
 </template>
-<script>
-export default {
-  // 获取父级传的数据
-  props:{
+<script setup lang="ts">
+// 获取父级传的数据
+withDefaults(
+  defineProps<{
     // 空页面提示
-    'textLabel':{
-      type: String,
-      default: '暂无数据'
-    }
+    textLabel?: string
+  }>(),
+  {
+    textLabel: '暂无数据'
   }
-}
+)
 </script>
 <style lang="scss" scoped>
 .empty-box{

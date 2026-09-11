@@ -3429,8 +3429,9 @@ components:
           $ref: '#/components/schemas/EnabledFlag'
         items:
           type: array
-          minItems: 1
-          description: 组成明细;同一菜品不可重复出现(唯一约束 `(setmealId, dishId)`)
+          description: |
+            组成明细;同一菜品不可重复出现(唯一约束 `(setmealId, dishId)`)。
+            缺失或为空是业务规则违反 → 422 `SETMEAL_ITEMS_EMPTY`(不走 400 参数校验)。
           items:
             $ref: '#/components/schemas/SetmealItem'
 
@@ -3460,7 +3461,9 @@ components:
           $ref: '#/components/schemas/EnabledFlag'
         items:
           type: array
-          minItems: 1
+          description: |
+            组成明细;不传表示不改组成。
+            套餐必须始终至少含一个菜品,所以空数组同样返回 422 `SETMEAL_ITEMS_EMPTY`(不能"清空套餐")。
           items:
             $ref: '#/components/schemas/SetmealItem'
 

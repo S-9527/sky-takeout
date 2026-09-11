@@ -2,6 +2,7 @@ package com.sky;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
 /**
@@ -12,6 +13,8 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
  */
 @SpringBootApplication
 @ConfigurationPropertiesScan
+// 定时任务:目前只有「未支付订单超时关单」(领域 §4 的 15 分钟)
+@EnableScheduling
 public class SkyApplication {
 
     public static void main(String[] args) {

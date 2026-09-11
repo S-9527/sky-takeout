@@ -128,6 +128,7 @@ node scripts/smoke-cart.mjs       # 购物车:同菜同口味合并/口味归一
 node scripts/smoke-profile.mjs    # 地址簿:默认地址唯一/上限 20/R9 隔离/幂等设默认,20 项
 node scripts/smoke-orders.mjs     # 顾客订单:试算/下单(R3/R5)/快照/取消状态机/再来一单/催单,30 项
 node scripts/smoke-payments.mjs   # 支付与退款:mock 发起即成功/轮询/R9/仅 ADMIN 退款/退款校验,26 项
+node scripts/smoke-admin-orders.mjs  # 管理端订单:接单→派送→完成/拒单退款/取消规则/状态计数,26 项
 ```
 
 脚本打的是 `http://localhost:8080`(可用 `SKY_BASE_URL` 覆盖),失败时以非零码退出,可直接串进 CI。

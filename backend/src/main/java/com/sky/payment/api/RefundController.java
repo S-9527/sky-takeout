@@ -53,6 +53,8 @@ public class RefundController {
     @ResponseStatus(HttpStatus.CREATED)
     public RefundResponse create(@Valid @RequestBody RefundCreateRequest request) {
         return RefundResponse.from(paymentService.createRefund(
-                request.orderNo(), request.reason(), request.reasonType(), request.expectedAmountCents()));
+                request.orderNo(), request.reason(),
+                request.reasonType() == null ? null : request.reasonType().name(),
+                request.expectedAmountCents()));
     }
 }

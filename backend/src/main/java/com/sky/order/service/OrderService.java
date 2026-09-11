@@ -29,6 +29,7 @@ import com.sky.common.error.CommonErrorCode;
 import com.sky.common.error.ErrorResponse;
 import com.sky.common.util.Hashes;
 import com.sky.common.util.Times;
+import com.sky.insights.service.DateRangeValidator;
 import com.sky.order.domain.CancelSide;
 import com.sky.order.domain.ComboSnapshotItem;
 import com.sky.order.domain.FlavorChoice;
@@ -43,6 +44,7 @@ import com.sky.order.domain.PayStatus;
 import com.sky.order.mapper.OrderItemCount;
 import com.sky.order.mapper.OrderItemMapper;
 import com.sky.order.mapper.OrderMapper;
+import com.sky.order.mapper.OrderStatusCount;
 import com.sky.notification.service.OrderNotifier;
 import com.sky.profile.service.AddressService;
 import com.sky.profile.service.DeliveryAddressView;
@@ -87,6 +89,12 @@ public class OrderService {
     /** 催单节流:同订单 5 分钟一次(契约 §2.4 第 5 项)。 */
     static final Duration URGE_WINDOW = Duration.ofMinutes(5);
 
+    /** 未支付订单超时关单窗口(领域 §4 / 契约 §2.4 第 3 项)。 */
+    public static final long PAY_TIMEOUT_MINUTES = 15;
+
+    /** 单次关单批量上限:定时任务不该在一轮里处理无界数据。 */
+    static final int TIMEOUT_BATCH_SIZE = 200;
+
     private static final String DUP_KEY_PREFIX = "sky:order:dup:";
     private static final String URGE_KEY_PREFIX = "sky:order:urge:";
 
@@ -99,10 +107,12 @@ public class OrderService {
     private final SetmealService setmealService;
     private final OrderNotifier orderNotifier;
     private final StringRedisTemplate redis;
+    private final DateRangeValidator dateRangeValidator;
 
     public OrderService(OrderMapper orderMapper, OrderItemMapper orderItemMapper, OrderNoGenerator orderNoGenerator,
                         CartService cartService, AddressService addressService, ShopStatusService shopStatusService,
-                        SetmealService setmealService, OrderNotifier orderNotifier, StringRedisTemplate redis) {
+                        SetmealService setmealService, OrderNotifier orderNotifier, StringRedisTemplate redis,
+                        DateRangeValidator dateRangeValidator) {
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
         this.orderNoGenerator = orderNoGenerator;
@@ -112,6 +122,7 @@ public class OrderService {
         this.setmealService = setmealService;
         this.orderNotifier = orderNotifier;
         this.redis = redis;
+        this.dateRangeValidator = dateRangeValidator;
     }
 
     /** 金额构成。{@code pay = total + pack + delivery - discount}。 */
@@ -249,6 +260,25 @@ public class OrderService {
 
     public PageResponse<Order> page(Long customerId, OrderStatus status, LocalDate placedAtFrom, LocalDate placedAtTo,
                                     PageQuery pageQuery, SortSpec sortSpec) {
+        return pageInternal(customerId, status, placedAtFrom, placedAtTo, null, null, pageQuery, sortSpec);
+    }
+
+    /**
+     * 管理端分页:额外支持订单号与收货人手机号精确匹配。
+     *
+     * <p>日期区间按**报表规则**校验(起止同时给、起 ≤ 止、跨度 ≤ 366 天),规则归 insights 上下文所有,
+     * 这里通过它的 service 调用,避免同一套校验抄两遍。
+     */
+    public PageResponse<Order> pageForAdmin(OrderStatus status, LocalDate beginDate, LocalDate endDate,
+                                            String orderNo, String phone, Long filterCustomerId,
+                                            PageQuery pageQuery, SortSpec sortSpec) {
+        dateRangeValidator.validate(beginDate, endDate);
+        return pageInternal(filterCustomerId, status, beginDate, endDate, orderNo, phone, pageQuery, sortSpec);
+    }
+
+    private PageResponse<Order> pageInternal(Long customerId, OrderStatus status, LocalDate placedAtFrom,
+                                             LocalDate placedAtTo, String orderNo, String phone,
+                                             PageQuery pageQuery, SortSpec sortSpec) {
         LambdaQueryWrapper<Order> wrapper = Wrappers.lambdaQuery();
         if (customerId != null) {
             wrapper.eq(Order::getCustomerId, customerId);
@@ -263,11 +293,127 @@ public class OrderService {
             // 含首含尾:结束日是当天 23:59:59,所以用"次日 0 点前"
             wrapper.lt(Order::getPlacedAt, placedAtTo.plusDays(1).atStartOfDay());
         }
+        if (StringUtils.hasText(orderNo)) {
+            wrapper.eq(Order::getOrderNo, orderNo);
+        }
+        if (StringUtils.hasText(phone)) {
+            // 手机号是订单上的地址快照,R9 之外管理端可以按它检索
+            wrapper.eq(Order::getPhone, phone);
+        }
         applySort(wrapper, sortSpec);
 
         Page<Order> page = orderMapper.selectPage(new Page<>(pageQuery.page(), pageQuery.pageSize()), wrapper);
         fillItemCounts(page.getRecords());
         return PageResponse.from(page);
+    }
+
+    // ---------------------------------------------------------------- 管理端:查询与状态迁移
+
+    /** 管理端按 id 取单:不受顾客归属限制(R9 只约束顾客端)。 */
+    public Order requireById(Long orderId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(OrderErrorCode.ORDER_NOT_FOUND);
+        }
+        return order;
+    }
+
+    /** 各状态订单数;未出现的状态补 0。查询失败按契约返回 500 {@code ORDER_STATUS_COUNT_FAILED}。 */
+    public Map<OrderStatus, Long> statusCounts() {
+        try {
+            Map<OrderStatus, Long> counts = new java.util.EnumMap<>(OrderStatus.class);
+            for (OrderStatus status : OrderStatus.values()) {
+                counts.put(status, 0L);
+            }
+            for (OrderStatusCount row : orderMapper.countByStatus()) {
+                try {
+                    counts.put(OrderStatus.valueOf(row.getStatus()), row.getTotal());
+                } catch (IllegalArgumentException ignored) {
+                    // 库里出现未知状态(人工改库/回滚遗留)时忽略,不让整个角标接口挂掉
+                }
+            }
+            return counts;
+        } catch (RuntimeException ex) {
+            throw new BusinessException(OrderErrorCode.ORDER_STATUS_COUNT_FAILED);
+        }
+    }
+
+    /** 商家接单:PENDING_ACCEPTANCE → ACCEPTED,写 acceptedAt。 */
+    @Transactional
+    public void accept(Long orderId) {
+        Order order = requireById(orderId);
+        OrderStateMachine.requireTransition(order.getStatus(), OrderStatus.ACCEPTED);
+        Order update = new Order();
+        update.setId(orderId);
+        update.setStatus(OrderStatus.ACCEPTED);
+        update.setAcceptedAt(Times.nowLocal());
+        orderMapper.updateById(update);
+    }
+
+    /** 开始派送:ACCEPTED → DELIVERING,写 deliveringAt。 */
+    @Transactional
+    public void startDelivery(Long orderId) {
+        Order order = requireById(orderId);
+        OrderStateMachine.requireTransition(order.getStatus(), OrderStatus.DELIVERING);
+        Order update = new Order();
+        update.setId(orderId);
+        update.setStatus(OrderStatus.DELIVERING);
+        update.setDeliveringAt(Times.nowLocal());
+        orderMapper.updateById(update);
+    }
+
+    /** 完成订单:DELIVERING → COMPLETED(终态;此后不可取消、不可退款,R8)。 */
+    @Transactional
+    public void complete(Long orderId) {
+        Order order = requireById(orderId);
+        OrderStateMachine.requireTransition(order.getStatus(), OrderStatus.COMPLETED);
+        Order update = new Order();
+        update.setId(orderId);
+        update.setStatus(OrderStatus.COMPLETED);
+        update.setCompletedAt(Times.nowLocal());
+        orderMapper.updateById(update);
+    }
+
+    /** 写取消结果(取消方/原因/时间)。状态迁移与退款由调用方决定。 */
+    @Transactional
+    public void markCancelled(Long orderId, CancelSide side, String reason) {
+        Order update = new Order();
+        update.setId(orderId);
+        update.setStatus(OrderStatus.CANCELLED);
+        update.setCancelSide(side);
+        update.setCancelReason(reason);
+        update.setCancelledAt(Times.nowLocal());
+        orderMapper.updateById(update);
+    }
+
+    /**
+     * 超时未支付自动关单(领域 §4:15 分钟)。
+     *
+     * <p>逐单走状态机而不是一条 UPDATE:直接改状态会绕过 R10 的"迁移只能经状态机"。
+     *
+     * @return 本次关闭的订单数
+     */
+    @Transactional
+    public int cancelTimedOutOrders() {
+        LocalDateTime deadline = Times.nowLocal().minusMinutes(PAY_TIMEOUT_MINUTES);
+        List<Long> ids = orderMapper.selectTimedOutIds(deadline, TIMEOUT_BATCH_SIZE);
+        int cancelled = 0;
+        for (Long id : ids) {
+            Order order = orderMapper.selectById(id);
+            if (order == null || order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+                continue;   // 已经被支付或已取消
+            }
+            OrderStateMachine.requireTransition(order.getStatus(), OrderStatus.CANCELLED);
+            Order update = new Order();
+            update.setId(id);
+            update.setStatus(OrderStatus.CANCELLED);
+            update.setCancelSide(CancelSide.SYSTEM);
+            update.setCancelReason("超时未支付,系统自动关闭");
+            update.setCancelledAt(Times.nowLocal());
+            orderMapper.updateById(update);
+            cancelled++;
+        }
+        return cancelled;
     }
 
     public Order requireOwned(Long customerId, Long orderId) {

@@ -33,7 +33,9 @@ import com.sky.order.domain.OrderStatus;
 import com.sky.order.domain.PayStatus;
 import com.sky.order.mapper.OrderItemCount;
 import com.sky.order.mapper.OrderItemMapper;
+import com.sky.insights.service.DateRangeValidator;
 import com.sky.order.mapper.OrderMapper;
+import com.sky.order.mapper.OrderStatusCount;
 import com.sky.profile.service.AddressService;
 import com.sky.profile.service.DeliveryAddressView;
 import com.sky.shop.service.ShopStatusService;
@@ -42,6 +44,7 @@ import com.sky.testsupport.TableInfoTestSupport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -63,13 +66,14 @@ class OrderServiceTest {
     private final ShopStatusService shopStatusService = mock(ShopStatusService.class);
     private final SetmealService setmealService = mock(SetmealService.class);
     private final OrderNotifier orderNotifier = mock(OrderNotifier.class);
+    private final DateRangeValidator dateRangeValidator = mock(DateRangeValidator.class);
     private final StringRedisTemplate redis = mock(StringRedisTemplate.class);
     private final ValueOperations<String, String> valueOps = mock(ValueOperations.class);
 
     private final Map<String, String> redisValues = new HashMap<>();
 
     private final OrderService orderService = new OrderService(orderMapper, orderItemMapper, orderNoGenerator,
-            cartService, addressService, shopStatusService, setmealService, orderNotifier, redis);
+            cartService, addressService, shopStatusService, setmealService, orderNotifier, redis, dateRangeValidator);
 
     @BeforeAll
     static void registerTableInfo() {
@@ -578,5 +582,150 @@ class OrderServiceTest {
         assertThat(OrderService.estimatedDeliveryAt()).isNull();
         assertThat(OrderService.SORT_WHITELIST).containsExactlyInAnyOrder("placedAt", "payAmountCents");
         assertThat(Set.of(OrderService.PACK_AMOUNT_CENTS, OrderService.DELIVERY_AMOUNT_CENTS)).isNotEmpty();
+    }
+
+    // ---------------------------------------------------------------- 管理端:查询、统计与状态迁移
+
+    @Test
+    void adminPageValidatesDateRangeThroughInsightsService() {
+        Page<Order> page = new Page<>(1, 20);
+        page.setRecords(List.of());
+        page.setTotal(0);
+        when(orderMapper.selectPage(any(), any())).thenReturn(page);
+
+        orderService.pageForAdmin(OrderStatus.ACCEPTED, LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31),
+                "202501011200000001", "13800138000", CUSTOMER, PageQuery.of(1, 20),
+                new SortSpec("placedAt", true));
+
+        verify(dateRangeValidator).validate(LocalDate.of(2025, 1, 1), LocalDate.of(2025, 1, 31));
+        verify(orderMapper).selectPage(any(), any());
+    }
+
+    @Test
+    void adminPagePropagatesDateRangeViolation() {
+        org.mockito.Mockito.doThrow(new BusinessException(com.sky.insights.domain.InsightsErrorCode.REPORT_DATE_RANGE_INVALID))
+                .when(dateRangeValidator).validate(any(), any());
+
+        assertThatThrownBy(() -> orderService.pageForAdmin(null, LocalDate.of(2025, 1, 2), LocalDate.of(2025, 1, 1),
+                null, null, null, PageQuery.of(1, 20), new SortSpec("placedAt", true)))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode())
+                                .isEqualTo(com.sky.insights.domain.InsightsErrorCode.REPORT_DATE_RANGE_INVALID));
+        verify(orderMapper, never()).selectPage(any(), any());
+    }
+
+    @Test
+    void statusCountsFillsMissingStatesWithZero() {
+        OrderStatusCount row = new OrderStatusCount();
+        row.setStatus("ACCEPTED");
+        row.setTotal(3L);
+        OrderStatusCount unknown = new OrderStatusCount();
+        unknown.setStatus("LEGACY_STATUS");
+        unknown.setTotal(9L);
+        when(orderMapper.countByStatus()).thenReturn(List.of(row, unknown));
+
+        var counts = orderService.statusCounts();
+
+        assertThat(counts.get(OrderStatus.ACCEPTED)).isEqualTo(3L);
+        assertThat(counts.get(OrderStatus.PENDING_PAYMENT)).isZero();
+        assertThat(counts.get(OrderStatus.COMPLETED)).isZero();
+        assertThat(counts).hasSize(OrderStatus.values().length);
+    }
+
+    /** 统计查询失败按契约返回 500 ORDER_STATUS_COUNT_FAILED。 */
+    @Test
+    void statusCountsMapsQueryFailureToContractCode() {
+        when(orderMapper.countByStatus()).thenThrow(new IllegalStateException("db down"));
+
+        assertThatThrownBy(() -> orderService.statusCounts())
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode()).isEqualTo(OrderErrorCode.ORDER_STATUS_COUNT_FAILED));
+    }
+
+    @Test
+    void acceptMovesPendingAcceptanceToAccepted() {
+        when(orderMapper.selectById(4001L)).thenReturn(order(4001L, OrderStatus.PENDING_ACCEPTANCE));
+
+        orderService.accept(4001L);
+
+        ArgumentCaptor<Order> update = ArgumentCaptor.forClass(Order.class);
+        verify(orderMapper).updateById(update.capture());
+        assertThat(update.getValue().getStatus()).isEqualTo(OrderStatus.ACCEPTED);
+        assertThat(update.getValue().getAcceptedAt()).isNotNull();
+    }
+
+    @Test
+    void acceptRejectsOrdersInOtherStates() {
+        when(orderMapper.selectById(4001L)).thenReturn(order(4001L, OrderStatus.PENDING_PAYMENT));
+
+        assertThatThrownBy(() -> orderService.accept(4001L))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode()).isEqualTo(OrderErrorCode.ORDER_INVALID_TRANSITION));
+    }
+
+    @Test
+    void startDeliveryAndCompleteFollowTheStateMachine() {
+        when(orderMapper.selectById(4001L)).thenReturn(order(4001L, OrderStatus.ACCEPTED));
+        orderService.startDelivery(4001L);
+        ArgumentCaptor<Order> delivery = ArgumentCaptor.forClass(Order.class);
+        verify(orderMapper).updateById(delivery.capture());
+        assertThat(delivery.getValue().getStatus()).isEqualTo(OrderStatus.DELIVERING);
+        assertThat(delivery.getValue().getDeliveringAt()).isNotNull();
+
+        when(orderMapper.selectById(4002L)).thenReturn(order(4002L, OrderStatus.DELIVERING));
+        orderService.complete(4002L);
+        ArgumentCaptor<Order> completion = ArgumentCaptor.forClass(Order.class);
+        verify(orderMapper, times(2)).updateById(completion.capture());
+        assertThat(completion.getAllValues().get(1).getStatus()).isEqualTo(OrderStatus.COMPLETED);
+        assertThat(completion.getAllValues().get(1).getCompletedAt()).isNotNull();
+    }
+
+    /** R8:已完成是终态,不能再次迁移。 */
+    @Test
+    void completeRejectsTerminalOrders() {
+        when(orderMapper.selectById(4001L)).thenReturn(order(4001L, OrderStatus.COMPLETED));
+
+        assertThatThrownBy(() -> orderService.complete(4001L))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode()).isEqualTo(OrderErrorCode.ORDER_INVALID_TRANSITION));
+    }
+
+    @Test
+    void markCancelledWritesSideReasonAndTime() {
+        orderService.markCancelled(4001L, CancelSide.MERCHANT, "菜品售完");
+
+        ArgumentCaptor<Order> update = ArgumentCaptor.forClass(Order.class);
+        verify(orderMapper).updateById(update.capture());
+        assertThat(update.getValue().getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(update.getValue().getCancelSide()).isEqualTo(CancelSide.MERCHANT);
+        assertThat(update.getValue().getCancelReason()).isEqualTo("菜品售完");
+        assertThat(update.getValue().getCancelledAt()).isNotNull();
+    }
+
+    @Test
+    void timeoutJobCancelsOnlyStillUnpaidOrders() {
+        when(orderMapper.selectTimedOutIds(any(), anyInt())).thenReturn(List.of(4001L, 4002L, 4003L));
+        when(orderMapper.selectById(4001L)).thenReturn(order(4001L, OrderStatus.PENDING_PAYMENT));
+        // 4002 已经被支付(定时任务与支付回调竞争),4003 已经不存在
+        when(orderMapper.selectById(4002L)).thenReturn(order(4002L, OrderStatus.PENDING_ACCEPTANCE));
+        when(orderMapper.selectById(4003L)).thenReturn(null);
+
+        int cancelled = orderService.cancelTimedOutOrders();
+
+        assertThat(cancelled).isEqualTo(1);
+        ArgumentCaptor<Order> update = ArgumentCaptor.forClass(Order.class);
+        verify(orderMapper).updateById(update.capture());
+        assertThat(update.getValue().getId()).isEqualTo(4001L);
+        assertThat(update.getValue().getCancelSide()).isEqualTo(CancelSide.SYSTEM);
+        assertThat(update.getValue().getCancelReason()).contains("超时");
+        assertThat(OrderService.PAY_TIMEOUT_MINUTES).isEqualTo(15);
+    }
+
+    @Test
+    void timeoutJobDoesNothingWhenNoTimedOutOrders() {
+        when(orderMapper.selectTimedOutIds(any(), anyInt())).thenReturn(List.of());
+
+        assertThat(orderService.cancelTimedOutOrders()).isZero();
+        verify(orderMapper, never()).updateById(any(Order.class));
     }
 }

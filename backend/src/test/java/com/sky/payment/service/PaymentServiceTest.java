@@ -340,7 +340,7 @@ class PaymentServiceTest {
         when(gateway.refund(any(), any(Payment.class), anyLong(), any()))
                 .thenReturn(new PaymentGateway.RefundReceipt(false, null, "渠道不可用"));
 
-        assertThatThrownBy(() -> paymentService.createRefund(ORDER_NO, "原因", RefundReasonType.MERCHANT_REJECT, null))
+        assertThatThrownBy(() -> paymentService.createRefund(ORDER_NO, "原因", "MERCHANT_REJECT", null))
                 .isInstanceOfSatisfying(BusinessException.class, ex -> {
                     assertThat(ex.errorCode()).isEqualTo(PaymentErrorCode.PAY_REFUND_FAILED);
                     assertThat(ex.errorCode().httpStatus()).isEqualTo(org.springframework.http.HttpStatus.BAD_GATEWAY);
@@ -364,7 +364,7 @@ class PaymentServiceTest {
                 refund(7001L, RefundStatus.SUCCESS));
 
         PaymentService.RefundView view = paymentService.createRefund(
-                ORDER_NO, "顾客电话要求取消", RefundReasonType.CUSTOMER_APPLY, 5200L);
+                ORDER_NO, "顾客电话要求取消", "CUSTOMER_APPLY", 5200L);
 
         ArgumentCaptor<Refund> inserted = ArgumentCaptor.forClass(Refund.class);
         verify(refundMapper).insert(inserted.capture());

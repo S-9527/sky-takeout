@@ -64,7 +64,7 @@ class RefundControllerTest {
     @Test
     void createPassesRequestFieldsThrough() {
         when(paymentService.createRefund(eq("202501011200000001"), eq("顾客电话要求取消"),
-                eq(RefundReasonType.CUSTOMER_APPLY), eq(5200L))).thenReturn(refundView());
+                eq("CUSTOMER_APPLY"), eq(5200L))).thenReturn(refundView());
 
         RefundResponse response = controller.create(new RefundCreateRequest(
                 "202501011200000001", "顾客电话要求取消", RefundReasonType.CUSTOMER_APPLY, 5200L));
@@ -72,7 +72,7 @@ class RefundControllerTest {
         assertThat(response.id()).isEqualTo(7001L);
         assertThat(response.amountCents()).isEqualTo(5200L);
         verify(paymentService).createRefund("202501011200000001", "顾客电话要求取消",
-                RefundReasonType.CUSTOMER_APPLY, 5200L);
+                "CUSTOMER_APPLY", 5200L);
     }
 
     @Test

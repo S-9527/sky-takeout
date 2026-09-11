@@ -194,7 +194,8 @@ public class PaymentService {
      * <p>渠道**受理成功**才落退款记录:受理失败直接 502,订单状态与 payStatus 不变(R6)。
      */
     @Transactional
-    public RefundView createRefund(String orderNo, String reason, RefundReasonType reasonType, Long expectedAmountCents) {
+    public RefundView createRefund(String orderNo, String reason, String reasonTypeName, Long expectedAmountCents) {
+        RefundReasonType reasonType = parseReasonType(reasonTypeName);
         OrderService.OrderPaymentView order = orderService.findPaymentViewByOrderNo(orderNo)
                 .orElseThrow(() -> new BusinessException(PaymentErrorCode.PAY_ORDER_NOT_FOUND));
 
@@ -349,6 +350,23 @@ public class PaymentService {
             throw new BusinessException(PaymentErrorCode.PAY_ORDER_NOT_PAID);
         }
         return payment;
+    }
+
+    /**
+     * 跨上下文调用方(order 的取消流程)传的是**字符串**而不是 {@code RefundReasonType}:
+     * 跨上下文只能用对方的 service 包,不能引用 payment 的 domain 枚举(架构规则 L4)。
+     */
+    private static RefundReasonType parseReasonType(String name) {
+        if (name == null || name.isBlank()) {
+            return RefundReasonType.OTHER;
+        }
+        try {
+            return RefundReasonType.valueOf(name);
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException(CommonErrorCode.COMMON_VALIDATION_FAILED,
+                    "退款原因分类不合法",
+                    List.of(new ErrorResponse.Detail("reasonType", "取值不在允许集合内")));
+        }
     }
 
     private static boolean isPaid(String payStatus) {

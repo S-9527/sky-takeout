@@ -31,7 +31,6 @@ class CategoryControllerTest {
 
     private final CategoryService categoryService = mock(CategoryService.class);
     private final CategoryController controller = new CategoryController(categoryService);
-    private final CustomerCatalogController customerController = new CustomerCatalogController(categoryService);
 
     private static Category category() {
         Category category = new Category();
@@ -119,15 +118,5 @@ class CategoryControllerTest {
         controller.changeStatus(1L, new StatusPatchRequest(0));
 
         verify(categoryService).setStatus(1L, EnableStatus.DISABLED);
-    }
-
-    @Test
-    void customerCategoriesNeverIncludeDisabledOnes() {
-        when(categoryService.list(eq(CategoryType.DISH), anyBoolean())).thenReturn(List.of(category()));
-
-        List<CategoryResponse> result = customerController.categories(CategoryType.DISH);
-
-        assertThat(result).hasSize(1);
-        verify(categoryService).list(CategoryType.DISH, false);
     }
 }

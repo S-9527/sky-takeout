@@ -77,6 +77,51 @@ public class DishService {
         return dish;
     }
 
+    /**
+     * 顾客端按分类查菜品:只返回起售菜品。
+     *
+     * <p>分类不存在 → 404;分类存在但被禁用、或不是菜品分类 → **空页而不是报错**:
+     * 对顾客来说"这个分类下没有可点的东西"和"这个分类不可见"是同一种结果。
+     */
+    public PageResponse<Dish> pageCustomerVisible(Long categoryId, PageQuery pageQuery) {
+        Category category = categoryService.requireById(categoryId);
+        if (!isVisibleDishCategory(category)) {
+            return PageResponse.empty(pageQuery.page(), pageQuery.pageSize());
+        }
+        LambdaQueryWrapper<Dish> wrapper = Wrappers.<Dish>lambdaQuery()
+                .eq(Dish::getCategoryId, categoryId)
+                .eq(Dish::getStatus, EnableStatus.ENABLED)
+                .orderByAsc(Dish::getSortOrder)
+                .orderByAsc(Dish::getId);
+        Page<Dish> page = dishMapper.selectPage(new Page<>(pageQuery.page(), pageQuery.pageSize()), wrapper);
+        return PageResponse.from(page);
+    }
+
+    /**
+     * 顾客端菜品详情:不存在 → 404;停售、或所在分类不可见 → 422 {@code DISH_OFF_SALE}。
+     *
+     * <p>分类被禁用时用"已下架"而不是"不存在":顾客此前见过这个商品,告诉他"下架了、重新选"比
+     * 假装商品不存在更好;而 R9 之外,商品可见性只能由服务端决定。
+     */
+    public Dish requireCustomerVisible(Long id) {
+        Dish dish = requireById(id);
+        if (dish.getStatus() == null || !dish.getStatus().isEnabled()) {
+            throw new BusinessException(CatalogErrorCode.DISH_OFF_SALE);
+        }
+        Category category = categoryService.requireById(dish.getCategoryId());
+        if (!isVisibleDishCategory(category)) {
+            throw new BusinessException(CatalogErrorCode.DISH_OFF_SALE, "商品已下架,请重新选择",
+                    List.of(new ErrorResponse.Detail("categoryId", "所属分类不可见")));
+        }
+        return dish;
+    }
+
+    private static boolean isVisibleDishCategory(Category category) {
+        return category.getType() == CategoryType.DISH
+                && category.getStatus() != null
+                && category.getStatus().isEnabled();
+    }
+
     /** 某菜品的口味配置,按 sortOrder 升序。停售菜品也照常返回(配置不因停售丢失)。 */
     public List<DishFlavor> flavorsOf(Long dishId) {
         return dishFlavorMapper.selectList(Wrappers.<DishFlavor>lambdaQuery()

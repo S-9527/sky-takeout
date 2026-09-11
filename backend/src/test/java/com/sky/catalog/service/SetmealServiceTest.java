@@ -467,4 +467,83 @@ class SetmealServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class,
                         ex -> assertThat(ex.errorCode()).isEqualTo(CatalogErrorCode.SETMEAL_NOT_FOUND));
     }
+
+    // ---------------------------------------------------------------- 顾客端可见性
+
+    @Test
+    void customerPageReturnsEmptyWhenNoSetmealCategoryIsVisible() {
+        when(categoryService.list(CategoryType.SETMEAL, false)).thenReturn(List.of());
+
+        PageResponse<Setmeal> result = setmealService.pageCustomerVisible(null, PageQuery.of(1, 20));
+
+        assertThat(result.records()).isEmpty();
+        verify(setmealMapper, never()).selectPage(any(), any());
+    }
+
+    @Test
+    void customerPageFiltersByVisibleCategoriesAndOptionalCategoryId() {
+        when(categoryService.list(CategoryType.SETMEAL, false))
+                .thenReturn(List.of(category(7L, CategoryType.SETMEAL, EnableStatus.ENABLED)));
+        Page<Setmeal> page = new Page<>(1, 20);
+        page.setRecords(List.of(setmeal(201L, 7L, 4500L, EnableStatus.ENABLED)));
+        page.setTotal(1);
+        when(setmealMapper.selectPage(any(), any())).thenReturn(page);
+
+        assertThat(setmealService.pageCustomerVisible(null, PageQuery.of(1, 20)).records()).hasSize(1);
+        assertThat(setmealService.pageCustomerVisible(7L, PageQuery.of(1, 20)).records()).hasSize(1);
+    }
+
+    /** 可选筛选条件给了不存在的分类 → 空页,不是 404(契约里这个接口只有 400)。 */
+    @Test
+    void customerPageWithUnknownCategoryFilterReturnsEmptyPage() {
+        when(categoryService.list(CategoryType.SETMEAL, false))
+                .thenReturn(List.of(category(7L, CategoryType.SETMEAL, EnableStatus.ENABLED)));
+        Page<Setmeal> page = new Page<>(1, 20);
+        page.setRecords(List.of());
+        page.setTotal(0);
+        when(setmealMapper.selectPage(any(), any())).thenReturn(page);
+
+        PageResponse<Setmeal> result = setmealService.pageCustomerVisible(999L, PageQuery.of(1, 20));
+
+        assertThat(result.records()).isEmpty();
+        assertThat(result.total()).isZero();
+    }
+
+    @Test
+    void customerDetailRejectsUnknownSetmealWith404() {
+        when(setmealMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> setmealService.requireCustomerVisible(999L))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode()).isEqualTo(CatalogErrorCode.SETMEAL_NOT_FOUND));
+    }
+
+    @Test
+    void customerDetailRejectsOffSaleSetmeal() {
+        when(setmealMapper.selectById(201L)).thenReturn(setmeal(201L, 7L, 4500L, EnableStatus.DISABLED));
+
+        assertThatThrownBy(() -> setmealService.requireCustomerVisible(201L))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode()).isEqualTo(CatalogErrorCode.SETMEAL_OFF_SALE));
+    }
+
+    @Test
+    void customerDetailRejectsSetmealWhoseCategoryBecameInvisible() {
+        when(setmealMapper.selectById(201L)).thenReturn(setmeal(201L, 7L, 4500L, EnableStatus.ENABLED));
+        when(categoryService.requireById(7L)).thenReturn(category(7L, CategoryType.SETMEAL, EnableStatus.DISABLED));
+
+        assertThatThrownBy(() -> setmealService.requireCustomerVisible(201L))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.errorCode()).isEqualTo(CatalogErrorCode.SETMEAL_OFF_SALE);
+                    assertThat(ex.details()).isNotEmpty();
+                });
+    }
+
+    @Test
+    void customerDetailReturnsOnSaleSetmealInVisibleCategory() {
+        when(setmealMapper.selectById(201L)).thenReturn(setmeal(201L, 7L, 4500L, EnableStatus.ENABLED));
+        when(categoryService.requireById(7L)).thenReturn(category(7L, CategoryType.SETMEAL, EnableStatus.ENABLED));
+
+        assertThat(setmealService.requireCustomerVisible(201L).getId()).isEqualTo(201L);
+    }
 }

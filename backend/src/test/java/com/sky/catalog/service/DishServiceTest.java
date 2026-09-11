@@ -411,4 +411,83 @@ class DishServiceTest {
         verify(dishMapper, never()).insert(any(Dish.class));
         verify(dishMapper, never()).selectById(anyLong());
     }
+
+    // ---------------------------------------------------------------- 顾客端可见性
+
+    @Test
+    void customerPageRejectsUnknownCategory() {
+        when(categoryService.requireById(999L))
+                .thenThrow(new BusinessException(CatalogErrorCode.CATEGORY_NOT_FOUND));
+
+        assertThatThrownBy(() -> dishService.pageCustomerVisible(999L, PageQuery.of(1, 20)))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode()).isEqualTo(CatalogErrorCode.CATEGORY_NOT_FOUND));
+    }
+
+    /** 分类不可见时返回空页而不是报错:"没有可点的"和"分类藏起来了"对顾客是同一种结果。 */
+    @Test
+    void customerPageReturnsEmptyPageWhenCategoryIsInvisible() {
+        categoryIs(2L, CategoryType.DISH, EnableStatus.DISABLED);
+        PageResponse<Dish> disabled = dishService.pageCustomerVisible(2L, PageQuery.of(2, 50));
+
+        assertThat(disabled.records()).isEmpty();
+        assertThat(disabled.page()).isEqualTo(2);
+        assertThat(disabled.pageSize()).isEqualTo(50);
+        verify(dishMapper, never()).selectPage(any(), any());
+
+        categoryIs(7L, CategoryType.SETMEAL, EnableStatus.ENABLED);
+        assertThat(dishService.pageCustomerVisible(7L, PageQuery.of(1, 20)).records()).isEmpty();
+    }
+
+    @Test
+    void customerPageReturnsOnSaleDishes() {
+        categoryIs(1L, CategoryType.DISH, EnableStatus.ENABLED);
+        Page<Dish> page = new Page<>(1, 20);
+        page.setRecords(List.of(dish(101L, 1L, EnableStatus.ENABLED)));
+        page.setTotal(1);
+        when(dishMapper.selectPage(any(), any())).thenReturn(page);
+
+        PageResponse<Dish> result = dishService.pageCustomerVisible(1L, PageQuery.of(1, 20));
+
+        assertThat(result.records()).hasSize(1);
+        assertThat(result.total()).isEqualTo(1);
+    }
+
+    @Test
+    void customerDetailRejectsUnknownDishWith404() {
+        when(dishMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> dishService.requireCustomerVisible(999L))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode()).isEqualTo(CatalogErrorCode.DISH_NOT_FOUND));
+    }
+
+    @Test
+    void customerDetailRejectsOffSaleDish() {
+        when(dishMapper.selectById(101L)).thenReturn(dish(101L, 1L, EnableStatus.DISABLED));
+
+        assertThatThrownBy(() -> dishService.requireCustomerVisible(101L))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        ex -> assertThat(ex.errorCode()).isEqualTo(CatalogErrorCode.DISH_OFF_SALE));
+    }
+
+    @Test
+    void customerDetailRejectsDishWhoseCategoryBecameInvisible() {
+        when(dishMapper.selectById(101L)).thenReturn(dish(101L, 2L, EnableStatus.ENABLED));
+        categoryIs(2L, CategoryType.DISH, EnableStatus.DISABLED);
+
+        assertThatThrownBy(() -> dishService.requireCustomerVisible(101L))
+                .isInstanceOfSatisfying(BusinessException.class, ex -> {
+                    assertThat(ex.errorCode()).isEqualTo(CatalogErrorCode.DISH_OFF_SALE);
+                    assertThat(ex.details()).isNotEmpty();
+                });
+    }
+
+    @Test
+    void customerDetailReturnsOnSaleDishInVisibleCategory() {
+        when(dishMapper.selectById(101L)).thenReturn(dish(101L, 1L, EnableStatus.ENABLED));
+        categoryIs(1L, CategoryType.DISH, EnableStatus.ENABLED);
+
+        assertThat(dishService.requireCustomerVisible(101L).getId()).isEqualTo(101L);
+    }
 }

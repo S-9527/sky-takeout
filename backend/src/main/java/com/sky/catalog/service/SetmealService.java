@@ -94,6 +94,47 @@ public class SetmealService {
     }
 
     /**
+     * 顾客端套餐列表:只返回起售套餐,且其分类必须启用。
+     *
+     * <p>{@code categoryId} 可选。分类不存在或不可见时返回**空页**而不是 404——
+     * 这个参数是筛选条件,不是路径资源(契约的 03-api 索引也只列了 COMMON_VALIDATION_FAILED)。
+     */
+    public PageResponse<Setmeal> pageCustomerVisible(Long categoryId, PageQuery pageQuery) {
+        List<Long> visibleCategoryIds = categoryService.list(CategoryType.SETMEAL, false).stream()
+                .map(Category::getId)
+                .toList();
+        if (visibleCategoryIds.isEmpty()) {
+            return PageResponse.empty(pageQuery.page(), pageQuery.pageSize());
+        }
+        LambdaQueryWrapper<Setmeal> wrapper = Wrappers.<Setmeal>lambdaQuery()
+                .in(Setmeal::getCategoryId, visibleCategoryIds)
+                .eq(Setmeal::getStatus, EnableStatus.ENABLED);
+        if (categoryId != null) {
+            wrapper.eq(Setmeal::getCategoryId, categoryId);
+        }
+        wrapper.orderByDesc(Setmeal::getCreatedAt).orderByAsc(Setmeal::getId);
+
+        Page<Setmeal> page = setmealMapper.selectPage(new Page<>(pageQuery.page(), pageQuery.pageSize()), wrapper);
+        return PageResponse.from(page);
+    }
+
+    /** 顾客端套餐详情:不存在 → 404;停售、或所在分类不可见 → 422 {@code SETMEAL_OFF_SALE}。 */
+    public Setmeal requireCustomerVisible(Long id) {
+        Setmeal setmeal = requireById(id);
+        if (setmeal.getStatus() == null || !setmeal.getStatus().isEnabled()) {
+            throw new BusinessException(CatalogErrorCode.SETMEAL_OFF_SALE);
+        }
+        Category category = categoryService.requireById(setmeal.getCategoryId());
+        if (category.getType() != CategoryType.SETMEAL
+                || category.getStatus() == null
+                || !category.getStatus().isEnabled()) {
+            throw new BusinessException(CatalogErrorCode.SETMEAL_OFF_SALE, "套餐已下架,请重新选择",
+                    List.of(new ErrorResponse.Detail("categoryId", "所属分类不可见")));
+        }
+        return setmeal;
+    }
+
+    /**
      * 套餐组成明细,带上菜品名称与当前单价(联表取实时值,不做快照——快照只发生在下单那一刻)。
      *
      * <p>菜品不可能被真删:被套餐引用时外键 RESTRICT 会挡住删除,所以这里直接复用

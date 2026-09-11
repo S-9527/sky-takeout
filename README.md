@@ -123,11 +123,12 @@ node scripts/smoke-shop.mjs       # 门店:营业状态读写/时间校验/顾�
 node scripts/smoke-catalog.mjs    # 商品-分类:分页/唯一性/类型不可改/启停用可见性/外键删除保护,30 项
 node scripts/smoke-dish.mjs       # 商品-菜品:口味 JSON 往返/整体替换/批量启停/分类启用约束,37 项
 node scripts/smoke-setmeal.mjs    # 商品-套餐:组成整体替换/定价上限/起售前置/连带停售,38 项
+node scripts/smoke-customer-catalog.mjs  # 顾客端目录:可见性过滤/分类启用约束/下架错误码,26 项
 ```
 
 脚本打的是 `http://localhost:8080`(可用 `SKY_BASE_URL` 覆盖),失败时以非零码退出,可直接串进 CI。
-三个脚本会写库,但都自行还原:`smoke-shop.mjs` 结束时把营业状态写回原值,`smoke-catalog.mjs` /
-`smoke-dish.mjs` / `smoke-setmeal.mjs` 只创建 / 删除自己造的 `smoke-` 记录,不碰种子数据。
+它们都会写库但都自行还原:`smoke-shop.mjs` 结束时把营业状态写回原值;catalog / dish / setmeal /
+customer-catalog 只创建或删除自己造的 `smoke-` 记录,不碰种子数据。
 
 ## 本地开发配置
 

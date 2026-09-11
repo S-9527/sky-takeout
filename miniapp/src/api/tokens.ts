@@ -20,8 +20,12 @@ interface UniStorage {
 }
 
 function storage(): UniStorage | null {
-  const candidate = (globalThis as { uni?: Partial<UniStorage> }).uni
-  if (!candidate?.getStorageSync || !candidate.setStorageSync || !candidate.removeStorageSync) {
+  // 必须用全局标识符 `uni`,不能用 `globalThis.uni`:小程序端 uni 由运行时注入为全局变量,
+  // 并不保证挂在 globalThis 上(实机/开发者工具里 globalThis.uni 是 undefined,
+  // 于是会走到"内存降级"——登录能过,刷新页面就掉登录)。
+  if (typeof uni === 'undefined') return null
+  const candidate = uni as unknown as Partial<UniStorage>
+  if (!candidate.getStorageSync || !candidate.setStorageSync || !candidate.removeStorageSync) {
     return null
   }
   return candidate as UniStorage

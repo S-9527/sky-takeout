@@ -98,8 +98,16 @@ interface UniLike {
   }) => UniRequestTask
 }
 
+/**
+ * 取 `uni` 运行时。
+ *
+ * **必须用全局标识符 `uni`**:小程序端它由 uni-app 运行时注入成全局变量,
+ * 并不保证存在于 `globalThis` 上 —— 之前用 `globalThis.uni` 取值,
+ * 在微信开发者工具里就报"当前环境没有 uni.request"(单元测试里反而是好的,
+ * 因为 jsdom 的桩正好挂在 globalThis 上,所以这个问题只有真机才暴露)。
+ */
 function uniApi(): UniLike {
-  const candidate = (globalThis as { uni?: Partial<UniLike> }).uni
+  const candidate = typeof uni === 'undefined' ? null : (uni as unknown as Partial<UniLike>)
   if (!candidate?.request) {
     throw new ApiError({
       status: 0,

@@ -169,7 +169,7 @@
 | 401 | 未认证、令牌无效或过期、密码错误 | `AUTH_TOKEN_INVALID`、`AUTH_TOKEN_EXPIRED`、`AUTH_REFRESH_TOKEN_INVALID`、`AUTH_BAD_CREDENTIALS` |
 | 403 | 已认证但无权限(受众不匹配、角色不足、账号被禁用) | `AUTH_AUDIENCE_MISMATCH`、`AUTH_PERMISSION_DENIED`、`EMPLOYEE_DISABLED`、`CUSTOMER_DISABLED` |
 | 404 | 资源不存在(或不属于当前顾客) | `COMMON_RESOURCE_NOT_FOUND`、`EMPLOYEE_NOT_FOUND`、`DISH_NOT_FOUND`、`ORDER_NOT_FOUND`、`ADDRESS_NOT_FOUND`、`CART_ITEM_NOT_FOUND` 等 |
-| 409 | 唯一键冲突、乐观锁冲突、重复请求 | `*_NAME_TAKEN`、`*_USERNAME_TAKEN`、`*_CONCURRENT_MODIFIED`、`PAY_DUPLICATE_PAYMENT`、`PAY_REFUND_ALREADY_EXISTS`、`ORDER_URGE_TOO_FREQUENT`、`CUSTOMER_DUPLICATE_OPENID` |
+| 409 | 唯一键冲突、重复请求 | `*_NAME_TAKEN`、`*_USERNAME_TAKEN`、`PAY_DUPLICATE_PAYMENT`、`PAY_REFUND_ALREADY_EXISTS`、`ORDER_URGE_TOO_FREQUENT`、`CUSTOMER_DUPLICATE_OPENID` |
 | 422 | 业务规则不满足(状态机、打烊、价格变动、金额不符等) | `ORDER_INVALID_TRANSITION`、`ORDER_SHOP_CLOSED`、`ORDER_PRICE_CHANGED`、`PAY_ORDER_NOT_REFUNDABLE` 等 |
 | 500 | 未预期错误 | `COMMON_INTERNAL_ERROR` |
 | 502 | 外部支付渠道调用失败(Refund 受理失败) | `PAY_REFUND_FAILED` |
@@ -191,7 +191,7 @@
 | `COMMON_METHOD_NOT_ALLOWED` | 405 | 用错了 HTTP 方法(如对只读路径发 POST) | 请求方式不正确 |
 | `COMMON_RESOURCE_NOT_FOUND` | 404 | 通用资源不存在(无更具体错误码时使用) | 请求的资源不存在 |
 | `COMMON_INTERNAL_ERROR` | 500 | 未预期异常(已记日志与 traceId) | 服务器开小差了,请稍后重试 |
-| `COMMON_CONCURRENT_MODIFIED` | 409 | 通用乐观锁冲突(无更具体错误码时使用) | 数据已被他人修改,请刷新后重试 |
+| `COMMON_CONFLICT` | 409 | 唯一键冲突等并发写冲突(无更具体错误码时使用) | 数据冲突,请刷新后重试 |
 
 #### `AUTH_*` — 认证与授权(员工 / 顾客共用)
 
@@ -213,7 +213,6 @@
 | `EMPLOYEE_NOT_FOUND` | 404 | 员工 id 不存在 | 员工不存在 |
 | `EMPLOYEE_USERNAME_TAKEN` | 409 | 新增员工时用户名已存在 | 该用户名已被使用 |
 | `EMPLOYEE_DISABLED` | 403 | 员工 `status=0`(禁用)却尝试登录或调用接口 | 账号已被禁用,请联系管理员 |
-| `EMPLOYEE_CONCURRENT_MODIFIED` | 409 | 编辑员工时乐观锁版本不匹配 | 员工信息已被他人修改,请刷新后重试 |
 | `EMPLOYEE_SELF_DISABLE` | 422 | ADMIN 试图禁用自己 | 不能禁用当前登录账号 |
 | `EMPLOYEE_SELF_ROLE_CHANGE` | 422 | ADMIN 试图把自己的角色降为 STAFF | 不能修改自己的角色 |
 
@@ -247,7 +246,6 @@
 | `DISH_NAME_TAKEN` | 409 | 同分类内菜品名重复 | 该分类下已存在同名菜品 |
 | `DISH_CATEGORY_TYPE_MISMATCH` | 422 | 菜品挂在 `type=SETMEAL` 的分类下 | 菜品只能归属于菜品分类 |
 | `DISH_IN_USE_BY_SETMEAL` | 422 | 菜品被套餐引用,不可删除 | 该菜品已被套餐引用,无法删除 |
-| `DISH_CONCURRENT_MODIFIED` | 409 | 编辑菜品时乐观锁版本不匹配 | 菜品已被他人修改,请刷新后重试 |
 | `DISH_OFF_SALE` | 422 | 顾客加购/下单时菜品已停售 | 商品已下架,请重新选择 |
 
 #### `SETMEAL_*` — 套餐
@@ -262,7 +260,6 @@
 | `SETMEAL_PRICE_EXCEEDS_ITEMS` | 422 | 套餐定价 > 所含菜品单价×份数之和 | 套餐定价不能高于所含菜品合计 |
 | `SETMEAL_DISH_NOT_ON_SALE` | 422 | 套餐起售但所含菜品存在停售 | 所含菜品中有停售商品,无法起售 |
 | `SETMEAL_CONTAINS_DISH` | 422 | 删除菜品时该菜品被套餐引用 | 菜品已被套餐引用,请先从套餐移除 |
-| `SETMEAL_CONCURRENT_MODIFIED` | 409 | 编辑套餐时乐观锁版本不匹配 | 套餐已被他人修改,请刷新后重试 |
 | `SETMEAL_OFF_SALE` | 422 | 顾客加购/下单时套餐已停售 | 套餐已下架,请重新选择 |
 
 #### `CART_*` — 购物车
@@ -327,7 +324,6 @@
 | 错误码 | HTTP | 触发条件 | 面向用户提示建议 |
 |---|---|---|---|
 | `SHOP_STATUS_NOT_FOUND` | 404 | 单行配置缺失(未初始化) | 门店信息不存在 |
-| `SHOP_STATUS_CONCURRENT_MODIFIED` | 409 | 营业状态并发更新冲突 | 营业状态已被他人修改,请刷新 |
 | `SHOP_BUSINESS_HOURS_INVALID` | 400 | `openTime` / `closeTime` 格式非法或逻辑矛盾 | 营业时间设置不合理 |
 
 #### `REPORT_*` — 报表
@@ -347,7 +343,7 @@
 | `UPLOAD_TYPE_NOT_ALLOWED` | 400 | 扩展名或内容类型不在 `jpg/jpeg/png/webp` | 仅支持 jpg/png/webp 格式 |
 | `UPLOAD_STORE_FAILED` | 500 | 存储写入失败 | 图片上传失败,请稍后重试 |
 
-合计 **92** 个错误码(与 79 个 endpoint 不是同一个数字:错误码按上下文收敛,一个码会被多个接口复用)。
+合计 **88** 个错误码(与 79 个 endpoint 不是同一个数字:错误码按上下文收敛,一个码会被多个接口复用)。
 
 ### 2.4 阈值与自主拍板项
 
@@ -366,7 +362,7 @@
 | 9 | 报表缺省区间 | `beginDate`/`endDate` 都省略时取**最近 7 天** | 领域文档未提 |
 | 10 | `total` 口径 | 顾客总数截至 `endDate` 当日 23:59:59;"今日"按 `Asia/Shanghai` | 领域文档未提时区 |
 | 11 | 取消原因 | 顾客取消的 `reason` **可空**;商家取消/拒单 **必填** | 领域文档未提 |
-| 12 | 外键失败的状态码 | 并发下外键失败统一 **409 `COMMON_CONCURRENT_MODIFIED`**,不使用 500 | 领域文档未提 |
+| 12 | 外键失败的状态码 | 并发下外键失败统一 **409 `COMMON_CONFLICT`**,不使用 500 | 领域文档未提 |
 | 13 | 退款受理失败 | **502 `PAY_REFUND_FAILED`**(唯一超出你给定状态码清单的一项) | 收敛到 500 只需改这一个码 |
 | 14 | `traceId` 形式 | 16 位十六进制字符串(如 `0f3a1c2b4d5e6f70`) | 领域文档未规定 |
 | 15 | **`CUSTOMER_*` 前缀** | 新增该前缀给顾客相关错误(领域文档只列了员工/顾客两个角色,未给顾客错误码前缀) | 若并入 `AUTH_*`/`COMMON_*`,需改 5 个码 |
@@ -393,7 +389,7 @@
 | GET | `/api/v1/admin/employees` | 员工分页查询 | 员工 `ADMIN` | `AUTH_PERMISSION_DENIED`、`COMMON_SORT_FIELD_NOT_ALLOWED` |
 | POST | `/api/v1/admin/employees` | 新增员工 | 员工 `ADMIN` | `EMPLOYEE_USERNAME_TAKEN`、`COMMON_VALIDATION_FAILED` |
 | GET | `/api/v1/admin/employees/{id}` | 按 id 查询员工 | 员工 `ADMIN` | `EMPLOYEE_NOT_FOUND` |
-| PUT | `/api/v1/admin/employees/{id}` | 编辑员工 | 员工 `ADMIN` | `EMPLOYEE_NOT_FOUND`、`EMPLOYEE_CONCURRENT_MODIFIED`、`EMPLOYEE_SELF_ROLE_CHANGE` |
+| PUT | `/api/v1/admin/employees/{id}` | 编辑员工 | 员工 `ADMIN` | `EMPLOYEE_NOT_FOUND`、`EMPLOYEE_SELF_ROLE_CHANGE` |
 | PATCH | `/api/v1/admin/employees/{id}/status` | 启用/禁用员工 | 员工 `ADMIN` | `EMPLOYEE_NOT_FOUND`、`EMPLOYEE_SELF_DISABLE` |
 
 ### 3.2 身份 Identity — 顾客(小程序)
@@ -411,7 +407,7 @@
 | 方法 | 路径 | 用途 | 认证受众 | 主要错误码 |
 |---|---|---|---|---|
 | GET | `/api/v1/admin/shop/status` | 管理端查询营业状态 | 员工 | `SHOP_STATUS_NOT_FOUND` |
-| PUT | `/api/v1/admin/shop/status` | 切换营业状态/公告/营业时间 | 员工 | `SHOP_BUSINESS_HOURS_INVALID`、`SHOP_STATUS_CONCURRENT_MODIFIED` |
+| PUT | `/api/v1/admin/shop/status` | 切换营业状态/公告/营业时间 | 员工 | `SHOP_BUSINESS_HOURS_INVALID` |
 | GET | `/api/v1/customer/shop/status` | 顾客端查询营业状态与公告 | 顾客 | — (打烊仍可浏览,R1) |
 
 ### 3.4 商品 Catalog — 管理端:分类
@@ -435,7 +431,7 @@
 | DELETE | `/api/v1/admin/dishes?ids=1,2` | 删除菜品(批量) | 员工 | `DISH_NOT_FOUND`、`DISH_IN_USE_BY_SETMEAL` |
 | PATCH | `/api/v1/admin/dishes/status` | 起售/停售(批量,连带停售含它的套餐) | 员工 | `DISH_NOT_FOUND` |
 | GET | `/api/v1/admin/dishes/{id}` | 按 id 查询菜品(含口味) | 员工 | `DISH_NOT_FOUND` |
-| PUT | `/api/v1/admin/dishes/{id}` | 编辑菜品(口味整体替换) | 员工 | `DISH_NAME_TAKEN`、`DISH_CONCURRENT_MODIFIED` |
+| PUT | `/api/v1/admin/dishes/{id}` | 编辑菜品(口味整体替换) | 员工 | `DISH_NAME_TAKEN` |
 
 ### 3.6 商品 Catalog — 管理端:套餐
 
@@ -446,7 +442,7 @@
 | DELETE | `/api/v1/admin/setmeals?ids=1,2` | 删除套餐(批量) | 员工 | `SETMEAL_NOT_FOUND` |
 | PATCH | `/api/v1/admin/setmeals/status` | 起售/停售(批量) | 员工 | `SETMEAL_NOT_FOUND`、`SETMEAL_DISH_NOT_ON_SALE` |
 | GET | `/api/v1/admin/setmeals/{id}` | 按 id 查询套餐(含所含菜品) | 员工 | `SETMEAL_NOT_FOUND` |
-| PUT | `/api/v1/admin/setmeals/{id}` | 编辑套餐(组成整体替换) | 员工 | `SETMEAL_NAME_TAKEN`、`SETMEAL_CONCURRENT_MODIFIED`、`SETMEAL_PRICE_EXCEEDS_ITEMS` |
+| PUT | `/api/v1/admin/setmeals/{id}` | 编辑套餐(组成整体替换) | 员工 | `SETMEAL_NAME_TAKEN`、`SETMEAL_PRICE_EXCEEDS_ITEMS` |
 
 ### 3.7 商品 Catalog — 顾客端
 

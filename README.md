@@ -35,8 +35,14 @@
 | 层 | 技术 |
 |---|---|
 | 后端 | Spring Boot 4.1、MyBatis-Plus 3.5、Druid、MySQL 8、Redis 7、Flyway、Spring Security + JWT、springdoc、WebSocket |
-| 管理端 | Vue 3.5、TypeScript、Element Plus、Pinia、Vite、ECharts |
-| 用户端 | uni-app、Vue 3、TypeScript、Pinia |
+| 管理端 | Vue 3.5、TypeScript、Element Plus、Pinia、Vite、Tailwind CSS v4、ECharts |
+| 用户端 | uni-app、Vue 3、TypeScript、Pinia、Tailwind CSS v4 |
+| 测试 | 后端 JaCoCo(行覆盖率门禁 60%)+ ArchUnit;前端 Vitest + v8 覆盖率 |
+
+> **Tailwind CSS v4 在小程序端是实验性能力。** 走 `weapp-tailwindcss` 的 v4 方案:
+> `@tailwindcss/vite` 只处理独立 `.css` 文件(不能写在 `App.vue` 的 `<style>` 里),
+> 且需要 `UnifiedViteWeappTailwindcssPlugin` 把原子类翻译成小程序可用的选择器。
+> H5 端无此限制。详见 [官方 uni-app v4 指引](https://sonofmagic.github.io/weapp-tailwindcss/docs/quick-start/v4/uni-app-vite)。
 
 ## 快速启动
 
@@ -62,6 +68,21 @@ wsl docker compose \
 `docker-compose.wsl.yml` 只是把两个服务改成 `network_mode: host` 并清掉端口映射,不改任何数据卷。不在这个环境时不要加它。
 
 另一个替代做法是在 `.wslconfig` 的 `[experimental]` 段加 `hostAddressLoopback=true` 并 `wsl --shutdown` 重启,那样标准 compose 文件即可直连;但那会影响整机 WSL 行为,本仓库选择用覆盖文件把影响限制在项目内。
+
+**注意 WSL 空闲休眠。** WSL2 在发行版空闲一段时间后会挂起 VM,容器随之停摆;此时 Windows 侧连 `127.0.0.1:3306` 会被拒绝,后端启动报
+`Communications link failure`。这个报错具有误导性——它看起来像配置错了数据库地址,实际只是 WSL 睡了。判断方法:跑一句 `wsl docker ps`,如果容器状态显示 `Up N seconds`(而不是 `Up N minutes`),就是刚被唤醒重建。
+
+唤醒并等就绪:
+
+```bash
+wsl docker compose \
+  -f /mnt/d/projects/sky-takeout/docker-compose.yml \
+  -f /mnt/d/projects/sky-takeout/docker-compose.wsl.yml up -d
+```
+
+嫌麻烦可以在 WSL 里挂一个常驻进程压住休眠(开发期间有效),例如 `wsl bash -lc "sleep infinity"` 放在一个后台任务里。
+
+**另外:WSL 里没有 JDK。** 本机 JDK/Maven 装在 Windows 侧(`D:\scoop\apps\openjdk25`),Maven 在 WSL 里是通过 `/mnt/d/...` 访问到的 Windows 版。所以后端要在 Windows 上跑;若要在 WSL 内跑后端,需先在发行版里装 JDK 21+ 与 Maven。
 
 </details>
 

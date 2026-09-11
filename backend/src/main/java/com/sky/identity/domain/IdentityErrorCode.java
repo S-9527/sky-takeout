@@ -10,7 +10,6 @@ public enum IdentityErrorCode implements ErrorCode {
     EMPLOYEE_NOT_FOUND(HttpStatus.NOT_FOUND, "员工不存在"),
     EMPLOYEE_USERNAME_TAKEN(HttpStatus.CONFLICT, "该用户名已被使用"),
     EMPLOYEE_DISABLED(HttpStatus.FORBIDDEN, "账号已被禁用,请联系管理员"),
-    EMPLOYEE_CONCURRENT_MODIFIED(HttpStatus.CONFLICT, "员工信息已被他人修改,请刷新后重试"),
     EMPLOYEE_SELF_DISABLE(HttpStatus.UNPROCESSABLE_ENTITY, "不能禁用当前登录账号"),
     EMPLOYEE_SELF_ROLE_CHANGE(HttpStatus.UNPROCESSABLE_ENTITY, "不能修改自己的角色"),
 

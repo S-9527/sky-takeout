@@ -103,7 +103,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateKeyException.class)
     public ResponseEntity<ErrorResponse> handleDuplicateKey(DuplicateKeyException ex) {
         log.warn("唯一键冲突: {}", ex.getMostSpecificCause().getMessage());
-        return build(CommonErrorCode.COMMON_CONCURRENT_MODIFIED, List.of());
+        return build(CommonErrorCode.COMMON_CONFLICT, List.of());
     }
 
     @ExceptionHandler(Exception.class)

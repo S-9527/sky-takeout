@@ -844,7 +844,7 @@ FROM sky_takeout.flyway_schema_history ORDER BY installed_rank;
 | 13 | `orders.tableware_count` | 允许 0(顾客自带餐具),`CHECK >= 0` | 改成 `>= 1` |
 | 14 | 所有枚举列的 `CHECK` 约束 | 新增(领域文档没提),用于在库层兜住取值域;状态**迁移**合法性仍只在应用层 | 删除 `ck_*` 语句,文档 §1.3(c) 同步调整 |
 | 15 | `shop_status` 单行 | 只在种子里插 `id=1`,不加 `CHECK(id=1)`;单行由应用层保证 | 想强约束可加 `CHECK (id = 1)` |
-| 16 | 图片地址 | 种子数据用占位路径 `/img/dish/*.jpg`、`/img/setmeal/*.jpg`(共 26 条 `image_url`),文件并不存在。**待定**:若图片走本地存储(`sky.storage.public-base-url` + `/files/**`)应改成 `/files/dish/*.jpg`;若作为静态资源放进 `src/main/resources/static/img/`,则当前值即为正确路由 | 替换 V2 里 26 条 `image_url` |
+| 16 | 图片地址 | 种子数据用占位路径 `/files/dish/*.jpg`、`/files/setmeal/*.jpg`(共 26 条 `image_url`),文件并不存在,由前端兜底占位图。路由与本地存储约定一致(`sky.storage.public-base-url` + `/files/**`)。**已拍板**:不再改用 `src/main/resources/static/img/` | 若改走静态资源路由,需同步 V2 里 26 条 `image_url` |
 | 17 | 「每顾客至多一条默认地址」「套餐价 ≤ 菜品合计」「套餐与分类 type 匹配」 | 均为跨行/跨表规则,**不落数据库**,由应用层事务保证(库里只提供支撑索引) | 要做成数据库约束需引入触发器 |
 | 18 | `dish_flavor.options` 必须是 JSON 数组 | 应用层 DTO 校验;数据库只用 `JSON` 类型 + `NOT NULL` 保证是合法 JSON | 可在 `V3__` 里补 `CHECK (JSON_TYPE(options) = 'ARRAY')` |
 

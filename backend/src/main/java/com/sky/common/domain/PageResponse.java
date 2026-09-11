@@ -31,4 +31,9 @@ public record PageResponse<T>(List<T> records, long page, long pageSize, long to
     public static <T> PageResponse<T> empty(long page, long pageSize) {
         return new PageResponse<>(List.of(), page, pageSize, 0);
     }
+
+    /** 把实体分页映射为对外 DTO 分页,保留分页元数据。 */
+    public <R> PageResponse<R> map(Function<T, R> mapper) {
+        return new PageResponse<>(records.stream().map(mapper).toList(), page, pageSize, total);
+    }
 }

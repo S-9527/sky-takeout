@@ -24,7 +24,7 @@ info:
     - 分页列表:`{"records": [...], "page": 1, "pageSize": 20, "total": 137}`。
     - 失败:**正确的 HTTP 状态码** + 统一错误体 `{code, message, details?, traceId}`。
       - 400 参数校验失败 / 401 未认证或令牌过期 / 403 已认证但无权限
-      - 404 资源不存在 / 409 唯一键冲突或乐观锁冲突 / 422 业务规则不满足 / 500 未预期错误
+      - 404 资源不存在 / 409 唯一键冲突 / 422 业务规则不满足 / 500 未预期错误
 
     ## 数据约定
     - 金额:整数,**单位分**,字段名以 `Cents` 结尾(如 `payAmountCents`)。
@@ -314,7 +314,6 @@ paths:
       description: |
         仅 ADMIN。可改姓名、手机号、角色、状态;用户名不可在本接口修改。
         ADMIN 不能把自己的角色降为 STAFF,也不能禁用自己(422 `EMPLOYEE_SELF_ROLE_CHANGE`, `EMPLOYEE_SELF_DISABLE`)。
-        请求携带 `version` 时按乐观锁校验,冲突返回 409 `EMPLOYEE_CONCURRENT_MODIFIED`。
       requestBody:
         required: true
         content:
@@ -935,7 +934,7 @@ paths:
       summary: 编辑菜品
       description: |
         传入 `flavors` 时**整体替换**口味配置(未出现的旧口味被删除)。
-        停售菜品保留口味配置(领域文档 3.5)。乐观锁冲突 409 `DISH_CONCURRENT_MODIFIED`。
+        停售菜品保留口味配置(领域文档 3.5)。
       requestBody:
         required: true
         content:
@@ -1108,7 +1107,7 @@ paths:
       tags: [Catalog-Admin]
       operationId: updateSetmeal
       summary: 编辑套餐
-      description: 传入 `items` 时整体替换组成明细。乐观锁冲突 409 `SETMEAL_CONCURRENT_MODIFIED`。
+      description: 传入 `items` 时整体替换组成明细。
       requestBody:
         required: true
         content:
@@ -2516,7 +2515,7 @@ components:
             message: 请求的资源不存在
             traceId: 0f3a1c2b4d5e6f70
     Conflict:
-      description: 唯一键冲突或乐观锁冲突(409)
+      description: 唯一键冲突(409)
       content:
         application/json:
           schema:
@@ -2820,11 +2819,6 @@ components:
           $ref: '#/components/schemas/EmployeeRole'
         status:
           $ref: '#/components/schemas/EmployeeStatus'
-        version:
-          type: integer
-          format: int64
-          description: 可选。乐观锁版本号;不传则不做并发校验
-          example: 3
 
     ChangePasswordRequest:
       type: object
@@ -3315,10 +3309,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DishFlavor'
-        version:
-          type: integer
-          format: int64
-          description: 可选乐观锁版本号
 
     SetmealItem:
       type: object
@@ -3469,10 +3459,6 @@ components:
           minItems: 1
           items:
             $ref: '#/components/schemas/SetmealItem'
-        version:
-          type: integer
-          format: int64
-          description: 可选乐观锁版本号
 
     ########################################################################
     # 购物车 Cart

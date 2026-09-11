@@ -32,11 +32,8 @@ import com.sky.security.TokenService;
 @Service
 public class EmployeeService {
 
-    /** 新建员工的初始密码。与种子数据里的 admin / zhangsan 保持一致,便于本地联调。 */
-    private static final String INITIAL_PASSWORD = "123456";
-
-    /** 与 docs/03-api.md §1.6 的白名单一致。 */
-    private static final Set<String> SORT_WHITELIST = Set.of("createdAt", "username", "lastLoginAt");
+    /** 与 docs/03-api.md §1.6 的白名单一致。控制器解析 sort 参数时复用它,避免两处各写一份。 */
+    public static final Set<String> SORT_WHITELIST = Set.of("createdAt", "username", "lastLoginAt");
 
     private final EmployeeMapper employeeMapper;
     private final PasswordEncoder passwordEncoder;
@@ -85,9 +82,19 @@ public class EmployeeService {
         return employee;
     }
 
-    public PageResponse<Employee> page(String name, PageQuery pageQuery, SortSpec sortSpec) {
-        LambdaQueryWrapper<Employee> wrapper = Wrappers.<Employee>lambdaQuery()
-                .like(StringUtils.hasText(name), Employee::getName, name);
+    public PageResponse<Employee> page(String name, Integer status, EmployeeRole role,
+                                       PageQuery pageQuery, SortSpec sortSpec) {
+        LambdaQueryWrapper<Employee> wrapper = Wrappers.lambdaQuery();
+        if (StringUtils.hasText(name)) {
+            // 契约规定 name 同时匹配用户名与姓名:管理员记的是人名,不该逼他先判断该填哪个
+            wrapper.and(w -> w.like(Employee::getUsername, name).or().like(Employee::getName, name));
+        }
+        if (status != null) {
+            wrapper.eq(Employee::getStatus, EnableStatus.of(status));
+        }
+        if (role != null) {
+            wrapper.eq(Employee::getRole, role);
+        }
         applySort(wrapper, sortSpec);
         Page<Employee> page = employeeMapper.selectPage(
                 new Page<>(pageQuery.page(), pageQuery.pageSize()), wrapper);
@@ -95,7 +102,7 @@ public class EmployeeService {
     }
 
     @Transactional
-    public Employee create(String username, String name, String phone, EmployeeRole role) {
+    public Employee create(String username, String rawPassword, String name, String phone, EmployeeRole role) {
         if (employeeMapper.exists(Wrappers.<Employee>lambdaQuery().eq(Employee::getUsername, username))) {
             throw new BusinessException(IdentityErrorCode.EMPLOYEE_USERNAME_TAKEN);
         }
@@ -105,23 +112,40 @@ public class EmployeeService {
         employee.setPhone(phone);
         employee.setRole(role);
         employee.setStatus(EnableStatus.ENABLED);
-        employee.setPasswordHash(passwordEncoder.encode(INITIAL_PASSWORD));
+        employee.setPasswordHash(passwordEncoder.encode(rawPassword));
         employeeMapper.insert(employee);
         return employee;
     }
 
+    /**
+     * 编辑员工。可改姓名、手机号、角色、状态;用户名不可改。
+     *
+     * <p>两个自我保护:超管不能把自己降级,也不能把自己禁用——否则一次误操作就能把系统锁死,
+     * 只能去数据库里改回来。
+     */
     @Transactional
-    public Employee update(Long id, String name, String phone, EmployeeRole role) {
+    public Employee update(Long id, String name, String phone, EmployeeRole role, Integer status) {
         Employee existing = requireById(id);
-        if (role != null && role != existing.getRole() && id.equals(currentEmployeeId())) {
+        EnableStatus targetStatus = EnableStatus.of(status);
+        boolean self = id.equals(currentEmployeeId());
+        if (self && role != existing.getRole()) {
             throw new BusinessException(IdentityErrorCode.EMPLOYEE_SELF_ROLE_CHANGE);
         }
+        if (self && !targetStatus.isEnabled()) {
+            throw new BusinessException(IdentityErrorCode.EMPLOYEE_SELF_DISABLE);
+        }
+
         Employee update = new Employee();
         update.setId(id);
         update.setName(name);
         update.setPhone(phone);
         update.setRole(role);
+        update.setStatus(targetStatus);
         employeeMapper.updateById(update);
+
+        if (!targetStatus.isEnabled()) {
+            tokenService.revokeAll(Audience.ADMIN, id);
+        }
         return requireById(id);
     }
 

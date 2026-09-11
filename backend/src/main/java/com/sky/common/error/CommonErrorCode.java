@@ -11,7 +11,7 @@ public enum CommonErrorCode implements ErrorCode {
     COMMON_SORT_FIELD_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "不支持按该字段排序"),
     COMMON_METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "请求方法不被支持"),
     COMMON_RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "请求的资源不存在"),
-    COMMON_CONCURRENT_MODIFIED(HttpStatus.CONFLICT, "数据已被他人修改,请刷新后重试"),
+    COMMON_CONFLICT(HttpStatus.CONFLICT, "数据冲突,请刷新后重试"),
     COMMON_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "服务器开小差了,请稍后重试");
 
     private final HttpStatus httpStatus;

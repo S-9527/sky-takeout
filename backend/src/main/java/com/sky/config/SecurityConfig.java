@@ -35,7 +35,9 @@ public class SecurityConfig {
     /** 无需认证即可访问。新增放行端点必须写在这里,不要散落在别处。 */
     private static final String[] PUBLIC_ENDPOINTS = {
             "/api/v1/admin/auth/login",
-            "/api/v1/customer/auth/login",
+            "/api/v1/admin/auth/refresh",
+            "/api/v1/customer/auth/wechat-login",
+            "/api/v1/customer/auth/refresh",
             "/api/v1/notify/**",
             "/files/**",
             "/v3/api-docs/**",

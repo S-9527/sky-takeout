@@ -3,7 +3,13 @@
     <!-- 导航 -->
     <navBar></navBar>
     <!-- end -->
-    <view class="home_content" :style="{ paddingTop: ht + 'px' }" @touchmove.stop.prevent="disabledScroll">
+    <view
+      class="home_content"
+      :style="{ paddingTop: ht + 'px' }"
+      <!-- #ifndef H5 -->
+      @touchmove.stop.prevent="disabledScroll"
+      <!-- #endif -->
+    >
       <!-- 店铺基本信息 -->
       <view class="restaurant_info_box">
         <view class="restaurant_info">
@@ -97,7 +103,7 @@
           <view v-if="typeListData.length > 0">该分类下暂无菜品</view>
         </view>
       </view>
-      <view class="restaurant_close">店铺已打烊</view>
+      <view class="restaurant_close" v-if="shopStatus !== 1">店铺已打烊</view>
       <!-- end -->
       <view class="mask-box"></view>
       <!-- 底部去结算 -->
@@ -216,7 +222,6 @@ const menuHeight = ref(0)
 const menuItemHeight = ref(0)
 const navHeight = ref(0)
 const itemId = ref('')
-const arr = ref<any[]>([])
 
 const phone = ref<any>(null)
 
@@ -253,7 +258,6 @@ ht = computed(() => {
 // #endif
 
 onReady(() => {
-  getMenuItemTop()
   // #ifndef MP-WEIXIN
   // H5 没有胶囊按钮，直接量出导航栏高度作为内容区顶部留白
   const navEl = document.querySelector('.navBar')
@@ -291,6 +295,7 @@ function doLogin(params: { code?: string; location?: string }) {
       if (success.code === 200) {
         // 后端返回 accessToken / refreshToken
         store.setToken(success.data.accessToken)
+        uni.setStorageSync('refreshToken', success.data.refreshToken || '')
         store.setShopInfo({
           shopName: success.data.shopName || '',
           shopAddress: success.data.shopAddress || '',
@@ -376,10 +381,7 @@ async function init() {
 }
 
 // 点击左边的栏目切换
-async function swichMenu(params: any, index: number) {
-  if (arr.value.length === 0) {
-    await getMenuItemTop()
-  }
+function swichMenu(params: any, index: number) {
   if (index === typeIndex.value) return
   nextTick(() => {
     typeIndex.value = index
@@ -423,25 +425,6 @@ async function leftMenuStatus(index: number) {
   }
   // 将菜单活动item垂直居中
   scrollTop.value = index * menuItemHeight.value + menuItemHeight.value / 2 - menuHeight.value / 2
-}
-
-// 获取右边菜单每个item到顶部的距离
-function getMenuItemTop() {
-  return new Promise((resolve) => {
-    const selectorQuery = uni.createSelectorQuery()
-    selectorQuery
-      .selectAll('.class-item')
-      .boundingClientRect((rects: any) => {
-        // 如果节点尚未生成，rects值为[]，循环调用执行
-        if (!rects.length) {
-          setTimeout(() => {
-            getMenuItemTop()
-          }, 10)
-          return
-        }
-      })
-      .exec()
-  })
 }
 
 // 获取菜品列表

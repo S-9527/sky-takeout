@@ -7,8 +7,8 @@
      
       leftIcon="arrowleft"
       title="提交订单"
-      statusBar="true"
-      fixed="true"
+      :statusBar="true"
+      :fixed="true"
       color="#ffffff"
       backgroundColor="#333333"
     ></uni-nav-bar>
@@ -108,7 +108,7 @@ import { getLableVal, dateFormat, presentFormat, getWeekDate } from '../../utils
 import AddressPop from './components/address.vue'
 import DishDetail from './components/dishDetail.vue'
 import DishInfo from './components/dishInfo.vue'
-import dayjs from '@/utils/lib/dayjs.min.js'
+import dayjs from 'dayjs'
 
 const store = useAppStore()
 const {
@@ -316,7 +316,7 @@ async function getAddressBookDefault() {
       addressLabel.value = getLableVal(data.label)
       tagLabel.value = data.label
     }
-  })
+  }).catch(() => {})
 }
 
 // 去地址页面

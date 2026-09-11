@@ -20,6 +20,9 @@ importers:
       '@dcloudio/uni-mp-weixin':
         specifier: 3.0.0-alpha-1000920260909822
         version: 3.0.0-alpha-1000920260909822(debug@4.4.3(supports-color@5.5.0))(postcss@8.5.28)(supports-color@5.5.0)(vue@3.5.42(typescript@5.9.3))
+      dayjs:
+        specifier: ^1.11.23
+        version: 1.11.23
       pinia:
         specifier: ^2.3.0
         version: 2.3.1(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3))
@@ -1585,6 +1588,9 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  dayjs@1.11.23:
+    resolution: {integrity: sha512-QDTCU0M0MxR3hQfnlDJfwekQiaanm1ubOD231u73WBckQ/fsamwRLiE2GBz6D3a/xF1NgfiDLJjXBa1hYOYTtQ==}
 
   de-indent@1.0.2:
     resolution: {integrity: sha512-e/1zu3xH5MQryN2zdVaF0OrdNLUbvWxzMbi+iNA6Bky7l1RoP8a2fIbRocyHclXt/arDrrR6lL3TqFD9pMQTsg==}
@@ -4801,6 +4807,8 @@ snapshots:
   cssesc@3.0.0: {}
 
   csstype@3.2.3: {}
+
+  dayjs@1.11.23: {}
 
   de-indent@1.0.2: {}
 

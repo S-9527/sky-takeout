@@ -18,8 +18,3 @@ declare module '@/components/empty/empty' {
   const component: DefineComponent<{}, {}, any>
   export default component
 }
-
-declare module '@/utils/lib/dayjs.min.js' {
-  const dayjs: (date?: string | number | Date) => any
-  export default dayjs
-}

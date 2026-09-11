@@ -5,8 +5,8 @@
      
       leftIcon="arrowleft"
       title="订单备注"
-      statusBar="true"
-      fixed="true"
+      :statusBar="true"
+      :fixed="true"
       color="#ffffff"
       backgroundColor="#333333"
     ></uni-nav-bar>

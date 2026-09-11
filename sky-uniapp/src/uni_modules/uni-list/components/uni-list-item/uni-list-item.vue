@@ -31,7 +31,6 @@
 					<view v-if="rightText || showBadge || showSwitch" class="uni-list-item__extra"
 						:class="{ 'flex--justify': direction === 'column' }">
 						<text v-if="rightText" class="uni-list-item__extra-text">{{ rightText }}</text>
-						<uni-badge v-if="showBadge" :type="badgeType" :text="badgeText" :custom-style="badgeStyle" />
 						<switch v-if="showSwitch" :disabled="disabled" :checked="switchChecked"
 							@change="onSwitchChange" />
 					</view>

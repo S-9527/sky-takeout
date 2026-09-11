@@ -15,6 +15,7 @@
     "@dcloudio/uni-components": "3.0.0-alpha-1000920260909822",
     "@dcloudio/uni-h5": "3.0.0-alpha-1000920260909822",
     "@dcloudio/uni-mp-weixin": "3.0.0-alpha-1000920260909822",
+    "dayjs": "^1.11.23",
     "pinia": "^2.3.0",
     "vue": "^3.4.21"
   },

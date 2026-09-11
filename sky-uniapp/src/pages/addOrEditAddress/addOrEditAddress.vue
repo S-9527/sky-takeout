@@ -6,8 +6,8 @@
      
       leftIcon="arrowleft"
       :title="delId ? '编辑收货地址' : '新增收货地址'"
-      statusBar="true"
-      fixed="true"
+      :statusBar="true"
+      :fixed="true"
       color="#ffffff"
       backgroundColor="#333333"
     ></uni-nav-bar>

@@ -1,7 +1,7 @@
 <template>
   <view>
     <!-- 导航 -->
-    <uni-nav-bar @clickLeft="goBack" leftIcon="arrowleft" title="订单详情" statusBar="true" fixed="true"
+    <uni-nav-bar @clickLeft="goBack" leftIcon="arrowleft" title="订单详情" :statusBar="true" :fixed="true"
       color="#ffffff" backgroundColor="#333333"></uni-nav-bar>
     <!-- end -->
     <view class="order_content orderDetail">

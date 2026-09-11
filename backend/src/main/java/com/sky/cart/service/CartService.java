@@ -87,6 +87,70 @@ public class CartService {
     public record AddResult(CartItemSnapshot item, boolean created) {
     }
 
+    /** 跨上下文的口味入参(order 不能引用 cart 的 {@code FlavorChoice})。 */
+    public record FlavorChoiceRef(String name, String option) {
+    }
+
+    /** 结算用的购物车行:实时商品视图 + 数量 + 口味。 */
+    public record CheckoutLine(
+            Long id,
+            String itemType,
+            Long dishId,
+            Long setmealId,
+            Integer quantity,
+            List<FlavorChoiceRef> flavorChoice,
+            PurchasableItemView goods) {
+    }
+
+    // ---------------------------------------------------------------- 跨上下文:结算与再来一单
+
+    /**
+     * 结算用的购物车行(含**不可售**的行:下单方要据此报 422,而不是自己过滤掉)。
+     *
+     * <p>返回的 {@code CheckoutLine} 定义在 service 包,商品信息是 catalog 的 service 层类型,
+     * 两者都是"跨上下文允许依赖的形状"(架构规则 L4)。
+     */
+    public List<CheckoutLine> linesForCheckout(Long customerId) {
+        List<CartItem> rows = cartItemMapper.selectList(Wrappers.<CartItem>lambdaQuery()
+                .eq(CartItem::getCustomerId, customerId)
+                .orderByAsc(CartItem::getId));
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, PurchasableItemView> goods = loadGoods(rows);
+        return rows.stream()
+                .map(row -> new CheckoutLine(
+                        row.getId(),
+                        row.getItemType() == null ? null : row.getItemType().name(),
+                        row.getDishId(),
+                        row.getSetmealId(),
+                        row.getQuantity(),
+                        row.getFlavorChoice().stream()
+                                .map(choice -> new FlavorChoiceRef(choice.name(), choice.option()))
+                                .toList(),
+                        goods.get(goodsIdOf(row))))
+                .toList();
+    }
+
+    /**
+     * "再来一单"用:加购一件商品,失败不抛异常而是返回**跳过原因**。
+     *
+     * <p>历史订单里的商品可能已下架/已删除,甚至数量合并后超限;这些都不该让整单重来失败,
+     * 契约要求把它们列进 {@code skippedItems}。
+     */
+    public String addOrSkip(Long customerId, String itemType, Long dishId, Long setmealId,
+                            Integer quantity, List<FlavorChoiceRef> flavorChoice) {
+        try {
+            add(customerId, ItemType.valueOf(itemType), dishId, setmealId, quantity,
+                    flavorChoice == null ? List.of() : flavorChoice.stream()
+                            .map(ref -> new FlavorChoice(ref.name(), ref.option()))
+                            .toList());
+            return null;
+        } catch (BusinessException ex) {
+            return ex.getMessage();
+        }
+    }
+
     // ---------------------------------------------------------------- 查询
 
     /**

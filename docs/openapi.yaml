@@ -1537,7 +1537,9 @@ paths:
       operationId: cancelMyOrder
       summary: 顾客取消订单
       description: |
-        仅 `PENDING_PAYMENT` 可被顾客取消(未支付,无需退款)。其他状态 → 422 `ORDER_INVALID_TRANSITION`。
+        仅 `PENDING_PAYMENT` 可被顾客取消(未支付,无需退款)。
+        状态机不允许的迁移(已取消 / 已完成 / 派送中)→ 422 `ORDER_INVALID_TRANSITION`;
+        迁移本身合法、但只有商家能取消(待接单 / 已接单)→ 422 `ORDER_CANNOT_CANCEL`(已支付必须走退款,R6)。
         取消后 `cancelSide=CUSTOMER`,写 `cancelledAt`。
       requestBody:
         required: false

@@ -364,6 +364,9 @@
 | 14 | `traceId` 形式 | 16 位十六进制字符串(如 `0f3a1c2b4d5e6f70`) | 领域文档未规定 |
 | 15 | **`CUSTOMER_*` 前缀** | 新增该前缀给顾客相关错误(领域文档只列了员工/顾客两个角色,未给顾客错误码前缀) | 若并入 `AUTH_*`/`COMMON_*`,需改 5 个码 |
 | 16 | 报表接口不返回 `*_COMMENT` 对比文案 | 只返回数值,文案由前端拼 | 旧实现的 `dateList/orderCount` 对比文案属于展示层 |
+| 17 | 打包费 / 配送费 | 每单固定 **200 分** / **600 分**;优惠恒 0(v2 预留) | 领域文档只规定"有这两列",没规定怎么算。改金额口径要同步 R5 重算与报表统计;改按件/按距离计费需引入更细的计费模型 |
+| 18 | `estimatedDeliveryAt` 预计送达时间 | **不计算**,恒为空 | 领域文档 §7 明确"不做真实配送调度";要填真值就得引入配送上下文,而不是拍一个假 ETA |
+| 19 | 顾客取消非待付款订单的错误码 | 状态机不允许的迁移 → `ORDER_INVALID_TRANSITION`;迁移合法但只有商家能做 → `ORDER_CANNOT_CANCEL` | 两个码的含义重叠;若想合并成一个,需同步改错误码表与实现 |
 | 17 | 顾客端不暴露 `openid` | 顾客资料不返回 `openid` | 领域文档未提;避免敏感标识外泄 |
 | 18 | 支付参数中的 `null` 字段 | 非微信渠道(`MOCK`)时 `timeStamp`/`nonceStr`/`package`/`signType`/`paySign` 可为 `null` | 避免为 MOCK 造一套假签名 |
 | 19 | `payMethod` 未支付时的值 | 用**空字符串** `""`(领域文档写"未支付时为空") | 若你想要 `null`,改 `PayMethod` 枚举 |
@@ -464,7 +467,7 @@
 
 | 方法 | 路径 | 用途 | 认证受众 | 主要错误码 |
 |---|---|---|---|---|
-| POST | `/api/v1/customer/orders/preview` | 订单预览/金额试算(不落库) | 顾客 | `ORDER_CART_EMPTY`、`ORDER_SHOP_CLOSED`、`ORDER_ITEM_NOT_ON_SALE` |
+| POST | `/api/v1/customer/orders/preview` | 订单预览/金额试算(不落库) | 顾客 | `ORDER_CART_EMPTY`、`ORDER_ITEM_NOT_ON_SALE`、`ORDER_ADDRESS_INVALID`(打烊不报错,用 `shopOpen=false` 表达) |
 | POST | `/api/v1/customer/orders` | 下单提交 | 顾客 | `ORDER_CART_EMPTY`、`ORDER_SHOP_CLOSED`、`ORDER_ITEM_NOT_ON_SALE`、`ORDER_PRICE_CHANGED`、`ORDER_ADDRESS_INVALID`、`ORDER_DUPLICATE_SUBMIT` |
 | GET | `/api/v1/customer/orders` | 我的订单分页(按状态筛选) | 顾客 | `COMMON_SORT_FIELD_NOT_ALLOWED` |
 | GET | `/api/v1/customer/orders/{id}` | 订单详情(含不可变明细) | 顾客 | `ORDER_NOT_FOUND` |

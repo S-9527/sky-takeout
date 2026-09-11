@@ -1,10 +1,9 @@
 package com.sky.cart.domain;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import com.sky.common.util.Hashes;
 
 /**
  * 口味选择的归一化键,用于购物车唯一约束
@@ -34,21 +33,6 @@ public final class FlavorKeys {
                         + choice.option().length() + ":" + choice.option())
                 .sorted()
                 .collect(Collectors.joining("&"));
-        return sha256Hex(canonical);
-    }
-
-    private static String sha256Hex(String value) {
-        try {
-            byte[] hash = MessageDigest.getInstance("SHA-256")
-                    .digest(value.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hex = new StringBuilder(hash.length * 2);
-            for (byte b : hash) {
-                hex.append(Character.forDigit((b >> 4) & 0xF, 16));
-                hex.append(Character.forDigit(b & 0xF, 16));
-            }
-            return hex.toString();
-        } catch (NoSuchAlgorithmException ex) {
-            throw new IllegalStateException("JVM 必须支持 SHA-256", ex);
-        }
+        return Hashes.sha256Hex(canonical);
     }
 }

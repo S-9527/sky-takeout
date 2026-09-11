@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.sky.common.error.BusinessException;
 import com.sky.profile.domain.ProfileErrorCode;
@@ -47,6 +48,34 @@ public class AddressService {
             throw new BusinessException(ProfileErrorCode.ADDRESS_NOT_FOUND);
         }
         return address;
+    }
+
+    // ---------------------------------------------------------------- 跨上下文:下单用的地址视图
+
+    /**
+     * 取本人地址的下单视图;不存在或不属于本人时返回空——由调用方决定错误码
+     * (下单场景要的是 422 {@code ORDER_ADDRESS_INVALID},不是 404)。
+     */
+    public Optional<DeliveryAddressView> findDeliveryAddress(Long customerId, Long addressId) {
+        if (addressId == null) {
+            return Optional.empty();
+        }
+        UserAddress address = userAddressMapper.selectById(addressId);
+        if (address == null || !customerId.equals(address.getCustomerId())) {
+            return Optional.empty();
+        }
+        return Optional.of(toView(address));
+    }
+
+    /** 结算页没选地址时用默认地址(没有默认则用最近创建的一条)。 */
+    public Optional<DeliveryAddressView> findPreferredDeliveryAddress(Long customerId) {
+        List<UserAddress> addresses = list(customerId);
+        return addresses.isEmpty() ? Optional.empty() : Optional.of(toView(addresses.get(0)));
+    }
+
+    private static DeliveryAddressView toView(UserAddress address) {
+        return new DeliveryAddressView(address.getId(), address.getConsignee(), address.getPhone(),
+                address.getProvince(), address.getCity(), address.getDistrict(), address.getDetail());
     }
 
     @Transactional

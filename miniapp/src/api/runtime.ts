@@ -94,13 +94,25 @@ export function runtimeStorageRemove(key: string): void {
 }
 
 /**
- * 当前运行平台:H5 是 `web`,微信小程序是 `mp-weixin`(由各端 uni 运行时给出)。
- * 拿不到时返回 `undefined`,调用方按"非小程序"处理。
+ * 目标平台,由 `vite.config.ts` 的 `define` 在编译期注入(H5 是 `h5`,
+ * 微信小程序是 `mp-weixin`)。
+ *
+ * 之所以用编译期常量而不是 `uni.getSystemInfoSync()`:后者在微信端会触发
+ * 「wx.getSystemInfoSync is deprecated」告警(官方要求改用 getAppBaseInfo /
+ * getDeviceInfo / getWindowInfo / getSystemSetting 等)。
+ */
+declare const __UNI_PLATFORM__: string
+
+/**
+ * 当前运行平台。拿不到时返回 `undefined`,调用方按"非小程序"处理。
  */
 export function runtimePlatform(): string | undefined {
   if (platformOverride !== undefined) return platformOverride ?? undefined
+  if (typeof __UNI_PLATFORM__ === 'string' && __UNI_PLATFORM__) return __UNI_PLATFORM__
+
+  // 兜底:构建期常量缺失(例如换了一套构建配置)时用新 API 探测,不要用已废弃的 getSystemInfoSync
   try {
-    const info = uni.getSystemInfoSync?.() as { uniPlatform?: string } | undefined
+    const info = uni.getAppBaseInfo?.() as { uniPlatform?: string } | undefined
     return info?.uniPlatform
   } catch {
     return undefined
@@ -118,7 +130,7 @@ export const DEV_LOGIN_CODE = 'dev-h5-customer'
  *
  * **不能凭"有没有 `wx.login`"判断平台**:H5 开发模式下 `window.wx` 就是 `uni` 本身,
  * 而 `uni.login` 是"当前平台不支持"的桩,一调必失败 —— 这正是 H5 点"微信一键登录"
- * 直接提示"登录失败"的原因。这里用 `uniPlatform` 判断,只在小程序里才真正发起登录。
+ * 直接提示"登录失败"的原因。这里用编译期平台常量判断,只在小程序里才真正发起登录。
  */
 export function runtimeWechatLoginCode(): Promise<string> {
   const login: WechatLogin | null =

@@ -56,7 +56,7 @@ describe('runtime 适配层', () => {
     expect(runtimeStorageGet('k')).toBe('')
   })
 
-  it('平台可由替身伪造,优先于 uni.getSystemInfoSync', () => {
+  it('平台可由替身伪造,优先于运行时探测', () => {
     setRuntimeForTest({ platform: 'mp-weixin' })
     expect(runtimePlatform()).toBe('mp-weixin')
 
@@ -67,20 +67,20 @@ describe('runtime 适配层', () => {
     expect(runtimePlatform()).toBeUndefined()
   })
 
-  it('没伪造平台时读 uni.getSystemInfoSync().uniPlatform,读不到就算未知', () => {
+  it('没伪造平台时用 uni.getAppBaseInfo().uniPlatform 兜底,读不到就算未知', () => {
     setRuntimeForTest(null)
-    const uniStub = (globalThis as { uni?: { getSystemInfoSync?: () => unknown } }).uni
+    const uniStub = (globalThis as { uni?: { getAppBaseInfo?: () => unknown } }).uni
     expect(uniStub).toBeDefined()
 
-    uniStub!.getSystemInfoSync = () => ({ uniPlatform: 'mp-weixin' })
+    uniStub!.getAppBaseInfo = () => ({ uniPlatform: 'mp-weixin' })
     expect(runtimePlatform()).toBe('mp-weixin')
 
-    uniStub!.getSystemInfoSync = () => {
-      throw new Error('getSystemInfoSync:fail')
+    uniStub!.getAppBaseInfo = () => {
+      throw new Error('getAppBaseInfo:fail')
     }
     expect(runtimePlatform()).toBeUndefined()
 
-    delete uniStub!.getSystemInfoSync
+    delete uniStub!.getAppBaseInfo
     expect(runtimePlatform()).toBeUndefined()
   })
 

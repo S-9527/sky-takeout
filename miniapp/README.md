@@ -16,9 +16,10 @@ pnpm dev:mp-weixin      # 产物在 dist/dev/mp-weixin,用微信开发者工具�
 
 **登录**:顾客端所有接口(含目录、门店状态)都要令牌 —— 契约的全局 `security` 是 `bearerAuth`,
 只有登录、刷新、支付回调例外。H5 开发环境没有微信,登录页用固定 code 走后端 mock 换 openid;
-小程序端用 `uni.login()` 现取真实 code。**平台判断用 `uni.getSystemInfoSync().uniPlatform`**,
-不能用"有没有 `wx.login`":H5 里 `window.wx` 是空桩(发行摇树)或 `uni` 自身(开发模式),
-而后者的 `uni.login` 是"当前平台不支持"的桩,一调就失败。
+小程序端用 `uni.login()` 现取真实 code。**平台判断用构建期常量 `__UNI_PLATFORM__`**(由
+`vite.config.ts` 注入),不能用"有没有 `wx.login`":H5 里 `window.wx` 是空桩(发行摇树)或
+`uni` 自身(开发模式),而后者的 `uni.login` 是"当前平台不支持"的桩,一调就失败。也不用
+`uni.getSystemInfoSync()` —— 微信端已废弃,会打 `wx.getSystemInfoSync is deprecated` 告警。
 
 **小程序端的接口地址**:小程序没有代理概念,`vite.config.ts` 里的 `server.proxy` 只对 H5 生效。
 构建时会把默认根地址经 `define` 注入 `__API_BASE_URL__`:微信端默认指到 `SKY_BACKEND`

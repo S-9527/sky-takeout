@@ -22,7 +22,8 @@ import { weappTailwindcss } from 'weapp-tailwindcss/vite'
  * 已移除),仓库 README 的说明据此更新。
  */
 const backendTarget = process.env.SKY_BACKEND ?? 'http://localhost:8080'
-const isWeapp = process.env.UNI_PLATFORM === 'mp-weixin'
+const platform = process.env.UNI_PLATFORM ?? ''
+const isWeapp = platform === 'mp-weixin'
 
 /**
  * API 根地址(编译期经 `define` 注入 `__API_BASE_URL__`)。
@@ -41,6 +42,8 @@ export default defineConfig(async () => {
     define: {
       // 各端默认 API 根地址;业务代码用 `import.meta.env.VITE_API_BASE_URL` 优先覆盖
       __API_BASE_URL__: JSON.stringify(apiBaseUrl),
+      // 目标平台编译期常量:运行时不必再调 wx.getSystemInfoSync(微信端已废弃)
+      __UNI_PLATFORM__: JSON.stringify(platform),
     },
     plugins: [uni(), tailwindcss(), ...(isWeapp ? weappTailwindcss({ rem2rpx: true }) : [])],
     server: {

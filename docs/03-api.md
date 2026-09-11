@@ -407,8 +407,8 @@
 | 方法 | 路径 | 用途 | 认证受众 | 主要错误码 |
 |---|---|---|---|---|
 | GET | `/api/v1/admin/shop/status` | 管理端查询营业状态 | 员工 | `SHOP_STATUS_NOT_FOUND` |
-| PUT | `/api/v1/admin/shop/status` | 切换营业状态/公告/营业时间 | 员工 | `SHOP_BUSINESS_HOURS_INVALID` |
-| GET | `/api/v1/customer/shop/status` | 顾客端查询营业状态与公告 | 顾客 | — (打烊仍可浏览,R1) |
+| PUT | `/api/v1/admin/shop/status` | 切换营业状态/公告/营业时间 | 员工 | `SHOP_STATUS_NOT_FOUND`、`SHOP_BUSINESS_HOURS_INVALID` |
+| GET | `/api/v1/customer/shop/status` | 顾客端查询营业状态与公告 | 顾客 | `SHOP_STATUS_NOT_FOUND`(打烊仍可浏览,R1;配置缺失不算"打烊") |
 
 ### 3.4 商品 Catalog — 管理端:分类
 

@@ -101,6 +101,29 @@ uni-app 仓库有 `uni-app-vue3-dev-vite8` 分支(把 Vite / `@vitejs/plugin-vue
 - Tailwind 入口**必须是独立 CSS 文件**(`src/assets/tailwind.css`),不能写在 `App.vue` 的 `<style>` 里,
   否则小程序端会出现"类名在、样式没了"。
 
+### 坑一:H5 上 utilities 必须"无层"(否则大片样式不生效)
+
+uni-app 的 H5 运行时会注入一份**无层**(unlayered)的基础样式,里面有 `*{margin:0}`、
+`uni-view{display:block}`、`uni-text{white-space:pre-line}` 这类规则。
+CSS 级联里**无层声明优先于有层声明,且与特异性无关**,而 Tailwind v4 默认的
+`@import 'tailwindcss'` 会把 utilities 放进 `@layer utilities` —— 结果 `.mt-2`、`.flex`、
+`.whitespace-nowrap` 全被 uni 的基础样式盖掉,表现就是"H5 上很多样式没生效"。
+
+所以入口用 Tailwind 的拆分文件手动组织层级,**让 utilities 保持无层**:
+
+```css
+@layer theme, base, components;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';   /* 不套 layer */
+```
+
+### 坑二:原生 button 的 `::after` 边框
+
+微信小程序(以及 uni-app 的 H5 模拟)给 `button` 自带一圈 `::after` 1px 边框。
+它盖不住 class 里的背景色,却会让 `border-*` / `rounded-*` 看起来发脏,所以在入口里统一重置为
+`button::after { border: none }`。
+
 ### 已实跑验证
 
 `pnpm build:mp-weixin` 通过,产物 `dist/build/mp-weixin`(用微信开发者工具导入即可):

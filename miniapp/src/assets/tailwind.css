@@ -4,11 +4,31 @@
  * **必须独立成文件**,不能写进 `App.vue` 的 `<style>`:
  * `weapp-tailwindcss` 需要把这个文件当输入去翻译原子类,写在 SFC 里它看不到,
  * 小程序端就会出现"类名在、样式没了"。
+ *
+ * **utilities 故意不放进 `@layer`**:uni-app(H5)会注入一大坨**无层**的基础样式
+ * (例如 `*{margin:0}`);CSS 级联规则里"无层"声明优先于"有层"声明(与特异性无关),
+ * 所以用默认的 `@import 'tailwindcss'`(utilities 进 `@layer utilities`)时,
+ * `.mt-*` / `.flex` 这些会被 uni 的基础样式整片盖掉 —— 表现就是"H5 上很多样式没生效"。
+ * 这里按 Tailwind 的拆分入口手动组织:theme/base 仍分层,utilities 保持无层。
  */
-@import 'tailwindcss';
+@layer theme, base, components;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/preflight.css' layer(base);
+@import 'tailwindcss/utilities.css';
 
 /* 小程序不支持 page 选择器以外的通配,基础样式保持最小 */
 page,
 body {
   background-color: #f7f8fa;
 }
+
+/*
+ * 微信小程序原生 button 自带灰底和一圈 `::after` 边框:
+ * class 能盖住背景,但盖不住这个伪元素 —— 于是 `border-*` / `rounded-*` 会看起来"脏"。
+ * 统一去掉;H5 渲染的是 `<uni-button>`,匹配不到这条,不影响。
+ */
+button::after {
+  border: none;
+}
+

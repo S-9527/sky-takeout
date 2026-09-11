@@ -129,13 +129,15 @@ node scripts/smoke-profile.mjs    # 地址簿:默认地址唯一/上限 20/R9 �
 node scripts/smoke-orders.mjs     # 顾客订单:试算/下单(R3/R5)/快照/取消状态机/再来一单/催单,30 项
 node scripts/smoke-payments.mjs   # 支付与退款:mock 发起即成功/轮询/R9/仅 ADMIN 退款/退款校验,26 项
 node scripts/smoke-admin-orders.mjs  # 管理端订单:接单→派送→完成/拒单退款/取消规则/状态计数,26 项
+node scripts/smoke-notify.mjs     # 通知:微信回调(签名/幂等/金额)+ 管理端 WebSocket(关闭码/推送),20 项
 ```
 
 脚本打的是 `http://localhost:8080`(可用 `SKY_BASE_URL` 覆盖),失败时以非零码退出,可直接串进 CI。
 它们都会写库但都自行还原:`smoke-shop.mjs` 结束时把营业状态写回原值;catalog / dish / setmeal /
 customer-catalog / cart / profile 只创建或删除自己造的记录(并清空自己用过的购物车与地址簿),
-不碰种子数据。`smoke-orders.mjs` / `smoke-payments.mjs` 会**真的创建订单、支付与退款**——契约里没有
-删除接口(它们是凭证),所以脚本不清除它们,但会清掉自造的菜品与地址。
+不碰种子数据。`smoke-orders.mjs` / `smoke-payments.mjs` / `smoke-admin-orders.mjs` / `smoke-notify.mjs`
+会**真的创建订单、支付与退款**——契约里没有删除接口(它们是凭证),所以脚本不清除它们,
+但会清掉自造的菜品与地址。`smoke-notify.mjs` 需要 `SKY_PAYMENT_GATEWAY=mock`(默认)。
 
 ## 本地开发配置
 

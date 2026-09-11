@@ -39,6 +39,9 @@ public class SecurityConfig {
             "/api/v1/customer/auth/wechat-login",
             "/api/v1/customer/auth/refresh",
             "/api/v1/notify/**",
+            // WebSocket 握手不能带自定义请求头(令牌在查询参数里),真正的鉴权在 handler 建立连接后
+            // 按契约用关闭码 4401/4403 表达
+            "/ws/**",
             "/files/**",
             "/v3/api-docs/**",
             "/swagger-ui/**",

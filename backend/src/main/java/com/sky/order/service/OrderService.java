@@ -496,7 +496,24 @@ public class OrderService {
         if (!Boolean.TRUE.equals(redis.opsForValue().setIfAbsent(key, "1", URGE_WINDOW))) {
             throw new BusinessException(OrderErrorCode.ORDER_URGE_TOO_FREQUENT);
         }
-        orderNotifier.orderReminder(orderId, order.getOrderNo(), message);
+        orderNotifier.orderReminder(orderId, order.getOrderNo(), order.getStatus().name(), message);
+    }
+
+    /** 通知(来单提醒)需要的订单投影:契约 §4.3 的 ORDER_NEW 载荷字段。 */
+    public record OrderNotificationView(Long orderId, String orderNo, long payAmountCents, String consignee,
+                                        String phone, String detail, int itemCount, String remark,
+                                        LocalDateTime placedAt, LocalDateTime paidAt) {
+    }
+
+    /** 供通知上下文组装 ORDER_NEW;不引用 order 的实体(L4)。 */
+    public OrderNotificationView notificationView(Long orderId) {
+        Order order = requireById(orderId);
+        List<OrderItem> items = itemsOf(orderId);
+        return new OrderNotificationView(
+                order.getId(), order.getOrderNo(),
+                order.getPayAmountCents() == null ? 0L : order.getPayAmountCents(),
+                order.getConsignee(), order.getPhone(), order.getDetail(),
+                items.size(), order.getRemark(), order.getPlacedAt(), order.getPaidAt());
     }
 
     // ---------------------------------------------------------------- 跨上下文:支付

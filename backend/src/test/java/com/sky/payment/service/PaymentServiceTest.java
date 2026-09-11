@@ -16,6 +16,7 @@ import com.sky.common.domain.SortSpec;
 import com.sky.common.error.BusinessException;
 import com.sky.common.error.CommonErrorCode;
 import com.sky.order.domain.OrderErrorCode;
+import com.sky.notification.service.OrderNotifier;
 import com.sky.order.service.OrderService;
 import com.sky.payment.domain.Payment;
 import com.sky.payment.domain.PaymentChannel;
@@ -51,13 +52,20 @@ class PaymentServiceTest {
     private final PaymentGateway gateway = mock(PaymentGateway.class);
     private final OrderService orderService = mock(OrderService.class);
     private final RefundNoGenerator refundNoGenerator = mock(RefundNoGenerator.class);
+    private final OrderNotifier orderNotifier = mock(OrderNotifier.class);
 
     private final PaymentService paymentService = new PaymentService(
-            paymentMapper, refundMapper, gateway, orderService, refundNoGenerator);
+            paymentMapper, refundMapper, gateway, orderService, refundNoGenerator, orderNotifier);
 
     @BeforeAll
     static void registerTableInfo() {
         TableInfoTestSupport.register(Payment.class, Refund.class);
+    }
+
+    /** 支付成功会组装来单提醒,这里给一个默认的订单投影。 */
+    private void notificationViewAvailable() {
+        when(orderService.notificationView(ORDER_ID)).thenReturn(new OrderService.OrderNotificationView(
+                ORDER_ID, ORDER_NO, 5200L, "张三", "13800138000", "望京 1 号", 2, "不要香菜", null, null));
     }
 
     // ---------------------------------------------------------------- 辅助
@@ -109,6 +117,7 @@ class PaymentServiceTest {
             return 1;
         });
         gatewayIsMock(true);
+        notificationViewAvailable();
         // applyPaySuccess 先读到 PENDING(刚插入的行),处理完再读就是 SUCCESS
         when(paymentMapper.selectById(6001L)).thenReturn(
                 payment(6001L, PaymentStatus.PENDING, PaymentChannel.MOCK),
@@ -217,6 +226,7 @@ class PaymentServiceTest {
     void applyPaySuccessMarksOrderPaid() {
         when(paymentMapper.selectById(6001L)).thenReturn(payment(6001L, PaymentStatus.PENDING, PaymentChannel.WECHAT));
         when(paymentMapper.exists(any())).thenReturn(false);
+        notificationViewAvailable();
 
         assertThat(paymentService.applyPaySuccess(6001L, "TXN-1", "{\"raw\":true}")).isTrue();
 
@@ -225,6 +235,8 @@ class PaymentServiceTest {
         assertThat(update.getValue().getTransactionId()).isEqualTo("TXN-1");
         assertThat(update.getValue().getPaidAt()).isNotNull();
         verify(orderService).markPaid(ORDER_ID, "WECHAT");
+        // 来单提醒在支付成功后被触发(实际推送由 notifier 保证提交后发出)
+        verify(orderNotifier).orderNew(any());
     }
 
     @Test

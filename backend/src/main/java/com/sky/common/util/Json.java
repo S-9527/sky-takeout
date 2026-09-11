@@ -5,6 +5,7 @@ import tools.jackson.databind.ObjectMapper;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * JSON 转换的唯一入口。
@@ -30,6 +31,15 @@ public final class Json {
     /** JSON 字符串数组 → List;null / 空白 → 空列表。 */
     public static List<String> readStringList(String json) {
         return readList(json, String.class);
+    }
+
+    /** JSON 对象 → Map;null / 空白 → 空 Map。 */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> readMap(String json) {
+        if (json == null || json.isBlank()) {
+            return Map.of();
+        }
+        return MAPPER.readValue(json, Map.class);
     }
 
     /**

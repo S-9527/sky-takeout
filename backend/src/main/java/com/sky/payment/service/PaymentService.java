@@ -21,6 +21,8 @@ import com.sky.common.error.CommonErrorCode;
 import com.sky.common.error.ErrorResponse;
 import com.sky.common.util.Json;
 import com.sky.common.util.Times;
+import com.sky.notification.service.OrderNewNotification;
+import com.sky.notification.service.OrderNotifier;
 import com.sky.order.service.OrderService;
 import com.sky.payment.domain.Payment;
 import com.sky.payment.domain.PaymentChannel;
@@ -62,14 +64,17 @@ public class PaymentService {
     private final PaymentGateway paymentGateway;
     private final OrderService orderService;
     private final RefundNoGenerator refundNoGenerator;
+    private final OrderNotifier orderNotifier;
 
     public PaymentService(PaymentMapper paymentMapper, RefundMapper refundMapper, PaymentGateway paymentGateway,
-                          OrderService orderService, RefundNoGenerator refundNoGenerator) {
+                          OrderService orderService, RefundNoGenerator refundNoGenerator,
+                          OrderNotifier orderNotifier) {
         this.paymentMapper = paymentMapper;
         this.refundMapper = refundMapper;
         this.paymentGateway = paymentGateway;
         this.orderService = orderService;
         this.refundNoGenerator = refundNoGenerator;
+        this.orderNotifier = orderNotifier;
     }
 
     /** 发起支付的结果:支付参数 + 当前支付状态。 */
@@ -183,6 +188,12 @@ public class PaymentService {
         paymentMapper.updateById(update);
 
         orderService.markPaid(payment.getOrderId(), payment.getChannel().name());
+        // 来单提醒:notifier 保证在事务提交后才真正推送(架构 §4.4)
+        OrderService.OrderNotificationView order = orderService.notificationView(payment.getOrderId());
+        orderNotifier.orderNew(new OrderNewNotification(
+                order.orderId(), order.orderNo(), order.payAmountCents(), order.consignee(), order.phone(),
+                order.detail(), order.itemCount(), order.remark(),
+                formatTime(order.placedAt()), formatTime(order.paidAt())));
         return true;
     }
 
@@ -266,6 +277,27 @@ public class PaymentService {
         refundMapper.updateById(update);
 
         orderService.markRefunded(refund.getOrderId());
+        return true;
+    }
+
+    /**
+     * 退款失败落库(异常/关闭回调)。只把流水置 FAILED,**不动订单 payStatus**:
+     * 钱没退出去,订单的支付状态就还是"已支付",由人工/重试继续处理。
+     */
+    @Transactional
+    public boolean applyRefundFailure(Long refundId, String rawNotify) {
+        Refund refund = refundMapper.selectById(refundId);
+        if (refund == null) {
+            throw new BusinessException(PaymentErrorCode.PAY_REFUND_NOT_FOUND);
+        }
+        if (refund.getStatus() != RefundStatus.PENDING) {
+            return false;
+        }
+        Refund update = new Refund();
+        update.setId(refundId);
+        update.setStatus(RefundStatus.FAILED);
+        update.setRawNotify(rawNotify);
+        refundMapper.updateById(update);
         return true;
     }
 
@@ -367,6 +399,12 @@ public class PaymentService {
                     "退款原因分类不合法",
                     List.of(new ErrorResponse.Detail("reasonType", "取值不在允许集合内")));
         }
+    }
+
+    private static String formatTime(java.time.LocalDateTime value) {
+        return value == null ? null
+                : value.atZone(com.sky.common.util.Times.ZONE)
+                        .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME);
     }
 
     private static boolean isPaid(String payStatus) {

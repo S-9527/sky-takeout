@@ -549,7 +549,7 @@ class OrderServiceTest {
 
         orderService.remind(CUSTOMER, 4001L, "请尽快派送");
 
-        verify(orderNotifier).orderReminder(4001L, "202501011200000001", "请尽快派送");
+        verify(orderNotifier).orderReminder(4001L, "202501011200000001", "ACCEPTED", "请尽快派送");
         assertThat(redisValues).containsKey("sky:order:urge:4001");
     }
 
@@ -562,7 +562,7 @@ class OrderServiceTest {
                     .isInstanceOfSatisfying(BusinessException.class,
                             ex -> assertThat(ex.errorCode()).isEqualTo(OrderErrorCode.ORDER_URGE_NOT_ALLOWED));
         }
-        verify(orderNotifier, never()).orderReminder(any(), any(), any());
+        verify(orderNotifier, never()).orderReminder(any(), any(), any(), any());
     }
 
     @Test
@@ -574,7 +574,7 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.remind(CUSTOMER, 4001L, null))
                 .isInstanceOfSatisfying(BusinessException.class,
                         ex -> assertThat(ex.errorCode()).isEqualTo(OrderErrorCode.ORDER_URGE_TOO_FREQUENT));
-        verify(orderNotifier, times(1)).orderReminder(any(), any(), any());
+        verify(orderNotifier, times(1)).orderReminder(any(), any(), any(), any());
     }
 
     @Test

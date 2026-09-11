@@ -1,0 +1,22 @@
+# WSL 专用覆盖文件:仅用于 Docker 跑在 WSL 里、且 .wslconfig 使用
+#   [wsl2]
+#   networkingMode=Mirrored
+# 的场景。
+#
+# 背景:mirrored 网络模式下,WSL 内**普通进程**监听的端口能被 Windows 的 localhost 访问,
+# 但 Docker 用 bridge 网络 + iptables 发布的端口不行(实测 127.0.0.1:3306 直接被拒,
+# 而用 host 网络的容器同端口可以访问)。后端跑在 Windows 上,所以必须绕过这一层。
+#
+# 用法:
+#   wsl docker compose -f /mnt/d/projects/sky-takeout/docker-compose.yml \
+#                      -f /mnt/d/projects/sky-takeout/docker-compose.wsl.yml up -d
+#
+# 不在此环境时,只用 docker-compose.yml 即可(端口映射那份是跨平台默认)。
+services:
+  mysql:
+    network_mode: host
+    ports: !override []
+
+  redis:
+    network_mode: host
+    ports: !override []

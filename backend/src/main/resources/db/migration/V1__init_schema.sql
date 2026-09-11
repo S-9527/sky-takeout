@@ -233,9 +233,12 @@ CREATE TABLE `setmeal_item` (
 --      dish_id / setmeal_id 按类型二选一,另一个必为 NULL;而 MySQL 唯一索引
 --      视多个 NULL 互不相等,直接对 (customer_id,item_type,dish_id,setmeal_id,
 --      flavor_key) 建唯一键会完全失效(同一菜同口味可插入任意多行)。
---      因此新增两个 STORED 生成列 dish_ref_id / setmeal_ref_id = IFNULL(x, 0),
+--      因此新增两个生成列 dish_ref_id / setmeal_ref_id = IFNULL(x, 0),
 --      唯一键建在生成列上,用 0 表示"不适用",使唯一性真正生效。
 --      生成列由 MySQL 计算,应用层不可写,不会与真实列漂移。
+--      必须用 VIRTUAL 而不是 STORED:MySQL 8.4 禁止"以带 ON DELETE CASCADE
+--      外键的列作为基列的 STORED 生成列"(实测报 ERROR 1215),
+--      而 VIRTUAL 生成列不受此限制,且同样可以承载 UNIQUE 索引。
 -- ---------------------------------------------------------------------
 CREATE TABLE `cart_item` (
   `id`              BIGINT      NOT NULL AUTO_INCREMENT          COMMENT '主键',
@@ -246,8 +249,8 @@ CREATE TABLE `cart_item` (
   `quantity`        INT         NOT NULL DEFAULT 1               COMMENT '数量,>=1',
   `flavor_choice`   JSON        NULL                             COMMENT '顾客选中的口味,如 [{"name":"辣度","option":"微辣"}];未选为 NULL',
   `flavor_key`      VARCHAR(64) NOT NULL DEFAULT ''              COMMENT 'flavor_choice 的归一化哈希(稳定序),未选口味时为固定空串',
-  `dish_ref_id`     BIGINT GENERATED ALWAYS AS (IFNULL(`dish_id`, 0)) STORED    COMMENT '唯一键归一化列:=IFNULL(dish_id,0)',
-  `setmeal_ref_id`  BIGINT GENERATED ALWAYS AS (IFNULL(`setmeal_id`, 0)) STORED COMMENT '唯一键归一化列:=IFNULL(setmeal_id,0)',
+  `dish_ref_id`     BIGINT GENERATED ALWAYS AS (IFNULL(`dish_id`, 0)) VIRTUAL    COMMENT '唯一键归一化列:=IFNULL(dish_id,0),VIRTUAL 才能与 CASCADE 外键共存',
+  `setmeal_ref_id`  BIGINT GENERATED ALWAYS AS (IFNULL(`setmeal_id`, 0)) VIRTUAL COMMENT '唯一键归一化列:=IFNULL(setmeal_id,0),VIRTUAL 才能与 CASCADE 外键共存',
   `created_at`      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_at`      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `created_by`      BIGINT      NULL                             COMMENT '创建人(customer.id)',

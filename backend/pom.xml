@@ -24,6 +24,9 @@
         <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>3.1.1</springdoc.version>
         <archunit.version>1.5.0</archunit.version>
+        <jacoco.version>0.8.13</jacoco.version>
+        <!-- 行覆盖率门禁。mvn verify 时强制校验,低于该值直接构建失败。 -->
+        <coverage.minimum>0.60</coverage.minimum>
     </properties>
 
     <dependencies>
@@ -65,11 +68,16 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- 表结构版本化:唯一的建表路径 -->
+        <!-- 表结构版本化:唯一的建表路径。
+             必须用 starter:Spring Boot 4 把自动配置按技术拆成了独立模块,
+             只加 flyway-core 只能拿到 Flyway 本身,拿不到 FlywayAutoConfiguration,
+             表现就是"依赖在、日志里却完全没有迁移记录"。 -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
         </dependency>
+        <!-- 方言模块必须单独加:starter 只带 flyway-core,缺了它启动会报
+             "Unsupported Database: MySQL 8.4" -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-mysql</artifactId>
@@ -156,6 +164,49 @@
                         <arg>-proc:full</arg>
                     </compilerArgs>
                 </configuration>
+            </plugin>
+
+            <!-- 覆盖率:mvn test 产出报告,mvn verify 执行门禁 -->
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check-coverage</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${coverage.minimum}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

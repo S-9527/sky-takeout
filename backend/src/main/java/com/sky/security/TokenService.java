@@ -1,7 +1,7 @@
 package com.sky.security;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -218,17 +218,13 @@ public class TokenService {
     }
 
     private String serialize(RefreshSession session) {
-        try {
-            return objectMapper.writeValueAsString(session);
-        } catch (JsonProcessingException ex) {
-            throw new IllegalStateException("refresh 会话序列化失败", ex);
-        }
+        return objectMapper.writeValueAsString(session);
     }
 
     private RefreshSession deserialize(String json) {
         try {
             return objectMapper.readValue(json, RefreshSession.class);
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new BusinessException(AuthErrorCode.AUTH_REFRESH_TOKEN_INVALID);
         }
     }

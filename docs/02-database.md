@@ -69,7 +69,7 @@
 | `setmeal.status` | 1 起售 / 0 停售 |
 | `shop_status.is_open` | 1 营业中 / 0 已打烊 |
 
-领域文档 §3 对这批列显式给出的是 `TINYINT` + `1`/`0` 两个值(不是多值状态机),所以保留 `TINYINT` 是对文档最忠实的落地。若后续要求"所有状态一律字符串",改动面是这 7 列 + 对应 CHECK + 应用层枚举,一条 `V3__` 迁移即可完成,不影响其它表。
+领域文档 §3 对这批列显式给出的是 `TINYINT` + `1`/`0` 两个值(不是多值状态机),所以保留 `TINYINT` 是对文档最忠实的落地。**后端已经按同一约定实现**:`com.sky.common.domain.EnableStatus implements IEnum<Integer>`,取值 `ENABLED(1)` / `DISABLED(0)`,员工、顾客、分类、菜品、套餐共用一个枚举,MyBatis-Plus 据此做类型转换。若后续要求"所有状态一律字符串",改动面是这 7 列 + 对应 CHECK + 应用层枚举,一条 `V3__` 迁移即可完成,不影响其它表。
 
 **(c) 枚举值一律用 `CHECK` 约束在库层面兜住。**
 MySQL 8.0.16+ 真正执行 `CHECK`,`IN (...)` 是确定性的,所以每个枚举列都在 DDL 里限定了取值域(见 §3 各表)。注意 `CHECK` 只校验**取值合法**,不校验**状态迁移合法**——状态机仍然只在后端 `OrderStateMachine` 里(领域文档 §4:"DB 不做约束"),比如 `COMPLETED → CANCELLED` 数据库拦不住,那是领域层的职责。
@@ -305,8 +305,8 @@ MySQL 8.0.16+ 真正执行 `CHECK`,`IN (...)` 是确定性的,所以每个枚举
 | `quantity` | INT | 否 | 1 | 数量,`>= 1` |
 | `flavor_choice` | JSON | 是 | NULL | 顾客选中的口味,如 `[{"name":"辣度","option":"微辣"}]` |
 | `flavor_key` | VARCHAR(64) | 否 | `''` | `flavor_choice` 的归一化哈希(键按字典序拼接),未选口味为固定空串 |
-| `dish_ref_id` | BIGINT | 否 | 生成列 | **生成列** `IFNULL(dish_id, 0)`,仅供唯一键使用 |
-| `setmeal_ref_id` | BIGINT | 否 | 生成列 | **生成列** `IFNULL(setmeal_id, 0)`,仅供唯一键使用 |
+| `dish_ref_id` | BIGINT | 否 | **VIRTUAL** 生成列 | **生成列** `IFNULL(dish_id, 0)`,仅供唯一键使用 |
+| `setmeal_ref_id` | BIGINT | 否 | **VIRTUAL** 生成列 | **生成列** `IFNULL(setmeal_id, 0)`,仅供唯一键使用 |
 | `created_at` / `updated_at` | DATETIME | 否 | CURRENT_TIMESTAMP | 审计四件套 |
 | `created_by` / `updated_by` | BIGINT | 是 | NULL | 审计四件套 |
 
@@ -325,16 +325,21 @@ MySQL 8.0.16+ 真正执行 `CHECK`,`IN (...)` 是确定性的,所以每个枚举
 |---|---|---|
 | A. 用 0 代替 NULL | `dish_id BIGINT NOT NULL DEFAULT 0` | ❌ 与 `ON DELETE CASCADE` 外键冲突:外键要求 0 能在被引用表里存在,而 `dish` 没有 id=0 |
 | B. 统一引用列 | 只保留一列 `ref_id` + `item_type`,不区分菜品/套餐 | ❌ 外键指向两张表无法表达,`dish_id`/`setmeal_id` 的级联规则(§3.7 边界)会丢失 |
-| **C. 生成列归一化(采用)** | 保留可空真列 + 两个 `STORED` 生成列 `IFNULL(dish_id, 0)` / `IFNULL(setmeal_id, 0)`,唯一键建在生成列上 | ✅ 真列仍可空 → 外键 `CASCADE` 保留;唯一键看到的 NULL 变成 0 → 唯一性真正生效;生成列由 MySQL 维护,应用层写不进去,不会与真列漂移 |
+| **C. 生成列归一化(采用)** | 保留可空真列 + 两个 `VIRTUAL` 生成列 `IFNULL(dish_id, 0)` / `IFNULL(setmeal_id, 0)`,唯一键建在生成列上 | ✅ 真列仍可空 → 外键 `CASCADE` 保留;唯一键看到的 NULL 变成 0 → 唯一性真正生效;生成列由 MySQL 维护,应用层写不进去,不会与真列漂移 |
 
-采用 **方案 C**,MySQL 8.4 语法(已在 8.4 上实测建表与冲突拦截):
+采用 **方案 C**。MySQL 8.4 实测确认的两条硬约束:
+
+1. **必须用 `VIRTUAL`,不能用 `STORED`。** MySQL 8.4 禁止"以带 `ON DELETE CASCADE` 外键的列作为基列的 `STORED` 生成列"——实测建表直接报 `ERROR 1215 (HY000): Cannot add foreign key constraint`(因为 `dish_id` 既是 `fk_cart_item_dish ... ON DELETE CASCADE` 的列,又是 `dish_ref_id` 的基列)。改成 `VIRTUAL` 后限制消失,CASCADE 外键与生成列共存无碍;**`VIRTUAL` 生成列同样可以承载 `UNIQUE` 索引并真正拦截重复**(实测插入第二行报 `ERROR 1062`),删除商品时的级联删除也正常。
+2. `VIRTUAL` 生成列不占表空间,只在索引里落值,代价可忽略。
 
 ```sql
-`dish_ref_id`    BIGINT GENERATED ALWAYS AS (IFNULL(`dish_id`, 0))    STORED,
-`setmeal_ref_id` BIGINT GENERATED ALWAYS AS (IFNULL(`setmeal_id`, 0)) STORED,
+`dish_ref_id`    BIGINT GENERATED ALWAYS AS (IFNULL(`dish_id`, 0))    VIRTUAL,
+`setmeal_ref_id` BIGINT GENERATED ALWAYS AS (IFNULL(`setmeal_id`, 0)) VIRTUAL,
 UNIQUE KEY `uk_cart_item_identity`
   (`customer_id`, `item_type`, `dish_ref_id`, `setmeal_ref_id`, `flavor_key`)
 ```
+
+实测中该唯一键拦截到的重复键形如 `'1-DISH-101-0-k1'`、`'1-SETMEAL-0-201-k1'`——可以看到 NULL 已被归一化成 0,唯一性真正生效。
 
 语义:键里的 `(0, 108)` = 套餐 108;`(101, 0)` = 菜品 101;`(0, 0)` 不可能出现(被下面的 CHECK 挡住)。加购语句因此可以直接用 upsert:
 
@@ -724,7 +729,7 @@ erDiagram
 | 审计字段 | 只有部分表有 `create_time`/`update_time` | 每张业务表统一四件套,含 `created_by`/`updated_by` | 全表可用同一套审计/运维逻辑 |
 | 软删除 | 无 | **仍然无**(有意为之),禁用态用 `status`,真删除靠外键 | 软删除会让所有唯一索引失效(D13) |
 | 表结构管理 | 手工 `docker exec < sky_take_out.sql` | Flyway 版本化迁移 `V1__init_schema.sql` / `V2__seed_dev.sql` | 表结构与代码同版本、可复现(D9) |
-| 数据完整性 | 几乎全靠应用层 | 17 条外键 + CHECK 取值域 + 唯一键 | 应用层有 bug 时数据库仍不产生坏数据 |
+| 数据完整性 | 几乎全靠应用层 | 16 条外键 + 30 条 CHECK 取值域 + 唯一键 | 应用层有 bug 时数据库仍不产生坏数据 |
 
 ---
 
@@ -747,37 +752,33 @@ backend/src/main/resources/db/migration/
 
 Flyway 10 起 MySQL 支持被拆到独立模块,`pom.xml` 需要两个依赖:
 
-```xml
-<dependency>
-  <groupId>org.flywaydb</groupId>
-  <artifactId>flyway-core</artifactId>
-</dependency>
-<dependency>
-  <groupId>org.flywaydb</groupId>
-  <artifactId>flyway-mysql</artifactId>
-</dependency>
-```
+`flyway-core` 与 `flyway-mysql` 两个依赖已经在 `backend/pom.xml` 里声明(缺少 `flyway-mysql` 会在启动时报 "Unsupported Database: MySQL" —— Flyway 10 起 MySQL 支持被拆成独立模块)。
 
-`application.yml`(开发):
+仓库当前的 `backend/src/main/resources/application.yml` 已经是可用配置(仅列相关片段):
 
 ```yaml
 spring:
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/sky_takeout?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=Asia/Shanghai
-    username: root
-    password: root
+    url: jdbc:mysql://${SKY_DB_HOST:localhost}:${SKY_DB_PORT:3306}/${SKY_DB_NAME:sky_takeout}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${SKY_DB_USER:root}
+    password: ${SKY_DB_PASSWORD:root}
+  # 表结构的唯一来源。启动时自动执行,不再有任何手工建表步骤。
   flyway:
     enabled: true
     locations: classpath:db/migration
-    encoding: UTF-8
-    baseline-on-migrate: false   # 库由 MySQL 容器初始化,不需要 baseline
+    baseline-on-migrate: true
     validate-on-migrate: true
-    clean-disabled: true         # 禁止 flyway:clean 误删生产库
+  jackson:
+    time-zone: Asia/Shanghai
 ```
 
-时区提醒:JDBC 必须显式 `connectionTimeZone=Asia/Shanghai`(旧驱动写 `serverTimezone=Asia/Shanghai`),与 `docker-compose.yml` 的 `--default-time-zone=+08:00` 对齐,否则 `created_at`/`placed_at` 的默认值会按 UTC 落库,报表按天聚合会错 8 小时。
+两点说明:
 
-启动顺序:先 `docker compose up -d`,等 `sky-mysql` 健康检查通过(compose 里已配 `mysqladmin ping`)再起后端——否则应用启动时连不上库,迁移直接失败。
+- **时区**:连接串用 `serverTimezone=Asia/Shanghai`(Connector/J 8.x 接受;`connectionTimeZone=Asia/Shanghai` 是 8.0.23+ 的新名字,两者等价),必须与 `docker-compose.yml` 的 `--default-time-zone=+08:00` 对齐,否则 `created_at`/`placed_at` 的默认值会按 UTC 落库,报表按天聚合会错 8 小时。`spring.jackson.time-zone` 只管 JSON 序列化,不影响写库。
+- **`baseline-on-migrate: true`**:对"空库 + 无历史表"没有任何影响(正常路径不会打基线);它的作用是容忍"库里已经有表但没有 `flyway_schema_history`"的场景,见 §7.3 第 3 条的坑。若要严格禁止这种容忍,可改为 `false`。
+- `encoding`(默认 `UTF-8`)与 `clean-disabled`(Flyway 9+ 默认 `true`)都走默认值即可,无需显式配置。
+
+启动顺序:先 `docker compose up -d`,等 mysql 服务健康检查通过(compose 里已配 `mysqladmin ping`)再起后端——否则应用启动时连不上库,迁移直接失败。
 
 ### 7.3 执行方式
 
@@ -796,7 +797,9 @@ mvn flyway:info   -Dflyway.url=jdbc:mysql://127.0.0.1:3306/sky_takeout -Dflyway.
 mvn flyway:migrate -Dflyway.url=... -Dflyway.user=root -Dflyway.password=root
 ```
 
-3. **手工灌脚本(仅排障用,不推荐)**:`docker exec -i sky-mysql mysql -uroot -proot --default-character-set=utf8mb4 sky_takeout < V1__init_schema.sql`。手工执行**不会**写 `flyway_schema_history`,之后再让 Flyway 接管会因"非空 schema 且无历史表"报错,需要 `baseline-on-migrate=true` 打基线。正常流程请只用方式 1/2。
+3. **手工灌脚本(仅排障用,不推荐)**:`docker compose exec -T mysql mysql -uroot -proot --default-character-set=utf8mb4 sky_takeout < V1__init_schema.sql`(compose 里刻意没有写 `container_name`,容器名由 compose 生成,所以用服务名 `mysql` 而不是 `sky-mysql`)。
+
+   这里有一个真实的坑:手工执行**不会**写 `flyway_schema_history`。因为 `baseline-on-migrate: true`,Flyway 会在"非空 schema 且无历史表"时把基线打在 1,然后继续执行 V2——所以**只手工灌过 V1** 的库再启动应用是安全的(V2 会正常补跑);但**手工灌过 V1+V2** 的库再启动应用,V2 会被重复执行,种子数据的唯一键冲突会让迁移失败。遇到这种情况只有两条路:`docker compose down -v` 重置,或者手工往 `flyway_schema_history` 里补一条 V2 的成功记录(不如直接重置)。正常流程请只用方式 1/2。
 
 ### 7.4 迁移状态与重置
 
@@ -826,7 +829,7 @@ FROM sky_takeout.flyway_schema_history ORDER BY installed_rank;
 
 | # | 事项 | 本设计的决定 | 若推翻需改什么 |
 |---|---|---|---|
-| 1 | 二值启停标记的类型 | 沿用领域文档 §3 的 `TINYINT` 1/0(`employee.status`、`customer.status`、`category.status`、`dish.status`、`setmeal.status`、`user_address.is_default`、`shop_status.is_open`),与"枚举列存 VARCHAR"的约定形成"多值枚举走字符串、二值标记走 TINYINT"的分工;两者都用 `CHECK` 限定取值域 | 一条 `V3__` 迁移改 7 列类型 + 应用层枚举 |
+| 1 | 二值启停标记的类型 | 沿用领域文档 §3 的 `TINYINT` 1/0(`employee.status`、`customer.status`、`category.status`、`dish.status`、`setmeal.status`、`user_address.is_default`、`shop_status.is_open`),与"枚举列存 VARCHAR"的约定形成"多值枚举走字符串、二值标记走 TINYINT"的分工;两者都用 `CHECK` 限定取值域。后端 `EnableStatus`(`IEnum<Integer>`,`ENABLED(1)`/`DISABLED(0)`)与此一致 | 一条 `V3__` 迁移改 7 列类型 + 应用层枚举 |
 | 2 | `cart_item.customer_id` 的删除行为 | `ON DELETE CASCADE`(FK 规则表未列出该外键)。购物车是临时意图,顾客注销后没有保留价值 | 改成 `RESTRICT` 需同步改 §3.9 与 ER 图 |
 | 3 | `orders.source_address_id` | **不建外键**,存裸 id;地址删除不影响历史订单 | 若要外键,只能 `SET NULL`,溯源信息会丢 |
 | 4 | `created_by` / `updated_by` | **不建外键**(可能指员工或顾客,也可能是系统 NULL) | 需要更强的引用完整性时,可拆成 `created_by_type` + `created_by_id` |
@@ -841,7 +844,7 @@ FROM sky_takeout.flyway_schema_history ORDER BY installed_rank;
 | 13 | `orders.tableware_count` | 允许 0(顾客自带餐具),`CHECK >= 0` | 改成 `>= 1` |
 | 14 | 所有枚举列的 `CHECK` 约束 | 新增(领域文档没提),用于在库层兜住取值域;状态**迁移**合法性仍只在应用层 | 删除 `ck_*` 语句,文档 §1.3(c) 同步调整 |
 | 15 | `shop_status` 单行 | 只在种子里插 `id=1`,不加 `CHECK(id=1)`;单行由应用层保证 | 想强约束可加 `CHECK (id = 1)` |
-| 16 | 图片地址 | 种子数据用占位路径 `/img/dish/*.jpg`,待接入真实上传/OSS 后替换 | 替换种子里 26 条 `image_url` |
+| 16 | 图片地址 | 种子数据用占位路径 `/img/dish/*.jpg`、`/img/setmeal/*.jpg`(共 26 条 `image_url`),文件并不存在。**待定**:若图片走本地存储(`sky.storage.public-base-url` + `/files/**`)应改成 `/files/dish/*.jpg`;若作为静态资源放进 `src/main/resources/static/img/`,则当前值即为正确路由 | 替换 V2 里 26 条 `image_url` |
 | 17 | 「每顾客至多一条默认地址」「套餐价 ≤ 菜品合计」「套餐与分类 type 匹配」 | 均为跨行/跨表规则,**不落数据库**,由应用层事务保证(库里只提供支撑索引) | 要做成数据库约束需引入触发器 |
 | 18 | `dish_flavor.options` 必须是 JSON 数组 | 应用层 DTO 校验;数据库只用 `JSON` 类型 + `NOT NULL` 保证是合法 JSON | 可在 `V3__` 里补 `CHECK (JSON_TYPE(options) = 'ARRAY')` |
 
@@ -888,4 +891,34 @@ FROM sky_takeout.flyway_schema_history ORDER BY installed_rank;
 | `user_address.customer_id` → `customer.id` | `fk_user_address_customer` | CASCADE | §3.3 |
 | `cart_item.customer_id` → `customer.id` | `fk_cart_item_customer` | CASCADE(**本设计补充**,见 §8 第 2 条) | §3.9 |
 
-共 **17 条外键**;所有外键都显式写了 `ON UPDATE RESTRICT`(主键不自增改,不存在级联更新需求)。
+共 **16 条外键**;所有外键都显式写了 `ON UPDATE RESTRICT`(主键不自增改,不存在级联更新需求)。
+
+## 附录 C. 验证记录
+
+两个脚本在 **MySQL 8.4.8**(`InnoDB` / `utf8mb4_0900_ai_ci` / `default-time-zone=+08:00` / 完整默认 `sql_mode`,含 `STRICT_TRANS_TABLES`、`ONLY_FULL_GROUP_BY`)上**一次性执行成功**,无警告、无手工步骤;库由 `docker-compose.yml` 的 `MYSQL_DATABASE=sky_takeout` 预建。
+
+实际核对过的结论:
+
+| 项 | 结果 |
+|---|---|
+| `V1__init_schema.sql` 执行 | exit 0,`--show-warnings` 无输出 |
+| `V2__seed_dev.sql` 执行 | exit 0,`--show-warnings` 无输出 |
+| 表数量 / 引擎 / 排序规则 | 14 / 全 InnoDB / 全 `utf8mb4_0900_ai_ci` |
+| 列数量 | 186 = 业务列 128 + 审计四件套 56 + `cart_item` 生成列 2 |
+| 外键 / CHECK | 16 条外键(删除规则与附录 B 完全一致)、30 条 CHECK |
+| 索引 | 29 个索引名:14 个主键 + 11 个唯一键 + 17 个普通索引(每列外键都被显式索引,无隐式同名索引) |
+| 审计四件套 | 14 张表每张 4 列,`information_schema` 校验无遗漏 |
+| 无软删除 | 不存在 `is_deleted` / `deleted_at` / `delete_time` 列 |
+| 金额列 | 所有 `*amount*` / `*price*` / `*fee*` 列均为 `BIGINT` 且以 `_cents` 结尾 |
+| 时区 | `NOW()` 返回 +08:00;`placed_at` / `created_at` 默认值即为北京时间 |
+| 中文与 emoji | 表注释、菜品名、口味 JSON、店铺公告均正确落库并读回 |
+
+关键行为用例(均按预期):
+
+- **购物车唯一键**:同顾客同菜同口味第二次插入 → `ERROR 1062`(键值 `1-DISH-101-0-k1`);菜品行与套餐行同 `flavor_key` → 允许;同菜不同口味、不同顾客同菜同口味 → 允许;`INSERT ... ON DUPLICATE KEY UPDATE` 正确把 `quantity` 合并为 5。
+- **购物车 CHECK**:`dish_id`/`setmeal_id` 都填、都不填、与 `item_type` 不匹配、`item_type` 非法值、`quantity=0` → 全部 `ERROR 3819`。
+- **级联**:删顾客 → 地址簿与购物车行连带删除;删菜品 → 口味配置与购物车行连带删除,`order_item` 的 `dish_id` 置 `NULL` 而 `name_snapshot`/`unit_price_cents`/`combo_snapshot` 完整保留;删订单 → 明细连带删除。
+- **限制**:删被套餐引用的菜品、删被菜品引用的分类、删有订单的顾客、删有支付流水的订单 → 全部 `ERROR 1451`。
+- **幂等与唯一**:`orders.order_no`、`payment.transaction_id`、`refund.refund_no`、`employee.username`、`customer.openid`、`dish(category_id,name)`、`category(type,name)`、`dish_flavor(dish_id,name)`、`setmeal_item(setmeal_id,dish_id)` 重复 → 全部 `ERROR 1062`;`payment.transaction_id` 为 `NULL` 的多笔流水可以共存。
+- **枚举 CHECK**:`orders.status`/`pay_status`/`pay_method`/`cancel_side`、`payment.channel`/`status`、`refund.status`/`reason_type`、`employee.role`/`status`、`shop_status.is_open` 非法值 → 全部 `ERROR 3819`。
+- **种子数据业务规则**:5 个套餐的价格均 ≤ 所含菜品单价×份数之和;菜品分类全为 `DISH`、套餐分类全为 `SETMEAL`;起售套餐所含菜品全部起售;`dish_flavor.options` 全部是 JSON 数组;`DISH` 6 个分类、`SETMEAL` 4 个分类。

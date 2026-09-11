@@ -2,10 +2,14 @@ name: sky-takeout
 
 # 只跑基础设施。表结构由后端 Flyway 迁移脚本负责
 # (backend/src/main/resources/db/migration),不在这里灌 SQL。
+#
+# 刻意不写 container_name:交给 compose 按项目名生成(sky-takeout-mysql-1),
+# 避免和机器上其它 compose 项目的同名容器互相抢占。
+# 需要在容器里执行命令时用服务名即可,例如:
+#   wsl docker compose -f /mnt/d/projects/sky-takeout/docker-compose.yml exec mysql mysql -uroot -proot
 services:
   mysql:
     image: mysql:8.4
-    container_name: sky-mysql
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -27,7 +31,6 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: sky-redis
     restart: unless-stopped
     command: ["redis-server", "--requirepass", "123456", "--appendonly", "yes"]
     ports:

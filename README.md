@@ -48,6 +48,23 @@ docker compose up -d
 
 **表结构不需要手工导入。** 后端启动时由 Flyway 自动执行 `backend/src/main/resources/db/migration/` 下的迁移脚本建表并灌入开发种子数据。这是唯一的建表路径。
 
+<details>
+<summary><b>如果 Docker 跑在 WSL 里(本仓库当前开发环境)</b></summary>
+
+`.wslconfig` 使用 `networkingMode=Mirrored` 时,WSL 内**普通进程**监听的端口能从 Windows 的 localhost 访问,但 Docker 经 bridge 网络 + iptables 发布的端口**不行**——实测 Windows 连 `127.0.0.1:3306` 被直接拒绝,换 `network_mode: host` 的容器同端口就能连通。因为后端跑在 Windows 上,必须加上覆盖文件:
+
+```bash
+wsl docker compose \
+  -f /mnt/d/projects/sky-takeout/docker-compose.yml \
+  -f /mnt/d/projects/sky-takeout/docker-compose.wsl.yml up -d
+```
+
+`docker-compose.wsl.yml` 只是把两个服务改成 `network_mode: host` 并清掉端口映射,不改任何数据卷。不在这个环境时不要加它。
+
+另一个替代做法是在 `.wslconfig` 的 `[experimental]` 段加 `hostAddressLoopback=true` 并 `wsl --shutdown` 重启,那样标准 compose 文件即可直连;但那会影响整机 WSL 行为,本仓库选择用覆盖文件把影响限制在项目内。
+
+</details>
+
 ### 2. 后端
 
 ```bash

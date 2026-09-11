@@ -10,7 +10,6 @@
     </uni-popup>
   </view>
 </template>
-<style src="../../pages/index/style.scss" lang="scss" scoped></style>
 
 <script setup lang="ts">
 import { ref } from 'vue'

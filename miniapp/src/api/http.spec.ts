@@ -178,6 +178,15 @@ describe('参数与请求体', () => {
     expect(lastRequest().url).toContain('/api/v1/customer/orders')
   })
 
+  it('GET 会剔掉 undefined/null 的查询参数(否则会被拼成字面量 status=undefined)', async () => {
+    setTokens(pair('a', 'r'))
+    respondWith([{ status: 200, data: { records: [] } }])
+    await http.get('/api/v1/customer/orders', {
+      data: { page: 1, pageSize: 10, sort: 'placedAt,desc', status: undefined, keyword: null, ok: '' },
+    })
+    expect(bodyOf(lastRequest())).toEqual({ page: 1, pageSize: 10, sort: 'placedAt,desc', ok: '' })
+  })
+
   it('POST 会带 Content-Type', async () => {
     setTokens(pair('a', 'r'))
     respondWith([{ status: 201, data: {} }])

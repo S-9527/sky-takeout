@@ -81,6 +81,21 @@ export function resolveUrl(path: string): string {
   return `${apiBaseUrl}${path}`
 }
 
+/**
+ * 剔除查询参数里值为 `undefined` / `null` 的键。
+ *
+ * `uni.request` 对 GET 的 `data` 走的是 query 序列化,`{ status: undefined }` 会被拼成
+ * 字面量 `status=undefined`(而不是省略),后端校验直接 400 —— 订单列表「全部」页签踩过。
+ */
+function pruneQuery(data: unknown): unknown {
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) return data
+  const query: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+    if (value !== undefined && value !== null) query[key] = value
+  }
+  return query
+}
+
 /* ------------------------------------------------------------------ 请求体形状 */
 
 export type UniMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -234,11 +249,14 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   const token = options.auth === false ? null : getAccessToken()
   if (token) header.Authorization = `Bearer ${token}`
 
+  // GET 的 data 是查询参数:先剔掉 undefined/null,避免 `status=undefined` 这类脏参数
+  const data = method === 'GET' ? pruneQuery(options.data) : options.data
+
   const response = await new Promise<UniRequestSuccess>((resolve, reject) => {
     runtimeRequest({
       url: resolveUrl(path),
       method,
-      data: options.data,
+      data,
       header,
       timeout: options.timeout ?? 20_000,
       success: resolve,

@@ -35,7 +35,8 @@ async function saveProfile(): Promise<void> {
 }
 
 function goOrders(): void {
-  uni.navigateTo({ url: '/pages/order/list' })
+  // order/list 是 tabBar 页面,只能用 switchTab(navigateTo 会报 can not navigateTo a tabbar page)
+  uni.switchTab({ url: '/pages/order/list' })
 }
 
 function goAddresses(): void {

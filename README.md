@@ -130,7 +130,12 @@ node scripts/smoke-orders.mjs     # 顾客订单:试算/下单(R3/R5)/快照/取
 node scripts/smoke-payments.mjs   # 支付与退款:mock 发起即成功/轮询/R9/仅 ADMIN 退款/退款校验,26 项
 node scripts/smoke-admin-orders.mjs  # 管理端订单:接单→派送→完成/拒单退款/取消规则/状态计数,26 项
 node scripts/smoke-notify.mjs     # 通知:微信回调(签名/幂等/金额)+ 管理端 WebSocket(关闭码/推送),20 项
+node scripts/smoke-insights.mjs   # 报表:营业额/用户/订单/销量排行/工作台(口径与状态计数对齐),19 项
+node scripts/smoke-upload.mjs     # 上传:白名单/5MB 上限/空文件/匿名可访问 /files/**,11 项
 ```
+
+> **契约覆盖**:`docs/openapi.yaml` 里的 79 个 HTTP 操作已全部实现,且没有契约外的接口。
+> 可用 `GET /v3/api-docs` 与 `docs/openapi.yaml` 逐个 `(method, path)` 比对自检。
 
 脚本打的是 `http://localhost:8080`(可用 `SKY_BASE_URL` 覆盖),失败时以非零码退出,可直接串进 CI。
 它们都会写库但都自行还原:`smoke-shop.mjs` 结束时把营业状态写回原值;catalog / dish / setmeal /

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+  报表聚合 SQL(复杂 SQL 放这里,而不是散在注解里 —— 后端架构 §2)。
+
+  口径(与 docs/02-database.md §5 一致):
+    * 营业额 / 订单量 / 客单价:按 paid_at 聚合,有效订单 = status = 'COMPLETED'
+    * 时间区间含首含尾由 service 转成 [from, to) 半开区间传进来
+-->
+<mapper namespace="com.sky.insights.mapper.InsightsMapper">
+
+    <select id="turnoverByDay" resultType="com.sky.insights.mapper.DailyTurnover">
+        SELECT DATE(o.`paid_at`)        AS `day`,
+               SUM(o.`pay_amount_cents`) AS `revenueCents`,
+               COUNT(*)                 AS `orderCount`
+        FROM `orders` o
+        WHERE o.`status` = 'COMPLETED'
+          AND o.`paid_at` &gt;= #{from}
+          AND o.`paid_at` &lt; #{to}
+        GROUP BY DATE(o.`paid_at`)
+        ORDER BY `day`
+    </select>
+
+    <select id="ordersByDay" resultType="com.sky.insights.mapper.DailyOrderCount">
+        SELECT DATE(o.`paid_at`) AS `day`,
+               COUNT(*)          AS `totalOrderCount`,
+               SUM(CASE WHEN o.`status` = 'COMPLETED' THEN 1 ELSE 0 END) AS `validOrderCount`
+        FROM `orders` o
+        WHERE o.`paid_at` &gt;= #{from}
+          AND o.`paid_at` &lt; #{to}
+        GROUP BY DATE(o.`paid_at`)
+        ORDER BY `day`
+    </select>
+
+    <select id="usersByDay" resultType="com.sky.insights.mapper.DailyUserCount">
+        SELECT DATE(c.`created_at`) AS `day`,
+               COUNT(*)             AS `newUserCount`
+        FROM `customer` c
+        WHERE c.`created_at` &gt;= #{from}
+          AND c.`created_at` &lt; #{to}
+        GROUP BY DATE(c.`created_at`)
+        ORDER BY `day`
+    </select>
+
+    <select id="countUsersUntil" resultType="long">
+        SELECT COUNT(*) FROM `customer` c WHERE c.`created_at` &lt; #{until}
+    </select>
+
+    <!--
+      销量排行按**明细快照里的名称**归集:菜品被真删后 dish_id 会置 NULL,但快照仍在,
+      所以已删除的菜也能正确上榜(领域文档 D5 的收益)。
+    -->
+    <select id="topDishes" resultType="com.sky.insights.mapper.DishSales">
+        SELECT i.`name_snapshot` AS `name`,
+               SUM(i.`quantity`) AS `copies`
+        FROM `order_item` i
+        JOIN `orders` o ON o.`id` = i.`order_id`
+        WHERE o.`status` = 'COMPLETED'
+          AND o.`paid_at` &gt;= #{from}
+          AND o.`paid_at` &lt; #{to}
+        GROUP BY i.`name_snapshot`
+        ORDER BY `copies` DESC, `name` ASC
+        LIMIT #{topNumber}
+    </select>
+
+    <select id="orderStatusTotals" resultType="com.sky.insights.mapper.OrderStatusTotal">
+        SELECT o.`status` AS `status`, COUNT(*) AS `total`
+        FROM `orders` o
+        GROUP BY o.`status`
+    </select>
+
+    <select id="countOrdersPlacedBetween" resultType="long">
+        SELECT COUNT(*) FROM `orders` o
+        WHERE o.`placed_at` &gt;= #{from} AND o.`placed_at` &lt; #{to}
+    </select>
+
+    <select id="countDishesByStatus" resultType="long">
+        SELECT COUNT(*) FROM `dish` d WHERE d.`status` = #{status}
+    </select>
+
+    <select id="countSetmealsByStatus" resultType="long">
+        SELECT COUNT(*) FROM `setmeal` s WHERE s.`status` = #{status}
+    </select>
+
+    <select id="countZeroSalesOnSaleDishes" resultType="long">
+        SELECT COUNT(*) FROM `dish` d
+        WHERE d.`status` = 1
+          AND NOT EXISTS (
+            SELECT 1 FROM `order_item` i
+            JOIN `orders` o ON o.`id` = i.`order_id`
+            WHERE o.`status` = 'COMPLETED'
+              AND o.`paid_at` &gt;= #{from}
+              AND o.`paid_at` &lt; #{to}
+              AND i.`dish_id` = d.`id`
+          )
+    </select>
+
+</mapper>

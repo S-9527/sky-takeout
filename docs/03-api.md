@@ -492,10 +492,10 @@
 
 | 方法 | 路径 | 用途 | 认证受众 | 主要错误码 |
 |---|---|---|---|---|
-| POST | `/api/v1/customer/orders/{orderId}/payments` | 发起支付(返回小程序支付参数) | 顾客 | `PAY_ORDER_NOT_PAYABLE`、`PAY_DUPLICATE_PAYMENT`、`PAY_AMOUNT_MISMATCH`、`ORDER_PAY_TIMEOUT` |
+| POST | `/api/v1/customer/orders/{orderId}/payments` | 发起支付(返回小程序支付参数) | 顾客 | `PAY_ORDER_NOT_PAYABLE`、`PAY_DUPLICATE_PAYMENT`、`ORDER_PAY_TIMEOUT`(`PAY_AMOUNT_MISMATCH` 只可能出现在回调里,见 §2.3) |
 | GET | `/api/v1/customer/orders/{orderId}/payments/status` | 查询支付结果(轮询) | 顾客 | `ORDER_NOT_FOUND` |
 | GET | `/api/v1/admin/refunds` | 查询退款记录(分页) | 员工 | `COMMON_SORT_FIELD_NOT_ALLOWED` |
-| POST | `/api/v1/admin/refunds` | 发起退款(整单全额退) | 员工 `ADMIN` | `PAY_ORDER_NOT_PAID`、`PAY_ORDER_NOT_REFUNDABLE`、`PAY_REFUND_ALREADY_EXISTS`、`PAY_REFUND_AMOUNT_EXCEEDED`、`PAY_REFUND_FAILED` |
+| POST | `/api/v1/admin/refunds` | 发起退款(整单全额退,请求体必带 `orderNo`) | 员工 `ADMIN` | `PAY_ORDER_NOT_FOUND`、`PAY_ORDER_NOT_PAID`、`PAY_ORDER_NOT_REFUNDABLE`、`PAY_REFUND_ALREADY_EXISTS`、`PAY_REFUND_AMOUNT_EXCEEDED`、`PAY_REFUND_FAILED` |
 
 ### 3.12 支付平台回调 Notify
 

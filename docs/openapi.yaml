@@ -4205,8 +4205,10 @@ components:
         mockPayUrl:
           type: string
           nullable: true
-          description: 仅 `channel=MOCK` 时返回,供本地联调的模拟支付地址
-          example: /api/v1/notify/mock/pay?paymentId=6001
+          description: |
+            仅 `channel=MOCK` 且渠道需要外部触发时返回。当前 mock 通道**发起即成功**(README 的
+            `SKY_PAYMENT_GATEWAY=mock`),因此恒为 null——不谎报一个并不存在的回调地址。
+          example: null
 
     PaymentStatusView:
       type: object
@@ -4287,9 +4289,16 @@ components:
 
     RefundCreateRequest:
       type: object
-      description: 整单全额退;金额由服务端取订单 `payAmountCents`
-      required: [reason]
+      description: |
+        整单全额退;金额由服务端取订单 `payAmountCents`。
+        `orderNo` 是**必填**的:没有订单标识,这个接口无法知道退哪一单。
+      required: [orderNo, reason]
       properties:
+        orderNo:
+          type: string
+          maxLength: 32
+          description: 要退款的订单号(顾客可见的业务单号)
+          example: '202501011200000001'
         reason:
           type: string
           minLength: 1
@@ -4298,9 +4307,10 @@ components:
         reasonType:
           type: string
           maxLength: 32
-          enum: [MERCHANT_REJECT, MERCHANT_CANCEL, CUSTOMER_REQUEST, OTHER]
+          description: 取值与库里的 CHECK 约束一致(`CUSTOMER_APPLY`,不是 `CUSTOMER_REQUEST`)
+          enum: [MERCHANT_REJECT, MERCHANT_CANCEL, CUSTOMER_APPLY, OTHER]
           default: OTHER
-          example: CUSTOMER_REQUEST
+          example: CUSTOMER_APPLY
         expectedAmountCents:
           type: integer
           format: int64

@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -37,6 +38,7 @@ import com.sky.order.domain.OrderErrorCode;
 import com.sky.order.domain.OrderItem;
 import com.sky.order.domain.OrderStateMachine;
 import com.sky.order.domain.OrderStatus;
+import com.sky.order.domain.PayMethod;
 import com.sky.order.domain.PayStatus;
 import com.sky.order.mapper.OrderItemCount;
 import com.sky.order.mapper.OrderItemMapper;
@@ -349,6 +351,110 @@ public class OrderService {
             throw new BusinessException(OrderErrorCode.ORDER_URGE_TOO_FREQUENT);
         }
         orderNotifier.orderReminder(orderId, order.getOrderNo(), message);
+    }
+
+    // ---------------------------------------------------------------- 跨上下文:支付
+
+    /**
+     * 支付上下文需要的订单视图。跨上下文不能引用 {@code order.domain.Order}(架构规则 L4),
+     * 所以这里是 service 包里的一个稳定投影。
+     */
+    public record OrderPaymentView(Long id, String orderNo, String status, String payStatus,
+                                   long payAmountCents, String payMethod) {
+    }
+
+    public Optional<OrderPaymentView> findPaymentViewByOrderNo(String orderNo) {
+        Order order = orderMapper.selectOne(Wrappers.<Order>lambdaQuery().eq(Order::getOrderNo, orderNo));
+        return Optional.ofNullable(order).map(OrderService::toPaymentView);
+    }
+
+    public OrderPaymentView requirePaymentView(Long orderId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(OrderErrorCode.ORDER_NOT_FOUND);
+        }
+        return toPaymentView(order);
+    }
+
+    /** 顾客侧用:既要支付视图,又要 R9 归属校验(他人订单一律 404)。 */
+    public OrderPaymentView requireOwnedPaymentView(Long customerId, Long orderId) {
+        return toPaymentView(requireOwned(customerId, orderId));
+    }
+
+    /** 批量取订单号(退款列表展示用),避免每行一次查询。 */
+    public Map<Long, String> orderNosByIds(Collection<Long> orderIds) {
+        if (orderIds == null || orderIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, String> result = new LinkedHashMap<>();
+        for (Order order : orderMapper.selectBatchIds(orderIds)) {
+            result.put(order.getId(), order.getOrderNo());
+        }
+        return result;
+    }
+
+    /**
+     * 支付成功:待付款 → 待接单(走状态机),写 {@code paidAt} / {@code payStatus} / {@code payMethod}。
+     *
+     * <p>幂等:已支付的订单直接返回。支付回调可能重复送达(R7),这里必须是"重复通知只生效一次"的第一道闸。
+     */
+    @Transactional
+    public void markPaid(Long orderId, String payMethod) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(OrderErrorCode.ORDER_NOT_FOUND);
+        }
+        if (order.getPayStatus() != null && order.getPayStatus().isPaid()) {
+            return;
+        }
+        OrderStateMachine.requireTransition(order.getStatus(), OrderStatus.PENDING_ACCEPTANCE);
+
+        Order update = new Order();
+        update.setId(orderId);
+        update.setStatus(OrderStatus.PENDING_ACCEPTANCE);
+        update.setPayStatus(PayStatus.PAID);
+        update.setPayMethod(parsePayMethod(payMethod));
+        update.setPaidAt(Times.nowLocal());
+        orderMapper.updateById(update);
+    }
+
+    /** 退款成功:订单 {@code payStatus} 置 REFUNDED。订单状态本身不动——取消/拒单流程各自负责状态迁移。 */
+    @Transactional
+    public void markRefunded(Long orderId) {
+        Order order = orderMapper.selectById(orderId);
+        if (order == null) {
+            throw new BusinessException(OrderErrorCode.ORDER_NOT_FOUND);
+        }
+        if (order.getPayStatus() == PayStatus.REFUNDED) {
+            return;
+        }
+        Order update = new Order();
+        update.setId(orderId);
+        update.setPayStatus(PayStatus.REFUNDED);
+        orderMapper.updateById(update);
+    }
+
+    private static OrderPaymentView toPaymentView(Order order) {
+        return new OrderPaymentView(
+                order.getId(),
+                order.getOrderNo(),
+                order.getStatus() == null ? null : order.getStatus().name(),
+                order.getPayStatus() == null ? null : order.getPayStatus().name(),
+                order.getPayAmountCents() == null ? 0L : order.getPayAmountCents(),
+                order.getPayMethod() == null ? null : order.getPayMethod().name());
+    }
+
+    private static PayMethod parsePayMethod(String payMethod) {
+        if (payMethod == null) {
+            return null;
+        }
+        try {
+            return PayMethod.valueOf(payMethod);
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException(CommonErrorCode.COMMON_VALIDATION_FAILED,
+                    "支付方式不合法",
+                    List.of(new ErrorResponse.Detail("payMethod", "只能是 WECHAT 或 MOCK")));
+        }
     }
 
     // ---------------------------------------------------------------- 内部

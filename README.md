@@ -127,13 +127,14 @@ node scripts/smoke-customer-catalog.mjs  # 顾客端目录:可见性过滤/分�
 node scripts/smoke-cart.mjs       # 购物车:同菜同口味合并/口味归一化/覆盖式改量/R9 隔离/清空,30 项
 node scripts/smoke-profile.mjs    # 地址簿:默认地址唯一/上限 20/R9 隔离/幂等设默认,20 项
 node scripts/smoke-orders.mjs     # 顾客订单:试算/下单(R3/R5)/快照/取消状态机/再来一单/催单,30 项
+node scripts/smoke-payments.mjs   # 支付与退款:mock 发起即成功/轮询/R9/仅 ADMIN 退款/退款校验,26 项
 ```
 
 脚本打的是 `http://localhost:8080`(可用 `SKY_BASE_URL` 覆盖),失败时以非零码退出,可直接串进 CI。
 它们都会写库但都自行还原:`smoke-shop.mjs` 结束时把营业状态写回原值;catalog / dish / setmeal /
 customer-catalog / cart / profile 只创建或删除自己造的记录(并清空自己用过的购物车与地址簿),
-不碰种子数据。`smoke-orders.mjs` 会**真的创建订单**——订单是凭证、契约里没有删除接口,所以脚本
-不清除它们,但会清掉自造的菜品与地址。
+不碰种子数据。`smoke-orders.mjs` / `smoke-payments.mjs` 会**真的创建订单、支付与退款**——契约里没有
+删除接口(它们是凭证),所以脚本不清除它们,但会清掉自造的菜品与地址。
 
 ## 本地开发配置
 

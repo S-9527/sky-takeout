@@ -81,8 +81,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        // 员工管理是唯一需要超管角色的模块,必须排在 /api/v1/admin/** 之前
+                        // 员工管理与退款需要超管角色,必须排在 /api/v1/admin/** 之前
                         .requestMatchers("/api/v1/admin/employees/**").hasRole("ADMIN")
+                        .requestMatchers("/api/v1/admin/refunds/**").hasRole("ADMIN")
                         .requestMatchers("/api/v1/admin/**").hasAnyRole("ADMIN", "STAFF")
                         .requestMatchers("/api/v1/customer/**").hasRole("CUSTOMER")
                         .anyRequest().authenticated())

@@ -1,0 +1,35 @@
+/*
+ * Tailwind v4 入口。
+ *
+ * 关于顺序:`main.ts` 里**先**引本文件、**后**引 Element Plus 的样式 ——
+ * Tailwind 的 preflight 会重置 `button`/`input` 等元素的基础样式,
+ * 顺序反了会把 Element Plus 的按钮、输入框样式冲掉(典型症状:按钮变透明)。
+ *
+ * 本文件只放全局底座与少量复用类;组件样式一律写在各自的 `.vue` 里(用 Tailwind 原子类)。
+ */
+@import 'tailwindcss';
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family:
+    'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial,
+    sans-serif;
+  color: #303133;
+  background-color: #f5f7fa;
+}
+
+/* 表格里的金额用等宽字体对齐,扫一眼就能比大小 */
+.sky-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.sky-page {
+  padding: 16px;
+}

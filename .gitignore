@@ -15,6 +15,11 @@ coverage/
 pnpm-debug.log*
 npm-debug.log*
 
+# ---------- Playwright ----------
+test-results/
+playwright-report/
+blob-report/
+
 # ---------- uni-app ----------
 unpackage/
 

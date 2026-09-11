@@ -101,8 +101,27 @@ java -jar target/sky-takeout-backend-2.0.0.jar
 ```bash
 cd admin
 pnpm install
-pnpm dev
+pnpm gen:api    # 由 docs/openapi.yaml 生成 src/types/api.d.ts(改了契约就重跑)
+pnpm dev        # http://localhost:5173
 ```
+
+开发服务器把 `/api`、`/files`、`/ws` 代理到 `http://localhost:8080`,前端只发同源请求,不依赖后端 CORS。
+登录用种子账号 `admin / 123456`(管理员)或 `zhangsan / 123456`(员工:看不到员工管理、不能发起退款)。
+
+前端有三层测试,缺一不可:
+
+```bash
+pnpm test              # 单元/组件(Vitest + jsdom,mock 掉 HTTP)
+pnpm test:coverage     # 同上 + v8 覆盖率门禁(只圈逻辑层)
+pnpm test:integration  # 集成:用前端自己的 api/stores 打真后端(需后端在 :8080)
+pnpm test:e2e          # 端到端:真浏览器走真实 UI
+pnpm verify            # typecheck + typecheck:test + test:coverage + build
+```
+
+> **E2E 的浏览器从哪来**:本仓库的开发环境是 WSL,里面没有浏览器,而 Playwright 自带的浏览器需要
+> `libnspr4` / `libnss3` 等系统库(要 root 才能装)。所以 `pnpm test:e2e` 直接复用 **Windows 侧已安装的 Edge**:
+> `e2e/global-setup.ts` 用调试端口把它拉起来,测试通过 CDP 连上去 —— 零下载、零 root。
+> 换机器时可用 `SKY_EDGE_PATH` 指定浏览器,或 `pnpm exec playwright install chromium` 后设 `SKY_E2E_BUNDLED=1`。
 
 ### 4. 用户端
 
